@@ -1,0 +1,24 @@
+Package: FDLToolbox
+Type: Package
+Title: FDLToolbox Farm Development Lease
+Version: 0.1.0
+Author: Matthew Bayly M.J. Bayly Analytics Ltd.
+Maintainer: Matthew Bayly <mjbayly@mjbayly.com>
+Description: Farm Development Lease toolbox provids support to
+    the Governemnt of Alberta to automate administrative and
+    managerial activities.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.2.1
+Suggests: 
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+VignetteBuilder: knitr
+Imports: 
+    magrittr,
+    dplyr,
+    readxl,
+    writexl

@@ -8,15 +8,11 @@ module_excel_upload_ui <- function(id) {
     ns <- NS(id)
 
     tagList(
-
-  a(href="demo_data.xlsx", "Download Sample Excel Template (.xlsx)", download=NA, target="_blank"),
-
-
+        a(href = "demo_data.xlsx", "Download Sample Excel Template (.xlsx)", download = NA, target = "_blank"),
         fileInput(ns("input_file"), "Upload Excel Workbook (.xlsx, .xls)"),
         textOutput(ns("output_message")),
         valueBoxOutput(ns("approvalBox"))
     )
-
 }
 
 # Define server module for Excel workbook upload
@@ -92,6 +88,58 @@ module_excel_upload_server <- function(id) {
                     session$userData$rv_initial_load(1)
                     print("update rv_excel_data")
                     session$userData$rv_excel_data$rv_excel_data <- dat
+
+
+                    pct_coverage <- isolate({
+                        session$userData$rv_crop_selection_inputs$pct_coverage
+                    })
+                    yrs_dat <- isolate({
+                        session$userData$rv_crop_selection_inputs$yrs_dat
+                    })
+                    start_year <- isolate({
+                        session$userData$rv_crop_selection_inputs$start_year
+                    })
+                    stop_year <- isolate({
+                        session$userData$rv_crop_selection_inputs$stop_year
+                    })
+
+
+                    # Run the crop selection function
+                    cs <- suppressWarnings({
+                        crop_selector(
+                            excel_data = dat,
+                            start_year = start_year,
+                            stop_year = stop_year,
+                            target_years = yrs_dat,
+                            target_coverage_pct = pct_coverage
+                        )
+                    })
+
+                    # Set default crop selection
+                    session$userData$rv_crop_selection$rv_crop_selection <- cs
+
+                    # Run LTAY calculation
+                    if (!(all(cs$selected) == 0)) {
+                        ltay <- suppressWarnings({
+                            build_ltay_tables(
+                                excel_data = dat,
+                                crops_selected = cs,
+                                start_year = start_year,
+                                stop_year = stop_year
+                            )
+                        })
+                        # Set default crop selection
+                        session$userData$rv_ltay$rv_ltay <- ltay
+
+                        parcel_data <- parcel_data_gis(
+                            excel_data = dat,
+                            ltay_tables = ltay
+                        )
+
+                        # Set default crop selection
+                        session$userData$rv_parcel_data$rv_parcel_data$dat <- parcel_data
+                    }
+
 
                     show_toast(
                         title = "Data Imported",

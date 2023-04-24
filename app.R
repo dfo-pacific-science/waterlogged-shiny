@@ -78,13 +78,21 @@ ui <- dashboardPage(
         "t_lsrs",
         module_lsrs_ui("lsrs")
       ),
-      tabItem(
-        "t_Save_and_load",
-        # scenario_table_module_ui("scenario_table"),
+     tabItem(
+        "t_gis",
+        module_parcel_gis_ui("parcel_gis")
+      ),
+     tabItem(
+        "t_select_crops",
+        module_select_crops_ui("select_crops")
+      ),
+     tabItem(
+        "t_ltay",
+        module_ltay_ui("ltay")
       ),
       tabItem(
-        "t_Survivorship",
-        # survivorship_module_ui("survivorship_page"),
+        "t_parcel_rates",
+        module_parcel_report_ui("ltay")
       )
     )
   )
@@ -104,6 +112,11 @@ server <- function(input, output, session) {
   module_average_yields_server("average_yields")
   module_price_fractions_server("price_fractions")
   module_lsrs_server("lsrs")
+  module_parcel_gis_server("parcel_gis")
+  module_select_crops_server("select_crops")
+  module_ltay_server("ltay")
+  module_parcel_report_server("ltay")
+
 
 }
 

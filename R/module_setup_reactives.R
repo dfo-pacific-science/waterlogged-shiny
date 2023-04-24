@@ -1,5 +1,4 @@
 module_setup_reactives <- function(session = NA) {
-
     print("Setting up reactive values for user session...")
 
     # Initial load flag
@@ -20,6 +19,33 @@ module_setup_reactives <- function(session = NA) {
     )
     session$userData$rv_crop_names <- rv_crop_names
 
+    # Crop selection
+    rv_crop_selection <- reactiveValues(
+        rv_crop_selection = NULL
+    )
+    session$userData$rv_crop_selection <- rv_crop_selection
+
+    # Crop selection inputs
+    rv_crop_selection_inputs <- reactiveValues(
+        pct_coverage = 1,
+        yrs_dat = 3,
+        start_year = NULL,
+        stop_year = NULL
+    )
+    session$userData$rv_crop_selection_inputs <- rv_crop_selection_inputs
 
 
+    # LTAY tables
+    rv_ltay <- reactiveValues(
+        crop = NULL,
+        zone = NULL
+    )
+    session$userData$rv_ltay <- rv_ltay
+
+
+    # Parcel report
+    rv_parcel_data <- reactiveValues(
+        dat = NULL
+    )
+    session$userData$rv_parcel_data <- rv_parcel_data
 }

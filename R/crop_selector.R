@@ -106,7 +106,7 @@ crop_selector <-
     ay_sum$selected <- FALSE
     ay_sum$selected <-
       ifelse(ay_sum$n_years >= target_years &
-               ay_sum$pct_coverage >= 1,
+               ay_sum$pct_coverage >= target_coverage_pct,
              1,
              ay_sum$selected)
 

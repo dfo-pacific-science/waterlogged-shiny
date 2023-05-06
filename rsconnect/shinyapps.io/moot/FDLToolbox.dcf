@@ -1,0 +1,13 @@
+name: FDLToolbox
+title: FDLToolbox
+username:
+account: moot
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 8932882
+bundleId: 7128965
+url: https://moot.shinyapps.io/FDLToolbox/
+when: 1682355149.52892
+lastSyncTime: 1682355149.52893
+asMultiple: FALSE
+asStatic: FALSE

@@ -28,6 +28,21 @@ module_parcel_gis_ui <- function(id) {
                         "The sum of the non-cultivated area and LSRS columns should (roughly) equal the 'Total Acres (GIS FDL Boundary)', but rounding errors and combined field, desktop and GIS methodologies may result in slightly different values. The FDL toolbox references the LSRS columns for all calculations, so please ensure that those are as accurate as possible.",
                         class = "clean-print"
                     ),
+                    tags$p(
+                      div(
+                        class = "clean-print", style = "color: darkred; text-align: center;
+                            padding: 5px;
+                            margin: 5px;
+                            background-color: #ffebeb;
+                            border-radius: 15px;
+                            border: 3px solid #9e7474;
+                            font-weight: bold;",
+                        div(
+                          textOutput(ns("txt_bad_area_sum")),
+                        ),
+                      ),
+                      class = "clean-print"
+                    ),
                 )
             ),
             fluidRow(
@@ -136,6 +151,45 @@ module_parcel_gis_server <- function(id) {
                     icon = icon("check", lib = "glyphicon"),
                     color = "green"
                 )
+            })
+
+
+            # Bad GIS summary warning text
+            # Display warning for GIS summary non cultivated areas
+            output$txt_bad_area_sum <- renderText({
+
+              # Get reactive object
+              dt_data <- parcel_gis_table()
+              print("Bad GIS summary warning text")
+
+              # Check if object is populated
+              if (!(is.null(dt_data))) {
+                # Create message
+                cul <- dt_data[, grepl("LSRS", colnames(dt_data))]
+                cul <- rowSums(cul, na.rm = TRUE)
+                non_cul <- dt_data$`Not Cultivated Acres`
+                total <- dt_data$`Total Acres (GIS FDL Boundary)`
+
+                error_amount <- sum(abs(total - (cul + non_cul)), na.rm = TRUE)
+
+                if(error_amount <= 1) {
+                  return(NULL)
+                }
+
+                error_amount <- round(error_amount, 1)
+                pct <- round((error_amount/sum(total))*100, 1)
+                m2 <- paste(error_amount, " acres (or ", pct, "%) or the total FDL lease area. ")
+
+                message <- paste0(
+                  "Warning: The sum of the non-cultivated areas and cultivated areas (across the LSRS columns) does not equal the sum of the total area. The absolute difference in these estimates across each of the FDL units is approximately ",
+                  m2,
+                  "Adjust values in the FDL and reupload to fix potential errors in the GIS summaries."
+                )
+                # Show message
+                return(message)
+              } else {
+                return(NULL)
+              }
             })
 
 

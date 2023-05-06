@@ -14,29 +14,57 @@ module_parcel_report_ui <- function(id) {
                     width = 12,
                     tags$h1("FDL Parcel Report", class = "custom-h1"),
                     tags$p(
-                        "Placeholder text for parcel_report module....",
+                        "This page details summary data for each parcel providing the rental rate estimates and the input values used to drive each estimate. FDL parcel data is summarized as follows: a.) summarize total area per LSRS class per parcel (acre), b.) next estimate the rental rate per unit area for each LSRS class ($/acre), then c.) calculate the total value by multiplying the rate ($/acre) by total area (acres), d.) repeat this process for each of the Dry and Irr agricultural input type for all LSRS land classes and then e.) summarize final values for each parcel. To download this data, navigate to the Excel Download tab.",
                         class = "clean-print"
                     ),
-                    tags$p("Placeholder text for parcel_report module....",
-                        class = "clean-print"
-                    ),
-                    tags$p(
-                        "Placeholder text for parcel_report module....",
+                    tags$p("Use the following summary tables and plots on this page to determine if values make sense. Look carefully for any errors, issues, unexpected trends, or anomalies. If any issues are identified navigate back to the previous input data tabs or crop selector tabs to make necessary adjustments.",
                         class = "clean-print"
                     ),
                 )
             ),
+
+
+            fluidRow(
+              column(
+                width = 4,
+                valueBoxOutput(ns("median_rate"), width = 12),
+              ),
+              column(
+                width = 4,
+                valueBoxOutput(ns("median_rent"), width = 12),
+              ),
+              column(
+                width = 4,
+                valueBoxOutput(ns("total_value"), width = 12),
+              )
+            ),
+
+
             fluidRow(
                 column(
                     width = 12,
-                    tags$h2("parcel_report By Crop", class = "custom-h2"),
+                    tags$h2("Parcel Report", class = "custom-h2"),
                     tags$p(
-                        "Placeholder text for parcel_report module by crop type...",
+                        "Summary data  and rental rate calculations for each FDL parcel",
                         class = "clean-print"
                     ),
                     DT::dataTableOutput(ns("dt_parcel_report_table"))
                 ),
             ),
+
+
+            fluidRow(
+              column(
+                width = 12,
+
+                tags$p(
+                  "FDL Parcel Rental Rate Summary Plot: Showing to total rental rate for each parcel on the x-axis ($) and the rental rate value per acre ($/acre) on the y-axis. Use this plot to inspect individual parcels and identify any errors, issues, or anomalies. Scan for any extreme values or unexpected trends.",
+                  class = "clean-print"
+                ),
+                plotlyOutput(ns("plotly_output")),
+              )
+            ),
+
         ),
         # Below box
         fluidRow(
@@ -103,7 +131,7 @@ module_parcel_report_server <- function(id) {
                         stop_year = stop_year
                     )
                 })
-                
+
                 # Set default crop selection
                 session$userData$rv_ltay$rv_ltay <- ltay
 
@@ -140,13 +168,13 @@ module_parcel_report_server <- function(id) {
                     # Set other columns to factor for multi-select
                     dt_data$`AFSC Crop Risk Zone` <- as.factor(dt_data$`AFSC Crop Risk Zone`)
                     dt_data$`FDL` <- as.character(dt_data$`FDL`)
-                    
+
                     # Rounding
                     dt_data <- dt_data %>% mutate_if(is.numeric, round, 3)
 
                     dt_data$`Total Acres (GIS FDL Boundary)` <- round(dt_data$`Total Acres (GIS FDL Boundary)`, 1)
 
-       
+
                     c_index <- colnames(dt_data)[grepl("Dry Acres", colnames(dt_data))]
                     dt_data <- dt_data %>% mutate_at(c_index, round, 1)
 
@@ -196,6 +224,125 @@ module_parcel_report_server <- function(id) {
                     )
                 }
             })
+
+
+
+
+
+            # Value summary boxes
+
+            output$total_value <- renderValueBox({
+
+              dt_data <- parcel_report_table()
+
+              if (is.null(dt_data)) {
+                mval <- 0
+              } else {
+
+                mval <- sum(dt_data$`Total Value`, na.rm = TRUE)
+                mval <- round(mval, 0)
+                mval <- format(mval, nsmall=0, big.mark=",")  # 1,000.6
+                mval <- paste0("$", mval, "/year")
+
+              }
+              valueBox(
+                mval, "Total FDL Value ($)",
+                icon = icon("unchecked", lib = "glyphicon"),
+                color = "green"
+              )
+            })
+
+
+
+            # Value summary boxes
+
+            output$median_rate <- renderValueBox({
+
+              dt_data <- parcel_report_table()
+
+
+              if (is.null(dt_data)) {
+                mval <- 0
+              } else {
+
+                mval <- median(dt_data$`Value Per Acre`, na.rm = TRUE)
+                mval <- round(mval, 2)
+                mval <- format(mval, nsmall=2, big.mark=",")  # 1,000.6
+                mval <- paste0("$", mval, "/Acre")
+
+              }
+              valueBox(
+                mval, "Median Rate ($/Acre)",
+                icon = icon("unchecked", lib = "glyphicon"),
+                color = "green"
+              )
+            })
+
+
+
+            output$median_rent <- renderValueBox({
+
+              dt_data <- parcel_report_table()
+
+              if (is.null(dt_data)) {
+                mval <- 0
+              } else {
+
+                mval <- median(dt_data$`Total Value`, na.rm = TRUE)
+                mval <- round(mval, 0)
+                mval <- format(mval, nsmall=0, big.mark=",")  # 1,000.6
+                mval <- paste0("$", mval, "/FDL Parcel")
+
+              }
+              valueBox(
+                mval, "Median Rent ($/parcel)",
+                icon = icon("unchecked", lib = "glyphicon"),
+                color = "green"
+              )
+            })
+
+
+
+
+            # ------------------------------------------------------------
+            # render plot button clicked -
+            output$plotly_output <- renderPlotly({
+
+              req(parcel_report_table())
+
+              data <- parcel_report_table()
+
+              if (nrow(data) == 0) {
+                return()
+              }
+
+              print("rendering renderPlotly in PF...")
+
+              data <- data[!(is.na(data$`Value Per Acre`)), ]
+              data <- data[order(data$`Value Per Acre`), ]
+              data <- data[, c("FDL", "AFSC Crop Risk Zone",
+                               "Total Acres (GIS FDL Boundary)", "Not Cultivated Acres",
+                               "Total Value", "Value Per Acre")]
+              data$`Total Acres (GIS FDL Boundary)` <- round(data$`Total Acres (GIS FDL Boundary)`, 1)
+              data$`Not Cultivated Acres` <- round(data$`Not Cultivated Acres`, 1)
+              data$`Value Per Acre` <- round(data$`Value Per Acre`, 2)
+              data$`Total Value` <- round(data$`Total Value`, 2)
+
+              p <- ggplot(
+                data = data,
+                aes(
+                  x = `Total Value`,
+                  y = `Value Per Acre`,
+                  col = `AFSC Crop Risk Zone`,
+                  label = FDL
+                )
+              ) +
+                geom_point()
+
+              ggplotly(p)
+
+            })
+
 
 
 

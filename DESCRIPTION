@@ -21,4 +21,15 @@ Imports:
     magrittr,
     dplyr,
     readxl,
-    writexl
+    writexl,
+    shinyjs,
+    shinydashboard,
+    shinycssloaders,
+    shinyWidgets,
+    htmlwidgets,
+    stringr,
+    DT,
+    plotly,
+    jsonlite
+    
+    

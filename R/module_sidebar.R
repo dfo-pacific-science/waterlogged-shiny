@@ -47,11 +47,6 @@ page_sidebar_tab_ui <- function(id) {
                     "Excel Download",
                     tabName = "t_excel_download",
                     icon = icon("download")
-                ),
-                menuItem(
-                    "Support",
-                    tabName = "t_info",
-                    icon = icon("circle-info")
                 )
             )
         )

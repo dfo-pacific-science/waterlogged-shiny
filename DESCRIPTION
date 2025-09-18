@@ -10,7 +10,7 @@ Description: Farm Development Lease toolbox provids support to
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.2.1
+RoxygenNote: 7.3.2
 Suggests: 
     knitr,
     rmarkdown,
@@ -31,5 +31,3 @@ Imports:
     DT,
     plotly,
     jsonlite
-    
-    

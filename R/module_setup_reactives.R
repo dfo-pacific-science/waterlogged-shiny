@@ -30,7 +30,8 @@ module_setup_reactives <- function(session = NA) {
         pct_coverage = 1,
         yrs_dat = 3,
         start_year = NULL,
-        stop_year = NULL
+        stop_year = NULL,
+        max_select = NULL
     )
     session$userData$rv_crop_selection_inputs <- rv_crop_selection_inputs
 

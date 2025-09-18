@@ -293,6 +293,9 @@ module_excel_upload_server <- function(id) {
                      stop_year <- isolate({
                        session$userData$rv_crop_selection_inputs$stop_year
                      })
+                     max_select <- isolate({
+                       session$userData$rv_crop_selection_inputs$max_select
+                     })
 
 
                      # Run the crop selection function
@@ -302,7 +305,8 @@ module_excel_upload_server <- function(id) {
                          start_year = start_year,
                          stop_year = stop_year,
                          target_years = yrs_dat,
-                         target_coverage_pct = pct_coverage
+                         target_coverage_pct = pct_coverage,
+                         max_select = max_select
                        )
                      })
 

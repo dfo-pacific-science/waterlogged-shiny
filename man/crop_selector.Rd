@@ -9,7 +9,8 @@ crop_selector(
   start_year = NA,
   stop_year = NA,
   target_years = 3,
-  target_coverage_pct = 1
+  target_coverage_pct = 1,
+  max_select = NA
 )
 }
 \arguments{
@@ -21,7 +22,9 @@ crop_selector(
 
 \item{target_years}{Integer. Target years per crop per risk and ag type. Ideally no crop is included if it has less than 3 years of data.}
 
-\item{target_coverage_pct}{Integer. Target percent coverage to include}
+\item{target_coverage_pct}{Integer. Target percent coverage to include.}
+
+\item{max_select}{Integer. Maximum number of crops to select per risk area and ag type.}
 }
 \value{
 A data frame of risk area crop and Ag type with candidate crops

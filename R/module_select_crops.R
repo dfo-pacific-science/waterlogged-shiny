@@ -47,12 +47,25 @@ module_select_crops_ui <- function(id) {
                 ),
             ),
             fluidRow(
+              column(
+                width = 12,
+                numericInput(ns("max_select"), "Limit Selection to a maximum of N crops per risk area (e.g., 5):", value = 5, step = 1, min = 0, max = 3000, width = "100%"),
+              )
+            ),
+            fluidRow(
+              column(
+                width = 12,
+              tags$p("If limiting selection to a maximum of N crops per risk area, crops will be sorted by area coverage and then by years of data for each risk area. A limited selection will then be drawn from each risk area based on the top N (e.g., top 5) most representative crops. Leaving this value as blank will include all crops meeting the percent coverage and years of data thresholds."))
+            ),
+
+
+            fluidRow(
                 column(
                     width = 12,
                     tags$h2("AFSC Zone Summary", class = "custom-h2"),
-                    tags$p("Summary of selected crops across AFSC Risk Zones for Agricultural Input Type: Dry."),
+                    tags$p("Dry Crop Selection. Summary of selected crops across AFSC Risk Zones for Agricultural Input Type: Dry."),
                     tableOutput(ns("afsc_summary")),
-                    tags$p("Summary of selected crops across AFSC Risk Zones for Agricultural Input Type: Irr."),
+                    tags$p("Irrigated Crop Selection. Summary of selected crops across AFSC Risk Zones for Agricultural Input Type: Irr."),
                     tableOutput(ns("afsc_summary_irr"))
                 ),
             ),
@@ -60,7 +73,7 @@ module_select_crops_ui <- function(id) {
                 column(
                     width = 12,
                     tags$h2("Crop Selection Table", class = "custom-h2"),
-                    div("No data available. Please upload an Excel workbook first to populate this table.", id = "no_data_message"),
+                    p("Crop selection table shows all crops and selected crops (blue highlighted rows). The initial selection is based on the suggested field (0 = not suggested, 1 = suggested). Selections are made for each unique combination of RISK AREA, CROP TYPE, and AG INPUT (dry vs irr). N YEARS represents the years of data available in the input Excel workbook. ACRES represents the sum of acres for that crop in that risk area and ag input type (for reference, but not used in calculations). % COVERAGE represents the mean percent coverage of that crop in that risk area and ag input type across years. SUGGESTED is based on the input thresholds for percent coverage and years of data. Users can make additional manual edits by selecting on a row to include or exclude a crop from the analysis."),
                     DT::dataTableOutput(ns("dt_select_crops_table"))
                 ),
             ),
@@ -103,6 +116,10 @@ module_select_crops_server <- function(id) {
                 print("Updating stop_year...")
                 session$userData$rv_crop_selection_inputs$stop_year <- input$stop_year
             })
+            observeEvent(input$max_select, {
+              print("Updating max_select...")
+              session$userData$rv_crop_selection_inputs$max_select <- input$max_select
+            })
 
 
 
@@ -123,6 +140,7 @@ module_select_crops_server <- function(id) {
                 yrs_dat <- session$userData$rv_crop_selection_inputs$yrs_dat
                 start_year <- session$userData$rv_crop_selection_inputs$start_year
                 stop_year <- session$userData$rv_crop_selection_inputs$stop_year
+                max_select <- session$userData$rv_crop_selection_inputs$max_select
                 # browser()
 
                 # Set to NULL to reinitate
@@ -138,7 +156,8 @@ module_select_crops_server <- function(id) {
                         start_year = start_year,
                         stop_year = stop_year,
                         target_years = yrs_dat,
-                        target_coverage_pct = pct_coverage
+                        target_coverage_pct = pct_coverage,
+                        max_select = max_select
                     )
                 })
 

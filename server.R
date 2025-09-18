@@ -1,9 +1,9 @@
 # ------------------------------------------------
 # Setup server function for Shiny app
 server <- function(input, output, session) {
+
   # Prepare reactive values for session and use in modules
   module_setup_reactives(session)
-
 
 
   # Load moules

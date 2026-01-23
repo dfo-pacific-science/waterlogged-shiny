@@ -14,8 +14,8 @@ body, p, div, label {
     text-align: justify;
     text-justify: inter-word;
     max-width: 850px;
-    margin-left: auto;
-    margin-right: auto;
+    margin-left: 15px;
+    margin-right: 15px;
     color: #6A747B;
   }
   

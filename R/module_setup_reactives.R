@@ -1,52 +1,66 @@
+#' Setup Reactive Values for Waterlogged Session
+#'
+#' Initialize reactive values for the user session.
+#' These values are shared across modules via session$userData.
+#'
 module_setup_reactives <- function(session = NA) {
-    print("Setting up reactive values for user session...")
+  print("Setting up reactive values for user session...")
 
-    # Initial load flag
-    session$userData$rv_initial_load <- reactiveVal(NULL)
+  # Initial load flag
+  session$userData$rv_initial_load <- reactiveVal(NULL)
 
-    # Excel data object
-    rv_excel_data <- reactiveValues(
-        rv_excel_data = NULL
-    )
-    # Add to userData object for session
-    session$userData$rv_excel_data <- rv_excel_data
+  # Raw data storage
+  rv_raw_data <- reactiveValues(
+    baro_data = NULL,
+    waterlevel_data = NULL,
+    do_data = NULL,
+    metadata = NULL
+  )
+  session$userData$rv_raw_data <- rv_raw_data
 
-    # Bad crop names
-    rv_crop_names <- reactiveValues(
-        rv_only_in_price_fraction = NULL,
-        rv_only_in_avg_yeild = NULL,
-        rv_total_missing_area = NULL
-    )
-    session$userData$rv_crop_names <- rv_crop_names
+  # Bound data storage (Step 1 outputs)
+  rv_bound_data <- reactiveValues(
+    baro_bound = NULL,
+    waterlevel_bound = NULL,
+    do_bound = NULL
+  )
+  session$userData$rv_bound_data <- rv_bound_data
 
-    # Crop selection
-    rv_crop_selection <- reactiveValues(
-        rv_crop_selection = NULL
-    )
-    session$userData$rv_crop_selection <- rv_crop_selection
+  # Converted data storage (Step 2 outputs)
+  rv_converted_data <- reactiveValues(
+    waterlevel_converted = NULL,
+    do_converted = NULL
+  )
+  session$userData$rv_converted_data <- rv_converted_data
 
-    # Crop selection inputs
-    rv_crop_selection_inputs <- reactiveValues(
-        pct_coverage = 1,
-        yrs_dat = 3,
-        start_year = NULL,
-        stop_year = NULL,
-        max_select = NULL
-    )
-    session$userData$rv_crop_selection_inputs <- rv_crop_selection_inputs
+  # QAQC data storage (Step 3 outputs)
+  rv_qaqc_data <- reactiveValues(
+    waterlevel_qaqc = NULL,
+    do_qaqc = NULL,
+    qaqc_flags = NULL
+  )
+  session$userData$rv_qaqc_data <- rv_qaqc_data
 
+  # Clean data storage (Step 4 outputs)
+  rv_clean_data <- reactiveValues(
+    waterlevel_clean = NULL,
+    do_clean = NULL
+  )
+  session$userData$rv_clean_data <- rv_clean_data
 
-    # LTAY tables
-    rv_ltay <- reactiveValues(
-        crop = NULL,
-        zone = NULL
-    )
-    session$userData$rv_ltay <- rv_ltay
+  # Summary data storage (Step 5 outputs)
+  rv_summary_data <- reactiveValues(
+    daily_summary = NULL,
+    monthly_summary = NULL,
+    annual_summary = NULL
+  )
+  session$userData$rv_summary_data <- rv_summary_data
 
-
-    # Parcel report
-    rv_parcel_data <- reactiveValues(
-        dat = NULL
-    )
-    session$userData$rv_parcel_data <- rv_parcel_data
+  # Current station/file selection
+  rv_selection <- reactiveValues(
+    current_station = NULL,
+    current_logger_type = NULL,
+    selected_files = NULL
+  )
+  session$userData$rv_selection <- rv_selection
 }

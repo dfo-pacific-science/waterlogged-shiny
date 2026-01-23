@@ -1,33 +1,34 @@
-Package: FDLToolbox
+Package: waterloggedshiny
 Type: Package
-Title: FDLToolbox Farm Development Lease
+Title: Waterlogged Shiny Application
 Version: 0.1.0
 Author: Matthew Bayly M.J. Bayly Analytics Ltd.
 Maintainer: Matthew Bayly <mjbayly@mjbayly.com>
-Description: Farm Development Lease toolbox provids support to
-    the Governemnt of Alberta to automate administrative and
-    managerial activities.
+Description: Shiny application for processing water level and water quality
+    data from HOBO data loggers. Provides a step-by-step workflow for
+    binding logger files, converting raw measurements, QAQC, and data summaries.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.3.2
-Suggests: 
+Suggests:
     knitr,
     rmarkdown,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
 VignetteBuilder: knitr
-Imports: 
-    magrittr,
-    dplyr,
-    readxl,
-    writexl,
-    shinyjs,
+Imports:
+    shiny,
     shinydashboard,
+    shinyjs,
     shinycssloaders,
     shinyWidgets,
     htmlwidgets,
     stringr,
     DT,
     plotly,
-    jsonlite
+    dplyr,
+    tidyr,
+    ggplot2,
+    lubridate,
+    purrr

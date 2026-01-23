@@ -1,70 +1,58 @@
 # ui.R
+# Waterlogged Shiny Application
 
 # ------------------------------------------------
 # Setup UI function for Shiny app
 ui <- dashboardPage(
-  title = "Farm Development Leases (FDL) Toolbox",
+  title = "Waterlogged: Water Data Processing",
   skin = "blue",
   header = dashboardHeader(
-    title = "Farm Development Leases (FDL) Toolbox",
-    titleWidth = 450
+    title = "Waterlogged",
+    titleWidth = 250
   ),
 
   # Sidebar page menu
   sidebar = page_sidebar_tab_ui("sidebar_navigation"),
-  # Main body panel
-  body = dashboardBody( # Boxes need to be put in a row (or column)
 
+  # Main body panel
+  body = dashboardBody(
     # Import custom css files to html head tag
     tags$head(
       tags$link(rel = "stylesheet", type = "text/css", href = "custom_style.css")
     ),
 
-    # Import custom js files - note these are used with DT
-    #shinyFeedback::useShinyFeedback(),
+    # Import shinyjs
     shinyjs::useShinyjs(),
 
     # Individual pages - right side tab content
     tabItems(
       tabItem(
-        "t_overview",
-        module_overview_ui("overview")
+        "t_welcome",
+        module_welcome_ui("welcome")
       ),
       tabItem(
-        "t_excel_upload",
-        module_excel_upload_ui("excel_upload")
+        "t_upload_data",
+        module_upload_data_ui("upload_data")
       ),
       tabItem(
-        "t_average_yields",
-        module_average_yields_ui("average_yields")
+        "t_step1_bind",
+        module_step1_bind_ui("step1_bind")
       ),
       tabItem(
-        "t_price_fractions",
-        module_price_fractions_ui("price_fractions")
+        "t_step2_convert",
+        module_step2_convert_ui("step2_convert")
       ),
       tabItem(
-        "t_lsrs",
-        module_lsrs_ui("lsrs")
+        "t_step3_qaqc",
+        module_step3_qaqc_ui("step3_qaqc")
       ),
       tabItem(
-        "t_gis",
-        module_parcel_gis_ui("parcel_gis")
+        "t_step4_save",
+        module_step4_save_ui("step4_save")
       ),
       tabItem(
-        "t_select_crops",
-        module_select_crops_ui("select_crops")
-      ),
-      tabItem(
-        "t_ltay",
-        module_ltay_ui("ltay")
-      ),
-      tabItem(
-        "t_parcel_rates",
-        module_parcel_report_ui("parcel_report")
-      ),
-      tabItem(
-        "t_excel_download",
-        module_download_excel_ui("download_excel")
+        "t_step5_summarize",
+        module_step5_summarize_ui("step5_summarize")
       )
     )
   )

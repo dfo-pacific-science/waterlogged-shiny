@@ -14,6 +14,7 @@ module_setup_reactives <- function(session = NA) {
     baro_data = NULL,
     waterlevel_data = NULL,
     do_data = NULL,
+    conductivity_data = NULL,
     metadata = NULL
   )
   session$userData$rv_raw_data <- rv_raw_data
@@ -22,7 +23,8 @@ module_setup_reactives <- function(session = NA) {
   rv_bound_data <- reactiveValues(
     baro_bound = NULL,
     waterlevel_bound = NULL,
-    do_bound = NULL
+    do_bound = NULL,
+    conductivity_bound = NULL
   )
   session$userData$rv_bound_data <- rv_bound_data
 

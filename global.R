@@ -10,6 +10,7 @@ library(htmlwidgets) # Used throughout
 library(stringr) # For various text manipulation
 library(DT) # JS DataTables
 library(plotly) # Plotly for interactive plots
+library(leaflet) # For interactive maps
 
 # Load package dependencies for waterlogged workflows
 library(dplyr) # tidyverse operations
@@ -23,3 +24,15 @@ options(scipen = 999)
 
 # Set spinner type (for loading)
 options(spinner.type = 8)
+
+# Load demo data at startup
+demo_sites <- read.csv("inst/extdata/site_station_manager.csv")
+demo_metadata <- read.csv("inst/extdata/logger_manager.csv")
+demo_baro <- readRDS("inst/extdata/baro_demo.rds")
+demo_waterlevel <- readRDS("inst/extdata/waterlevel_demo.rds")
+demo_dissox <- read.csv("inst/extdata/dissox_demo.csv")
+demo_conductivity <- read.csv("inst/extdata/conductivity_demo.csv")
+
+# Parse timestamps for demo data
+demo_dissox$timestamp <- as.POSIXct(demo_dissox$timestamp, format = "%m/%d/%Y %H:%M", tz = "UTC")
+demo_conductivity$timestamp <- as.POSIXct(demo_conductivity$timestamp, format = "%m/%d/%Y %H:%M", tz = "UTC")

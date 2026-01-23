@@ -6,21 +6,79 @@ module_step4_save_ui <- function(id) {
     shinydashboard::box(
       width = 12,
       tags$h1("Step 4: Save Clean Site Data", class = "custom-h1"),
+      tags$h2("Export processed data with QAQC documentation", class = "custom-h2"),
 
-      tags$p(
-        "After completing QAQC, save your clean data files for further analysis. The
-        write_clean_data() function drops unnecessary columns and saves the final
-        dataset in a standardized format.",
-        class = "clean-print"
+      # Introduction
+      tags$div(
+        class = "clean-print",
+        style = "margin-bottom: 20px;",
+        tags$p(
+          "After completing QAQC, you need to save your clean data files for further analysis
+          or sharing. The write_clean_data() function prepares your data by keeping only the
+          essential columns while preserving the QAQC documentation that explains what
+          adjustments were made and why."
+        ),
+        tags$p(
+          "Clean data files are saved with the suffix 'v1.0' to indicate they have been fully
+          processed and are ready for analysis. This distinguishes them from intermediate
+          processing stages (v0.1 = raw bound, v0.2 = baro added, v0.3 = converted)."
+        )
       ),
 
-      tags$h2("The write_clean_data() Function", class = "custom-h2"),
+      fluidRow(
+        # Left column - explanation
+        column(
+          width = 4,
+          tags$div(
+            style = "background-color: #e3f2fd; padding: 20px; border-radius: 5px; margin-bottom: 20px;",
+            tags$h4("What gets saved?", style = "margin-top: 0;"),
+            tags$p(
+              "Clean data files contain the essential processed values plus QAQC metadata.
+              Intermediate columns used during processing (raw values, temporary calculations)
+              are dropped to keep the files clean and focused."
+            ),
+            tags$p(
+              "The QAQC columns are important - they document exactly what adjustments were
+              made to each data point, creating a transparent audit trail."
+            )
+          ),
 
-      tags$p(
-        "This function streamlines your QAQC'd data by keeping only the essential columns
-        and saving it as a clean CSV file ready for analysis.",
-        class = "clean-print"
-      ),
+          tags$div(
+            style = "background-color: #d4edda; padding: 20px; border-radius: 5px; margin-bottom: 20px;",
+            tags$h4("File naming convention", style = "margin-top: 0;"),
+            tags$p(
+              "Files are named with a standard pattern:"
+            ),
+            tags$code(
+              style = "display: block; background: #f8f9fa; padding: 10px; border-radius: 3px; font-size: 12px;",
+              "[SITE]_[TYPE]_[START]_[END]_v1.0.rds"
+            ),
+            tags$p(
+              style = "margin-top: 10px; font-size: 13px;",
+              "Example: FROG_WE_01_WL_20240101_20241009_v1.0.rds"
+            )
+          ),
+
+          tags$div(
+            style = "background-color: #fff3cd; padding: 20px; border-radius: 5px;",
+            tags$h4("Documentation tip", style = "margin-top: 0;"),
+            tags$p(
+              "We recommend saving your R script with all QAQC function calls alongside
+              your clean data. This creates a reproducible record of all processing steps
+              and allows you or others to re-run the analysis if needed."
+            )
+          )
+        ),
+
+        # Right column - function details
+        column(
+          width = 8,
+          tags$h4("The write_clean_data() Function"),
+          tags$p(
+            "This function streamlines your QAQC'd data by keeping only the essential columns
+            and saving it in a standardized format.",
+            class = "clean-print"
+          ),
 
       tags$h4("Function Parameters"),
       tags$div(
@@ -39,50 +97,44 @@ module_step4_save_ui <- function(id) {
               tags$td(style = "border: 1px solid #ddd; padding: 10px;", "Your QAQC'd dataframe for a single station")
             ),
             tags$tr(
-              tags$td(style = "border: 1px solid #ddd; padding: 10px;", tags$code("path_to_output_folder")),
-              tags$td(style = "border: 1px solid #ddd; padding: 10px;", "Where to save the clean data file")
-            ),
-            tags$tr(
               tags$td(style = "border: 1px solid #ddd; padding: 10px;", tags$code("logger_type")),
-              tags$td(style = "border: 1px solid #ddd; padding: 10px;", "Type: waterlevel_U20, baro_U20, dissolvedoxygen_U26, watertemp_TidbiT, airtemp_TidbiT")
+              tags$td(style = "border: 1px solid #ddd; padding: 10px;", "Type: waterlevel_U20, baro_U20, dissolvedoxygen_U26, conductivity_U24, watertemp_TidbiT, airtemp_TidbiT")
             )
           )
         )
       ),
 
-      tags$h3("Example: Save Water Level Data", class = "custom-h2"),
-      tags$pre(
-        class = "clean-print",
-        style = "background-color: #f5f5f5; padding: 15px; font-family: monospace; font-size: 12px;",
-"# Save clean water level data for a station
+          tags$h4("Example R Code"),
+          tags$pre(
+            class = "clean-print",
+            style = "background-color: #f5f5f5; padding: 15px; font-family: monospace; font-size: 12px;",
+"# Save clean water level data
 write_clean_data(
   input_data = station_wl_dat_final,
-  path_to_output_folder = \"data/waterlevel/2024/clean\",
   logger_type = \"waterlevel_U20\"
 )
 
-# Output file will be named:
-# [site_station_code]_waterlevel_U20_[year]_clean.csv"
-      ),
-
-      tags$h3("Example: Save Dissolved Oxygen Data", class = "custom-h2"),
-      tags$pre(
-        class = "clean-print",
-        style = "background-color: #f5f5f5; padding: 15px; font-family: monospace; font-size: 12px;",
-"# Save clean dissolved oxygen data for a station
+# Save clean dissolved oxygen data
 write_clean_data(
   input_data = station_do_dat_final,
-  path_to_output_folder = \"data/dissolved_oxygen/2024/clean\",
   logger_type = \"dissolvedoxygen_U26\"
 )
 
-# Output file will be named:
-# [site_station_code]_dissolvedoxygen_U26_[year]_clean.csv"
+# Save clean conductivity data
+write_clean_data(
+  input_data = cond_dat_final,
+  logger_type = \"conductivity_U24\"
+)"
+          )
+        )
       ),
+
+      hr(),
 
       tags$h3("Output File Structure", class = "custom-h2"),
       tags$p(
-        "Clean data files will contain the following columns (depending on logger type):",
+        "Clean data files contain the processed values plus QAQC documentation columns.
+        The exact columns depend on the logger type:",
         class = "clean-print"
       ),
 
@@ -114,26 +166,6 @@ write_clean_data(
             tags$li("do_qaqc_note")
           )
         )
-      ),
-
-      tags$h3("Recommended Folder Structure", class = "custom-h2"),
-      tags$pre(
-        class = "clean-print",
-        style = "background-color: #f5f5f5; padding: 15px; font-family: monospace;",
-"data/
-  waterlevel/
-    2024/
-      raw/           <- Original HOBOware exports
-      processed/     <- Output from bind_hobo_files() (v0.1)
-      clean/         <- Output from write_clean_data()
-        SLUG_ST_01_waterlevel_U20_2024_clean.csv
-        SLUG_ST_02_waterlevel_U20_2024_clean.csv
-  dissolved_oxygen/
-    2024/
-      raw/
-      processed/
-      clean/
-        SLUG_ST_01_dissolvedoxygen_U26_2024_clean.csv"
       ),
 
       tags$h3("Export Options", class = "custom-h2"),

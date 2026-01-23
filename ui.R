@@ -34,10 +34,28 @@ ui <- dashboardPage(
         "t_upload_data",
         module_upload_data_ui("upload_data")
       ),
+      # Step 1 subtabs
       tabItem(
-        "t_step1_bind",
-        module_step1_bind_ui("step1_bind")
+        "t_step1_baro",
+        module_step1_baro_ui("step1_baro")
       ),
+      tabItem(
+        "t_step1_wl",
+        module_step1_wl_ui("step1_wl")
+      ),
+      tabItem(
+        "t_step1_do",
+        module_step1_do_ui("step1_do")
+      ),
+      tabItem(
+        "t_step1_cond",
+        module_step1_cond_ui("step1_cond")
+      ),
+      tabItem(
+        "t_step1_overview",
+        module_step1_overview_ui("step1_overview")
+      ),
+      # Remaining steps
       tabItem(
         "t_step2_convert",
         module_step2_convert_ui("step2_convert")

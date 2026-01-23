@@ -6,21 +6,84 @@ module_step5_summarize_ui <- function(id) {
     shinydashboard::box(
       width = 12,
       tags$h1("Step 5: Summarizing Data", class = "custom-h1"),
+      tags$h2("Generate summary statistics and visualizations", class = "custom-h2"),
 
-      tags$p(
-        "Generate summary statistics and visualizations from your clean data. This step
-        helps you understand patterns in your data and prepare results for reporting.",
-        class = "clean-print"
+      # Introduction
+      tags$div(
+        class = "clean-print",
+        style = "margin-bottom: 20px;",
+        tags$p(
+          "Now that you have clean, QAQC'd data, you can generate summary statistics and
+          visualizations to understand patterns and prepare results for reporting. The
+          get_logger_data() function makes it easy to load and aggregate your processed
+          data at different temporal scales."
+        ),
+        tags$p(
+          "Summaries are useful for reporting annual or seasonal averages, comparing between
+          sites, identifying trends over time, and checking for remaining anomalies that
+          may indicate issues with the data or interesting environmental events."
+        )
       ),
 
-      tags$h2("Loading Clean Data", class = "custom-h2"),
-      tags$h3("The get_logger_data() Function", class = "custom-h2"),
+      fluidRow(
+        # Left column - explanation
+        column(
+          width = 4,
+          tags$div(
+            style = "background-color: #e3f2fd; padding: 20px; border-radius: 5px; margin-bottom: 20px;",
+            tags$h4("Temporal aggregation", style = "margin-top: 0;"),
+            tags$p(
+              "Raw logger data is typically recorded every 15 minutes to 1 hour. For many
+              analyses and reports, you'll want to aggregate this to daily or monthly values."
+            ),
+            tags$ul(
+              style = "padding-left: 20px; font-size: 13px;",
+              tags$li(tags$strong("Hourly"), " - Original resolution, all data points"),
+              tags$li(tags$strong("Daily"), " - Mean, min, max for each day"),
+              tags$li(tags$strong("Monthly"), " - Mean, min, max for each month")
+            )
+          ),
 
-      tags$p(
-        "Use this function to retrieve processed data by selecting the desired variable,
-        station, and temporal scale:",
-        class = "clean-print"
-      ),
+          tags$div(
+            style = "background-color: #d4edda; padding: 20px; border-radius: 5px; margin-bottom: 20px;",
+            tags$h4("Multi-station analysis", style = "margin-top: 0;"),
+            tags$p(
+              "You can load data from all stations at once (select_station = 'all') to
+              compare patterns across your monitoring network. This is useful for:"
+            ),
+            tags$ul(
+              style = "padding-left: 20px; font-size: 13px;",
+              tags$li("Regional pattern analysis"),
+              tags$li("Site-to-site comparisons"),
+              tags$li("Identifying outlier sites"),
+              tags$li("Watershed-scale summaries")
+            )
+          ),
+
+          tags$div(
+            style = "background-color: #fff3cd; padding: 20px; border-radius: 5px;",
+            tags$h4("Processing stage selection", style = "margin-top: 0;"),
+            tags$p(
+              "The data_processing parameter lets you choose which version of data to load:"
+            ),
+            tags$ul(
+              style = "padding-left: 20px; font-size: 13px;",
+              tags$li(tags$strong("v1.0 / clean"), " - Fully QAQC'd data (recommended)"),
+              tags$li(tags$strong("v0.3"), " - Converted but not QAQC'd"),
+              tags$li(tags$strong("v0.2"), " - With baro data added"),
+              tags$li(tags$strong("v0.1"), " - Raw bound data")
+            )
+          )
+        ),
+
+        # Right column - function details
+        column(
+          width = 8,
+          tags$h4("The get_logger_data() Function"),
+          tags$p(
+            "Use this function to retrieve and optionally aggregate your processed data:",
+            class = "clean-print"
+          ),
 
       tags$h4("Function Parameters"),
       tags$div(
@@ -58,10 +121,10 @@ module_step5_summarize_ui <- function(id) {
         )
       ),
 
-      tags$h4("Example R Code"),
-      tags$pre(
-        class = "clean-print",
-        style = "background-color: #f5f5f5; padding: 15px; font-family: monospace; font-size: 12px;",
+          tags$h4("Example R Code"),
+          tags$pre(
+            class = "clean-print",
+            style = "background-color: #f5f5f5; padding: 15px; font-family: monospace; font-size: 12px;",
 "# Get daily summary of water level for all stations
 wl_daily <- get_logger_data(
   path_to_data = \"data/waterlevel/2024/clean\",
@@ -76,12 +139,16 @@ do_monthly <- get_logger_data(
   path_to_data = \"data/dissolved_oxygen/2024/clean\",
   logger_type = \"dissolvedoxygen_U26\",
   data_processing = \"clean\",
-  select_station = \"SLUG_ST_01\",
+  select_station = \"FROG_WE_01\",
   temporal_scale = \"monthly\"
 )"
+          )
+        )
       ),
 
-      tags$h2("Summary Statistics", class = "custom-h2"),
+      hr(),
+
+      tags$h3("Summary Statistics", class = "custom-h2"),
 
       tags$div(
         style = "display: flex; gap: 20px; margin: 20px 0; flex-wrap: wrap;",

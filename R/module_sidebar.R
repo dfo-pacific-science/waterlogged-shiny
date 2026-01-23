@@ -13,11 +13,18 @@ page_sidebar_tab_ui <- function(id) {
           tabName = "t_upload_data",
           icon = icon("upload")
         ),
+
+        # Expandable Step 1 menu with subtabs
         menuItem(
-          "Step 1: Bind Logger Data",
-          tabName = "t_step1_bind",
-          icon = icon("link")
+          "Step 1: Review Series",
+          icon = icon("chart-line"),
+          menuSubItem("Barometric", tabName = "t_step1_baro"),
+          menuSubItem("Water Level", tabName = "t_step1_wl"),
+          menuSubItem("Dissolved Oxygen", tabName = "t_step1_do"),
+          menuSubItem("Conductivity", tabName = "t_step1_cond"),
+          menuSubItem("Overview", tabName = "t_step1_overview")
         ),
+
         menuItem(
           "Step 2: Convert Metrics",
           tabName = "t_step2_convert",

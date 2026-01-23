@@ -26,6 +26,58 @@ module_step1_overview_ui <- function(id) {
         )
       ),
 
+      # Station selectors at top - one for each logger type
+      tags$div(
+        style = "background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin-bottom: 20px;",
+        tags$h4("Select Stations for Comparison", style = "margin-top: 0; margin-bottom: 15px;"),
+        fluidRow(
+          column(
+            width = 3,
+            tags$div(
+              style = "border-left: 3px solid #1976D2; padding-left: 10px;",
+              selectInput(ns("baro_station"), "Barometric:",
+                choices = c("SLUG_ST_01", "BUGS_WE_01"),
+                selected = "SLUG_ST_01",
+                width = "100%"
+              )
+            )
+          ),
+          column(
+            width = 3,
+            tags$div(
+              style = "border-left: 3px solid #2E7D32; padding-left: 10px;",
+              selectInput(ns("wl_station"), "Water Level:",
+                choices = c("FROG_WE_01", "BUGS_WE_01"),
+                selected = "FROG_WE_01",
+                width = "100%"
+              )
+            )
+          ),
+          column(
+            width = 3,
+            tags$div(
+              style = "border-left: 3px solid #7B1FA2; padding-left: 10px;",
+              selectInput(ns("do_station"), "Dissolved Oxygen:",
+                choices = c("FROG_WE_01"),
+                selected = "FROG_WE_01",
+                width = "100%"
+              )
+            )
+          ),
+          column(
+            width = 3,
+            tags$div(
+              style = "border-left: 3px solid #FF6F00; padding-left: 10px;",
+              selectInput(ns("cond_station"), "Conductivity:",
+                choices = c("BUGS_WE_01"),
+                selected = "BUGS_WE_01",
+                width = "100%"
+              )
+            )
+          )
+        )
+      ),
+
       fluidRow(
         # Left column - guidance and context
         column(
@@ -34,31 +86,12 @@ module_step1_overview_ui <- function(id) {
             style = "background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin-bottom: 20px;",
             tags$h4("Data Coverage Summary", style = "margin-top: 0;"),
             tags$p(
-              "The table below shows the time periods covered by each logger type.
+              "The panel below shows the time periods covered by each selected station.
               For barometric compensation to work correctly, the barometric data must
               cover the same time period as the water level and DO data.",
               style = "margin-bottom: 15px;"
             ),
-            tags$div(
-              style = "border-left: 3px solid #1976D2; padding-left: 10px; margin-bottom: 10px;",
-              tags$p(tags$strong("Barometric"), style = "margin-bottom: 0;"),
-              tags$p("SLUG_ST_01: Jan - Oct 2024", style = "font-size: 13px; color: #666; margin: 0;")
-            ),
-            tags$div(
-              style = "border-left: 3px solid #2E7D32; padding-left: 10px; margin-bottom: 10px;",
-              tags$p(tags$strong("Water Level"), style = "margin-bottom: 0;"),
-              tags$p("FROG_WE_01: Jan - Oct 2024", style = "font-size: 13px; color: #666; margin: 0;")
-            ),
-            tags$div(
-              style = "border-left: 3px solid #7B1FA2; padding-left: 10px; margin-bottom: 10px;",
-              tags$p(tags$strong("Dissolved Oxygen"), style = "margin-bottom: 0;"),
-              tags$p("FROG_WE_01: Apr - Oct 2024", style = "font-size: 13px; color: #666; margin: 0;")
-            ),
-            tags$div(
-              style = "border-left: 3px solid #FF6F00; padding-left: 10px;",
-              tags$p(tags$strong("Conductivity"), style = "margin-bottom: 0;"),
-              tags$p("BUGS_WE_01: Apr 2024 - Apr 2025", style = "font-size: 13px; color: #666; margin: 0;")
-            )
+            uiOutput(ns("coverage_summary"))
           ),
 
           tags$div(
@@ -86,9 +119,8 @@ module_step1_overview_ui <- function(id) {
               gaps, you may need to fill them with data from a nearby weather station."
             ),
             tags$p(
-              "Different sites may have different loggers - in this demo, the conductivity
-              logger is at a different site (BUGS_WE_01) than the water level and DO loggers
-              (FROG_WE_01)."
+              "Different sites may have different loggers - use the station selectors above
+              to compare data from different sites or to view all data from a single site."
             )
           )
         ),
@@ -98,9 +130,9 @@ module_step1_overview_ui <- function(id) {
           width = 8,
           tags$h3("All Series Comparison", class = "custom-h2", style = "margin-top: 0;"),
           tags$p(
-            "The stacked plots below show all four data types on the same time axis.
-            Each plot can be zoomed independently, or you can compare patterns across
-            all parameters visually.",
+            "The stacked plots below show all four data types. Each plot updates based on
+            the selected station. Use the plots to compare patterns across parameters
+            and identify periods of concern.",
             class = "clean-print",
             style = "margin-bottom: 15px;"
           ),
@@ -110,7 +142,7 @@ module_step1_overview_ui <- function(id) {
 
           tags$h3("Data Summary Table", class = "custom-h2"),
           tags$p(
-            "This table summarizes the key statistics for each parameter. Use it to quickly
+            "This table summarizes the key statistics for each selected station. Use it to quickly
             check data ranges and identify any values that seem unusual for your site.",
             class = "clean-print",
             style = "margin-bottom: 15px;"
@@ -147,46 +179,164 @@ module_step1_overview_ui <- function(id) {
 #' Step 1: Overview Module - Server
 module_step1_overview_server <- function(id) {
   moduleServer(id, function(input, output, session) {
-    # Combined overview plot - all 4 series stacked
+
+    # Reactive data for each logger type based on station selection
+    baro_data <- reactive({
+      req(input$baro_station)
+      demo_baro_list[[input$baro_station]]
+    })
+
+    wl_data <- reactive({
+      req(input$wl_station)
+      demo_waterlevel_list[[input$wl_station]]
+    })
+
+    do_data <- reactive({
+      req(input$do_station)
+      demo_dissox_list[[input$do_station]]
+    })
+
+    cond_data <- reactive({
+      req(input$cond_station)
+      demo_conductivity_list[[input$cond_station]]
+    })
+
+    # Coverage summary display
+    output$coverage_summary <- renderUI({
+      baro <- baro_data()
+      wl <- wl_data()
+      do_dat <- do_data()
+      cond <- cond_data()
+
+      tags$div(
+        tags$div(
+          style = "border-left: 3px solid #1976D2; padding-left: 10px; margin-bottom: 10px;",
+          tags$p(tags$strong("Barometric"), style = "margin-bottom: 0;"),
+          tags$p(paste0(input$baro_station, ": ",
+            format(min(baro$timestamp), "%b %Y"), " - ",
+            format(max(baro$timestamp), "%b %Y")),
+            style = "font-size: 13px; color: #666; margin: 0;")
+        ),
+        tags$div(
+          style = "border-left: 3px solid #2E7D32; padding-left: 10px; margin-bottom: 10px;",
+          tags$p(tags$strong("Water Level"), style = "margin-bottom: 0;"),
+          tags$p(paste0(input$wl_station, ": ",
+            format(min(wl$timestamp), "%b %Y"), " - ",
+            format(max(wl$timestamp), "%b %Y")),
+            style = "font-size: 13px; color: #666; margin: 0;")
+        ),
+        tags$div(
+          style = "border-left: 3px solid #7B1FA2; padding-left: 10px; margin-bottom: 10px;",
+          tags$p(tags$strong("Dissolved Oxygen"), style = "margin-bottom: 0;"),
+          tags$p(paste0(input$do_station, ": ",
+            format(min(do_dat$timestamp), "%b %Y"), " - ",
+            format(max(do_dat$timestamp), "%b %Y")),
+            style = "font-size: 13px; color: #666; margin: 0;")
+        ),
+        tags$div(
+          style = "border-left: 3px solid #FF6F00; padding-left: 10px;",
+          tags$p(tags$strong("Conductivity"), style = "margin-bottom: 0;"),
+          tags$p(paste0(input$cond_station, ": ",
+            format(min(cond$timestamp), "%b %Y"), " - ",
+            format(max(cond$timestamp), "%b %Y")),
+            style = "font-size: 13px; color: #666; margin: 0;")
+        )
+      )
+    })
+
+    # Combined overview plot - all 4 series on single plot with multiple y-axes
     output$overview_combined <- renderPlotly({
-      p1 <- plot_ly(demo_baro, x = ~timestamp, y = ~airpress_kPa_U20,
-              type = "scattergl", mode = "lines",
-              line = list(color = "#1976D2", width = 1),
-              name = "Baro Pressure",
-              hovertemplate = "%{y:.2f} kPa<extra></extra>")
+      baro <- baro_data()
+      wl <- wl_data()
+      do_dat <- do_data()
+      cond <- cond_data()
 
-      p2 <- plot_ly(demo_waterlevel, x = ~timestamp, y = ~waterpress_kPa_U20,
-              type = "scattergl", mode = "lines",
-              line = list(color = "#2E7D32", width = 1),
-              name = "Water Pressure",
-              hovertemplate = "%{y:.2f} kPa<extra></extra>")
-
-      p3 <- plot_ly(demo_dissox, x = ~timestamp, y = ~do_mgl_U26,
-              type = "scattergl", mode = "lines",
-              line = list(color = "#7B1FA2", width = 1),
-              name = "Dissolved O2",
-              hovertemplate = "%{y:.2f} mg/L<extra></extra>")
-
-      p4 <- plot_ly(demo_conductivity, x = ~timestamp, y = ~conduct_uScm_U24,
-              type = "scattergl", mode = "lines",
-              line = list(color = "#FF6F00", width = 1),
-              name = "Conductivity",
-              hovertemplate = "%{y:.1f} uS/cm<extra></extra>")
-
-      subplot(p1, p2, p3, p4, nrows = 4, shareX = FALSE, titleY = TRUE) %>%
+      plot_ly() %>%
+        # Barometric pressure - left axis 1
+        add_trace(data = baro, x = ~timestamp, y = ~airpress_kPa_U20,
+                  type = "scattergl", mode = "lines",
+                  line = list(color = "#1976D2", width = 1.5),
+                  name = paste("Baro -", input$baro_station),
+                  yaxis = "y",
+                  hovertemplate = "Baro: %{y:.2f} kPa<extra></extra>") %>%
+        # Water pressure - left axis 2
+        add_trace(data = wl, x = ~timestamp, y = ~waterpress_kPa_U20,
+                  type = "scattergl", mode = "lines",
+                  line = list(color = "#2E7D32", width = 1.5),
+                  name = paste("WL -", input$wl_station),
+                  yaxis = "y2",
+                  hovertemplate = "Water: %{y:.2f} kPa<extra></extra>") %>%
+        # Dissolved oxygen - right axis 1
+        add_trace(data = do_dat, x = ~timestamp, y = ~do_mgl_U26,
+                  type = "scattergl", mode = "lines",
+                  line = list(color = "#7B1FA2", width = 1.5),
+                  name = paste("DO -", input$do_station),
+                  yaxis = "y3",
+                  hovertemplate = "DO: %{y:.2f} mg/L<extra></extra>") %>%
+        # Conductivity - right axis 2
+        add_trace(data = cond, x = ~timestamp, y = ~conduct_uScm_U24,
+                  type = "scattergl", mode = "lines",
+                  line = list(color = "#FF6F00", width = 1.5),
+                  name = paste("Cond -", input$cond_station),
+                  yaxis = "y4",
+                  hovertemplate = "Cond: %{y:.1f} uS/cm<extra></extra>") %>%
         layout(
-          yaxis = list(title = "Baro (kPa)"),
-          yaxis2 = list(title = "Water (kPa)"),
-          yaxis3 = list(title = "DO (mg/L)"),
-          yaxis4 = list(title = "Cond (uS/cm)"),
+          xaxis = list(
+            title = "Date",
+            tickangle = 0,
+            nticks = 10,
+            domain = c(0.08, 0.92)
+          ),
+          # Left axis 1 - Barometric (outer left)
+          yaxis = list(
+            title = list(text = "Baro (kPa)", font = list(color = "#1976D2")),
+            tickfont = list(color = "#1976D2"),
+            side = "left",
+            position = 0
+          ),
+          # Left axis 2 - Water Level (inner left)
+          yaxis2 = list(
+            title = list(text = "Water (kPa)", font = list(color = "#2E7D32")),
+            tickfont = list(color = "#2E7D32"),
+            side = "left",
+            overlaying = "y",
+            position = 0.08
+          ),
+          # Right axis 1 - DO (inner right)
+          yaxis3 = list(
+            title = list(text = "DO (mg/L)", font = list(color = "#7B1FA2")),
+            tickfont = list(color = "#7B1FA2"),
+            side = "right",
+            overlaying = "y",
+            position = 0.92
+          ),
+          # Right axis 2 - Conductivity (outer right)
+          yaxis4 = list(
+            title = list(text = "Cond (uS/cm)", font = list(color = "#FF6F00")),
+            tickfont = list(color = "#FF6F00"),
+            side = "right",
+            overlaying = "y",
+            position = 1
+          ),
           hovermode = "x unified",
-          showlegend = FALSE,
-          margin = list(l = 60, r = 20, t = 20, b = 40)
+          showlegend = TRUE,
+          legend = list(
+            orientation = "h",
+            x = 0.5,
+            xanchor = "center",
+            y = 1.05
+          ),
+          margin = list(l = 80, r = 80, t = 60, b = 50)
         )
     })
 
-    # Summary table
+    # Summary table - updates based on selected stations
     output$overview_table <- DT::renderDT({
+      baro <- baro_data()
+      wl <- wl_data()
+      do_dat <- do_data()
+      cond <- cond_data()
+
       summary_df <- data.frame(
         Parameter = c(
           "Barometric Pressure (kPa)",
@@ -199,46 +349,46 @@ module_step1_overview_server <- function(id) {
           "Water Temperature - Cond (C)"
         ),
         Site = c(
-          "SLUG_ST_01", "SLUG_ST_01",
-          "FROG_WE_01", "FROG_WE_01",
-          "FROG_WE_01", "FROG_WE_01",
-          "BUGS_WE_01", "BUGS_WE_01"
+          input$baro_station, input$baro_station,
+          input$wl_station, input$wl_station,
+          input$do_station, input$do_station,
+          input$cond_station, input$cond_station
         ),
         N = c(
-          nrow(demo_baro), nrow(demo_baro),
-          nrow(demo_waterlevel), nrow(demo_waterlevel),
-          nrow(demo_dissox), nrow(demo_dissox),
-          nrow(demo_conductivity), nrow(demo_conductivity)
+          nrow(baro), nrow(baro),
+          nrow(wl), nrow(wl),
+          nrow(do_dat), nrow(do_dat),
+          nrow(cond), nrow(cond)
         ),
         Min = c(
-          round(min(demo_baro$airpress_kPa_U20, na.rm = TRUE), 2),
-          round(min(demo_baro$airtemp_C_U20, na.rm = TRUE), 2),
-          round(min(demo_waterlevel$waterpress_kPa_U20, na.rm = TRUE), 2),
-          round(min(demo_waterlevel$watertemp_C_U20, na.rm = TRUE), 2),
-          round(min(demo_dissox$do_mgl_U26, na.rm = TRUE), 2),
-          round(min(demo_dissox$watertemp_C_U26, na.rm = TRUE), 2),
-          round(min(demo_conductivity$conduct_uScm_U24, na.rm = TRUE), 2),
-          round(min(demo_conductivity$watertemp_C_U24, na.rm = TRUE), 2)
+          round(min(baro$airpress_kPa_U20, na.rm = TRUE), 2),
+          round(min(baro$airtemp_C_U20, na.rm = TRUE), 2),
+          round(min(wl$waterpress_kPa_U20, na.rm = TRUE), 2),
+          round(min(wl$watertemp_C_U20, na.rm = TRUE), 2),
+          round(min(do_dat$do_mgl_U26, na.rm = TRUE), 2),
+          round(min(do_dat$watertemp_C_U26, na.rm = TRUE), 2),
+          round(min(cond$conduct_uScm_U24, na.rm = TRUE), 2),
+          round(min(cond$watertemp_C_U24, na.rm = TRUE), 2)
         ),
         Mean = c(
-          round(mean(demo_baro$airpress_kPa_U20, na.rm = TRUE), 2),
-          round(mean(demo_baro$airtemp_C_U20, na.rm = TRUE), 2),
-          round(mean(demo_waterlevel$waterpress_kPa_U20, na.rm = TRUE), 2),
-          round(mean(demo_waterlevel$watertemp_C_U20, na.rm = TRUE), 2),
-          round(mean(demo_dissox$do_mgl_U26, na.rm = TRUE), 2),
-          round(mean(demo_dissox$watertemp_C_U26, na.rm = TRUE), 2),
-          round(mean(demo_conductivity$conduct_uScm_U24, na.rm = TRUE), 2),
-          round(mean(demo_conductivity$watertemp_C_U24, na.rm = TRUE), 2)
+          round(mean(baro$airpress_kPa_U20, na.rm = TRUE), 2),
+          round(mean(baro$airtemp_C_U20, na.rm = TRUE), 2),
+          round(mean(wl$waterpress_kPa_U20, na.rm = TRUE), 2),
+          round(mean(wl$watertemp_C_U20, na.rm = TRUE), 2),
+          round(mean(do_dat$do_mgl_U26, na.rm = TRUE), 2),
+          round(mean(do_dat$watertemp_C_U26, na.rm = TRUE), 2),
+          round(mean(cond$conduct_uScm_U24, na.rm = TRUE), 2),
+          round(mean(cond$watertemp_C_U24, na.rm = TRUE), 2)
         ),
         Max = c(
-          round(max(demo_baro$airpress_kPa_U20, na.rm = TRUE), 2),
-          round(max(demo_baro$airtemp_C_U20, na.rm = TRUE), 2),
-          round(max(demo_waterlevel$waterpress_kPa_U20, na.rm = TRUE), 2),
-          round(max(demo_waterlevel$watertemp_C_U20, na.rm = TRUE), 2),
-          round(max(demo_dissox$do_mgl_U26, na.rm = TRUE), 2),
-          round(max(demo_dissox$watertemp_C_U26, na.rm = TRUE), 2),
-          round(max(demo_conductivity$conduct_uScm_U24, na.rm = TRUE), 2),
-          round(max(demo_conductivity$watertemp_C_U24, na.rm = TRUE), 2)
+          round(max(baro$airpress_kPa_U20, na.rm = TRUE), 2),
+          round(max(baro$airtemp_C_U20, na.rm = TRUE), 2),
+          round(max(wl$waterpress_kPa_U20, na.rm = TRUE), 2),
+          round(max(wl$watertemp_C_U20, na.rm = TRUE), 2),
+          round(max(do_dat$do_mgl_U26, na.rm = TRUE), 2),
+          round(max(do_dat$watertemp_C_U26, na.rm = TRUE), 2),
+          round(max(cond$conduct_uScm_U24, na.rm = TRUE), 2),
+          round(max(cond$watertemp_C_U24, na.rm = TRUE), 2)
         )
       )
 

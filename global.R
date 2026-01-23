@@ -28,11 +28,44 @@ options(spinner.type = 8)
 # Load demo data at startup
 demo_sites <- read.csv("inst/extdata/site_station_manager.csv")
 demo_metadata <- read.csv("inst/extdata/logger_manager.csv")
-demo_baro <- readRDS("inst/extdata/baro_demo.rds")
-demo_waterlevel <- readRDS("inst/extdata/waterlevel_demo.rds")
-demo_dissox <- read.csv("inst/extdata/dissox_demo.csv")
-demo_conductivity <- read.csv("inst/extdata/conductivity_demo.csv")
 
-# Parse timestamps for demo data
-demo_dissox$timestamp <- as.POSIXct(demo_dissox$timestamp, format = "%m/%d/%Y %H:%M", tz = "UTC")
-demo_conductivity$timestamp <- as.POSIXct(demo_conductivity$timestamp, format = "%m/%d/%Y %H:%M", tz = "UTC")
+# Load barometric data for multiple stations
+demo_baro_SLUG_ST_01 <- readRDS("inst/extdata/baro_demo.rds")
+demo_baro_BUGS_WE_01 <- readRDS("inst/extdata/baro_BUGS_WE_01.rds")
+
+# Combine into a list for easy access by station
+demo_baro_list <- list(
+  "SLUG_ST_01" = demo_baro_SLUG_ST_01,
+  "BUGS_WE_01" = demo_baro_BUGS_WE_01
+)
+
+# Load water level data for multiple stations
+demo_waterlevel_FROG_WE_01 <- readRDS("inst/extdata/waterlevel_demo.rds")
+demo_waterlevel_BUGS_WE_01 <- readRDS("inst/extdata/waterlevel_BUGS_WE_01.rds")
+
+demo_waterlevel_list <- list(
+  "FROG_WE_01" = demo_waterlevel_FROG_WE_01,
+  "BUGS_WE_01" = demo_waterlevel_BUGS_WE_01
+)
+
+# Load dissolved oxygen data (single station for demo)
+demo_dissox_FROG_WE_01 <- read.csv("inst/extdata/dissox_demo.csv")
+demo_dissox_FROG_WE_01$timestamp <- as.POSIXct(demo_dissox_FROG_WE_01$timestamp, format = "%m/%d/%Y %H:%M", tz = "UTC")
+
+demo_dissox_list <- list(
+  "FROG_WE_01" = demo_dissox_FROG_WE_01
+)
+
+# Load conductivity data (single station for demo)
+demo_conductivity_BUGS_WE_01 <- read.csv("inst/extdata/conductivity_demo.csv")
+demo_conductivity_BUGS_WE_01$timestamp <- as.POSIXct(demo_conductivity_BUGS_WE_01$timestamp, format = "%m/%d/%Y %H:%M", tz = "UTC")
+
+demo_conductivity_list <- list(
+  "BUGS_WE_01" = demo_conductivity_BUGS_WE_01
+)
+
+# Keep single dataframes for backwards compatibility with review modules
+demo_baro <- demo_baro_SLUG_ST_01
+demo_waterlevel <- demo_waterlevel_FROG_WE_01
+demo_dissox <- demo_dissox_FROG_WE_01
+demo_conductivity <- demo_conductivity_BUGS_WE_01

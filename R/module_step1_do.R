@@ -26,21 +26,31 @@ module_step1_do_ui <- function(id) {
         )
       ),
 
+      # Station selector at top
+      tags$div(
+        style = "background-color: #fce4ec; padding: 15px; border-radius: 5px; margin-bottom: 20px;",
+        fluidRow(
+          column(
+            width = 4,
+            selectInput(ns("station_select"), "Select Station:",
+              choices = c("FROG_WE_01"),
+              selected = "FROG_WE_01",
+              width = "100%"
+            )
+          ),
+          column(
+            width = 8,
+            uiOutput(ns("station_info"))
+          )
+        )
+      ),
+
       fluidRow(
         # Left column - guidance and context
         column(
           width = 4,
           tags$div(
             style = "background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin-bottom: 20px;",
-            tags$h4("Station Information", style = "margin-top: 0;"),
-            tags$p(tags$strong("Site: "), "FROG_WE_01"),
-            tags$p(tags$strong("Logger: "), "HOBO U26"),
-            tags$p(tags$strong("Serial Number: "), "42345678"),
-            tags$p(tags$strong("Date Range: "), "2024-04-20 to 2024-10-09")
-          ),
-
-          tags$div(
-            style = "background-color: #fce4ec; padding: 20px; border-radius: 5px; margin-bottom: 20px;",
             tags$h4("What to look for", style = "margin-top: 0;"),
             tags$p(
               "When reviewing dissolved oxygen data, look for patterns that indicate
@@ -139,15 +149,46 @@ module_step1_do_ui <- function(id) {
 #' Step 1: Dissolved Oxygen Review Module - Server
 module_step1_do_server <- function(id) {
   moduleServer(id, function(input, output, session) {
+
+    # Reactive data based on station selection
+    selected_data <- reactive({
+      req(input$station_select)
+      demo_dissox_list[[input$station_select]]
+    })
+
+    # Station info display
+    output$station_info <- renderUI({
+      req(input$station_select)
+      data <- selected_data()
+      n_records <- nrow(data)
+      date_range <- paste(
+        format(min(data$timestamp), "%Y-%m-%d"),
+        "to",
+        format(max(data$timestamp), "%Y-%m-%d")
+      )
+      tags$div(
+        style = "padding-top: 8px;",
+        tags$p(style = "margin: 0; font-size: 14px;",
+          tags$strong("Station: "), input$station_select, " | ",
+          tags$strong("Logger: "), "HOBO U26 | ",
+          tags$strong("Records: "), format(n_records, big.mark = ","), " | ",
+          tags$strong("Date Range: "), date_range
+        )
+      )
+    })
+
     # Combined synced plot using subplot
     output$do_combined_plot <- renderPlotly({
-      p1 <- plot_ly(demo_dissox, x = ~timestamp, y = ~do_mgl_U26,
+      data <- selected_data()
+      station <- input$station_select
+
+      p1 <- plot_ly(data, x = ~timestamp, y = ~do_mgl_U26,
               type = "scattergl", mode = "lines",
               line = list(color = "#7B1FA2", width = 1),
               name = "DO",
               hovertemplate = "DO: %{y:.2f} mg/L<extra></extra>")
 
-      p2 <- plot_ly(demo_dissox, x = ~timestamp, y = ~watertemp_C_U26,
+      p2 <- plot_ly(data, x = ~timestamp, y = ~watertemp_C_U26,
               type = "scattergl", mode = "lines",
               line = list(color = "#C2185B", width = 1),
               name = "Temperature",
@@ -155,24 +196,27 @@ module_step1_do_server <- function(id) {
 
       subplot(p1, p2, nrows = 2, shareX = TRUE, titleY = TRUE) %>%
         layout(
-          title = list(text = "Dissolved Oxygen & Temperature - FROG_WE_01", font = list(size = 14)),
-          xaxis = list(title = ""),
-          xaxis2 = list(title = "Date"),
+          title = list(text = paste("Dissolved Oxygen & Temperature -", station), font = list(size = 14)),
+          xaxis = list(title = "", tickangle = 0),
+          xaxis2 = list(title = "Date", tickangle = 0),
           yaxis = list(title = "DO (mg/L)"),
           yaxis2 = list(title = "Temperature (C)"),
           hovermode = "x unified",
-          showlegend = FALSE
+          showlegend = FALSE,
+          margin = list(b = 50)
         )
     })
 
     # Summary statistics for DO
     output$do_conc_summary <- renderPrint({
-      summary(demo_dissox$do_mgl_U26)
+      data <- selected_data()
+      summary(data$do_mgl_U26)
     })
 
     # Summary statistics for temperature
     output$do_temp_summary <- renderPrint({
-      summary(demo_dissox$watertemp_C_U26)
+      data <- selected_data()
+      summary(data$watertemp_C_U26)
     })
   })
 }

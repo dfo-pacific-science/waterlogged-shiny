@@ -1,8 +1,8 @@
 #' Step 1: Barometric Pressure Review Module - UI
 module_step1_baro_ui <- function(id) {
- ns <- NS(id)
+  ns <- NS(id)
 
- tagList(
+  tagList(
     shinydashboard::box(
       width = 12,
       tags$h1("Barometric Pressure Series", class = "custom-h1"),
@@ -25,21 +25,31 @@ module_step1_baro_ui <- function(id) {
         )
       ),
 
+      # Station selector at top
+      tags$div(
+        style = "background-color: #e3f2fd; padding: 15px; border-radius: 5px; margin-bottom: 20px;",
+        fluidRow(
+          column(
+            width = 4,
+            selectInput(ns("station_select"), "Select Station:",
+              choices = c("SLUG_ST_01", "BUGS_WE_01"),
+              selected = "SLUG_ST_01",
+              width = "100%"
+            )
+          ),
+          column(
+            width = 8,
+            uiOutput(ns("station_info"))
+          )
+        )
+      ),
+
       fluidRow(
         # Left column - guidance and context
         column(
           width = 4,
           tags$div(
             style = "background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin-bottom: 20px;",
-            tags$h4("Station Information", style = "margin-top: 0;"),
-            tags$p(tags$strong("Site: "), "SLUG_ST_01"),
-            tags$p(tags$strong("Logger: "), "HOBO U20"),
-            tags$p(tags$strong("Serial Number: "), "12345678"),
-            tags$p(tags$strong("Date Range: "), "2024-01-01 to 2024-10-10")
-          ),
-
-          tags$div(
-            style = "background-color: #e3f2fd; padding: 20px; border-radius: 5px; margin-bottom: 20px;",
             tags$h4("What to look for", style = "margin-top: 0;"),
             tags$p(
               "When reviewing barometric data, you are checking that the logger was
@@ -137,15 +147,46 @@ module_step1_baro_ui <- function(id) {
 #' Step 1: Barometric Pressure Review Module - Server
 module_step1_baro_server <- function(id) {
   moduleServer(id, function(input, output, session) {
+
+    # Reactive data based on station selection
+    selected_data <- reactive({
+      req(input$station_select)
+      demo_baro_list[[input$station_select]]
+    })
+
+    # Station info display
+    output$station_info <- renderUI({
+      req(input$station_select)
+      data <- selected_data()
+      n_records <- nrow(data)
+      date_range <- paste(
+        format(min(data$timestamp), "%Y-%m-%d"),
+        "to",
+        format(max(data$timestamp), "%Y-%m-%d")
+      )
+      tags$div(
+        style = "padding-top: 8px;",
+        tags$p(style = "margin: 0; font-size: 14px;",
+          tags$strong("Station: "), input$station_select, " | ",
+          tags$strong("Logger: "), "HOBO U20 | ",
+          tags$strong("Records: "), format(n_records, big.mark = ","), " | ",
+          tags$strong("Date Range: "), date_range
+        )
+      )
+    })
+
     # Combined synced plot using subplot
     output$baro_combined_plot <- renderPlotly({
-      p1 <- plot_ly(demo_baro, x = ~timestamp, y = ~airpress_kPa_U20,
+      data <- selected_data()
+      station <- input$station_select
+
+      p1 <- plot_ly(data, x = ~timestamp, y = ~airpress_kPa_U20,
               type = "scattergl", mode = "lines",
               line = list(color = "#1976D2", width = 1),
               name = "Pressure",
               hovertemplate = "Pressure: %{y:.2f} kPa<extra></extra>")
 
-      p2 <- plot_ly(demo_baro, x = ~timestamp, y = ~airtemp_C_U20,
+      p2 <- plot_ly(data, x = ~timestamp, y = ~airtemp_C_U20,
               type = "scattergl", mode = "lines",
               line = list(color = "#F57C00", width = 1),
               name = "Temperature",
@@ -153,24 +194,27 @@ module_step1_baro_server <- function(id) {
 
       subplot(p1, p2, nrows = 2, shareX = TRUE, titleY = TRUE) %>%
         layout(
-          title = list(text = "Barometric Pressure & Air Temperature - SLUG_ST_01", font = list(size = 14)),
-          xaxis = list(title = ""),
-          xaxis2 = list(title = "Date"),
+          title = list(text = paste("Barometric Pressure & Air Temperature -", station), font = list(size = 14)),
+          xaxis = list(title = "", tickangle = 0, nticks = 8),
+          xaxis2 = list(title = "Date", tickangle = 0, nticks = 8),
           yaxis = list(title = "Pressure (kPa)"),
           yaxis2 = list(title = "Temperature (C)"),
           hovermode = "x unified",
-          showlegend = FALSE
+          showlegend = FALSE,
+          margin = list(b = 50)
         )
     })
 
     # Summary statistics for pressure
     output$baro_pressure_summary <- renderPrint({
-      summary(demo_baro$airpress_kPa_U20)
+      data <- selected_data()
+      summary(data$airpress_kPa_U20)
     })
 
     # Summary statistics for temperature
     output$baro_temp_summary <- renderPrint({
-      summary(demo_baro$airtemp_C_U20)
+      data <- selected_data()
+      summary(data$airtemp_C_U20)
     })
   })
 }

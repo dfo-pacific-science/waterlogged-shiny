@@ -26,21 +26,31 @@ module_step1_wl_ui <- function(id) {
         )
       ),
 
+      # Station selector at top
+      tags$div(
+        style = "background-color: #e8f5e9; padding: 15px; border-radius: 5px; margin-bottom: 20px;",
+        fluidRow(
+          column(
+            width = 4,
+            selectInput(ns("station_select"), "Select Station:",
+              choices = c("FROG_WE_01", "BUGS_WE_01"),
+              selected = "FROG_WE_01",
+              width = "100%"
+            )
+          ),
+          column(
+            width = 8,
+            uiOutput(ns("station_info"))
+          )
+        )
+      ),
+
       fluidRow(
         # Left column - guidance and context
         column(
           width = 4,
           tags$div(
             style = "background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin-bottom: 20px;",
-            tags$h4("Station Information", style = "margin-top: 0;"),
-            tags$p(tags$strong("Site: "), "FROG_WE_01"),
-            tags$p(tags$strong("Logger: "), "HOBO U20"),
-            tags$p(tags$strong("Serial Number: "), "72345678"),
-            tags$p(tags$strong("Date Range: "), "2024-01-01 to 2024-10-09")
-          ),
-
-          tags$div(
-            style = "background-color: #e8f5e9; padding: 20px; border-radius: 5px; margin-bottom: 20px;",
             tags$h4("What to look for", style = "margin-top: 0;"),
             tags$p(
               "When reviewing water level data, you are looking for periods that may need
@@ -138,15 +148,46 @@ module_step1_wl_ui <- function(id) {
 #' Step 1: Water Level Review Module - Server
 module_step1_wl_server <- function(id) {
   moduleServer(id, function(input, output, session) {
+
+    # Reactive data based on station selection
+    selected_data <- reactive({
+      req(input$station_select)
+      demo_waterlevel_list[[input$station_select]]
+    })
+
+    # Station info display
+    output$station_info <- renderUI({
+      req(input$station_select)
+      data <- selected_data()
+      n_records <- nrow(data)
+      date_range <- paste(
+        format(min(data$timestamp), "%Y-%m-%d"),
+        "to",
+        format(max(data$timestamp), "%Y-%m-%d")
+      )
+      tags$div(
+        style = "padding-top: 8px;",
+        tags$p(style = "margin: 0; font-size: 14px;",
+          tags$strong("Station: "), input$station_select, " | ",
+          tags$strong("Logger: "), "HOBO U20 | ",
+          tags$strong("Records: "), format(n_records, big.mark = ","), " | ",
+          tags$strong("Date Range: "), date_range
+        )
+      )
+    })
+
     # Combined synced plot using subplot
     output$wl_combined_plot <- renderPlotly({
-      p1 <- plot_ly(demo_waterlevel, x = ~timestamp, y = ~waterpress_kPa_U20,
+      data <- selected_data()
+      station <- input$station_select
+
+      p1 <- plot_ly(data, x = ~timestamp, y = ~waterpress_kPa_U20,
               type = "scattergl", mode = "lines",
               line = list(color = "#2E7D32", width = 1),
               name = "Pressure",
               hovertemplate = "Pressure: %{y:.2f} kPa<extra></extra>")
 
-      p2 <- plot_ly(demo_waterlevel, x = ~timestamp, y = ~watertemp_C_U20,
+      p2 <- plot_ly(data, x = ~timestamp, y = ~watertemp_C_U20,
               type = "scattergl", mode = "lines",
               line = list(color = "#00796B", width = 1),
               name = "Temperature",
@@ -154,24 +195,27 @@ module_step1_wl_server <- function(id) {
 
       subplot(p1, p2, nrows = 2, shareX = TRUE, titleY = TRUE) %>%
         layout(
-          title = list(text = "Water Pressure & Temperature - FROG_WE_01", font = list(size = 14)),
-          xaxis = list(title = ""),
-          xaxis2 = list(title = "Date"),
+          title = list(text = paste("Water Pressure & Temperature -", station), font = list(size = 14)),
+          xaxis = list(title = "", tickangle = 0, nticks = 8),
+          xaxis2 = list(title = "Date", tickangle = 0, nticks = 8),
           yaxis = list(title = "Pressure (kPa)"),
           yaxis2 = list(title = "Temperature (C)"),
           hovermode = "x unified",
-          showlegend = FALSE
+          showlegend = FALSE,
+          margin = list(b = 50)
         )
     })
 
     # Summary statistics for pressure
     output$wl_pressure_summary <- renderPrint({
-      summary(demo_waterlevel$waterpress_kPa_U20)
+      data <- selected_data()
+      summary(data$waterpress_kPa_U20)
     })
 
     # Summary statistics for temperature
     output$wl_temp_summary <- renderPrint({
-      summary(demo_waterlevel$watertemp_C_U20)
+      data <- selected_data()
+      summary(data$watertemp_C_U20)
     })
   })
 }

@@ -26,21 +26,31 @@ module_step1_cond_ui <- function(id) {
         )
       ),
 
+      # Station selector at top
+      tags$div(
+        style = "background-color: #fff8e1; padding: 15px; border-radius: 5px; margin-bottom: 20px;",
+        fluidRow(
+          column(
+            width = 4,
+            selectInput(ns("station_select"), "Select Station:",
+              choices = c("BUGS_WE_01"),
+              selected = "BUGS_WE_01",
+              width = "100%"
+            )
+          ),
+          column(
+            width = 8,
+            uiOutput(ns("station_info"))
+          )
+        )
+      ),
+
       fluidRow(
         # Left column - guidance and context
         column(
           width = 4,
           tags$div(
             style = "background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin-bottom: 20px;",
-            tags$h4("Station Information", style = "margin-top: 0;"),
-            tags$p(tags$strong("Site: "), "BUGS_WE_01"),
-            tags$p(tags$strong("Logger: "), "HOBO U24"),
-            tags$p(tags$strong("Serial Number: "), "82345678"),
-            tags$p(tags$strong("Date Range: "), "2024-04-21 to 2025-04-18")
-          ),
-
-          tags$div(
-            style = "background-color: #fff8e1; padding: 20px; border-radius: 5px; margin-bottom: 20px;",
             tags$h4("What to look for", style = "margin-top: 0;"),
             tags$p(
               "When reviewing conductivity data, look for patterns that indicate
@@ -68,7 +78,7 @@ module_step1_cond_ui <- function(id) {
             tags$p(
               "Raw conductivity values are also affected by water temperature. To compare
               measurements across different times and sites, we convert to 'specific
-              conductance' which is temperature-compensated to a standard 25°C. This
+              conductance' which is temperature-compensated to a standard 25C. This
               conversion is applied in Step 2."
             )
           )
@@ -140,15 +150,46 @@ module_step1_cond_ui <- function(id) {
 #' Step 1: Conductivity Review Module - Server
 module_step1_cond_server <- function(id) {
   moduleServer(id, function(input, output, session) {
+
+    # Reactive data based on station selection
+    selected_data <- reactive({
+      req(input$station_select)
+      demo_conductivity_list[[input$station_select]]
+    })
+
+    # Station info display
+    output$station_info <- renderUI({
+      req(input$station_select)
+      data <- selected_data()
+      n_records <- nrow(data)
+      date_range <- paste(
+        format(min(data$timestamp), "%Y-%m-%d"),
+        "to",
+        format(max(data$timestamp), "%Y-%m-%d")
+      )
+      tags$div(
+        style = "padding-top: 8px;",
+        tags$p(style = "margin: 0; font-size: 14px;",
+          tags$strong("Station: "), input$station_select, " | ",
+          tags$strong("Logger: "), "HOBO U24 | ",
+          tags$strong("Records: "), format(n_records, big.mark = ","), " | ",
+          tags$strong("Date Range: "), date_range
+        )
+      )
+    })
+
     # Combined synced plot using subplot
     output$cond_combined_plot <- renderPlotly({
-      p1 <- plot_ly(demo_conductivity, x = ~timestamp, y = ~conduct_uScm_U24,
+      data <- selected_data()
+      station <- input$station_select
+
+      p1 <- plot_ly(data, x = ~timestamp, y = ~conduct_uScm_U24,
               type = "scattergl", mode = "lines",
               line = list(color = "#FF6F00", width = 1),
               name = "Conductivity",
               hovertemplate = "Cond: %{y:.1f} uS/cm<extra></extra>")
 
-      p2 <- plot_ly(demo_conductivity, x = ~timestamp, y = ~watertemp_C_U24,
+      p2 <- plot_ly(data, x = ~timestamp, y = ~watertemp_C_U24,
               type = "scattergl", mode = "lines",
               line = list(color = "#E65100", width = 1),
               name = "Temperature",
@@ -156,24 +197,27 @@ module_step1_cond_server <- function(id) {
 
       subplot(p1, p2, nrows = 2, shareX = TRUE, titleY = TRUE) %>%
         layout(
-          title = list(text = "Conductivity & Temperature - BUGS_WE_01", font = list(size = 14)),
-          xaxis = list(title = ""),
-          xaxis2 = list(title = "Date"),
+          title = list(text = paste("Conductivity & Temperature -", station), font = list(size = 14)),
+          xaxis = list(title = "", tickangle = 0),
+          xaxis2 = list(title = "Date", tickangle = 0),
           yaxis = list(title = "Conductivity (uS/cm)"),
           yaxis2 = list(title = "Temperature (C)"),
           hovermode = "x unified",
-          showlegend = FALSE
+          showlegend = FALSE,
+          margin = list(b = 50)
         )
     })
 
     # Summary statistics for conductivity
     output$cond_summary <- renderPrint({
-      summary(demo_conductivity$conduct_uScm_U24)
+      data <- selected_data()
+      summary(data$conduct_uScm_U24)
     })
 
     # Summary statistics for temperature
     output$cond_temp_summary <- renderPrint({
-      summary(demo_conductivity$watertemp_C_U24)
+      data <- selected_data()
+      summary(data$watertemp_C_U24)
     })
   })
 }

@@ -113,8 +113,12 @@ module_upload_data_ui <- function(id) {
               "HOBO water level loggers are not vented, meaning they read both the pressure
               of the water above them AND the atmospheric pressure. To get actual water depth,
               we must subtract the atmospheric pressure from the total pressure reading."
-            ),
-            tags$h4("Data columns:"),
+            )
+          ),
+
+          tags$div(
+            style = "background-color: #f8f9fa; padding: 20px; border-radius: 5px;",
+            tags$h4("Data columns:", style = "margin-top: 0;"),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
               tags$li(tags$strong("timestamp"), " - date and time of reading"),
@@ -139,7 +143,19 @@ module_upload_data_ui <- function(id) {
               placeholder = "No files selected"
             )
           ),
-          tags$p("Demo data preview (SLUG_ST_01):", style = "font-size: 12px; color: #888; margin-bottom: 10px;"),
+
+          tags$h4("Data Preview by Station", style = "margin-bottom: 10px;"),
+          tags$p(
+            "Select a station to preview its barometric data. Each station may have data from
+            multiple logger downloads that are bound together.",
+            style = "font-size: 13px; color: #666; margin-bottom: 15px;"
+          ),
+          selectInput(ns("baro_station_select"), "Select Station:",
+            choices = c("SLUG_ST_01", "BUGS_WE_01"),
+            selected = "SLUG_ST_01",
+            width = "250px"
+          ),
+          uiOutput(ns("baro_station_info")),
           DT::DTOutput(ns("baro_preview")) %>% withSpinner()
         )
       ),
@@ -168,8 +184,12 @@ module_upload_data_ui <- function(id) {
               readings into actual water depth in metres. This requires at least one manual
               measurement of water level (either true depth or stage) taken during the
               deployment period."
-            ),
-            tags$h4("Data columns:"),
+            )
+          ),
+
+          tags$div(
+            style = "background-color: #f8f9fa; padding: 20px; border-radius: 5px;",
+            tags$h4("Data columns:", style = "margin-top: 0;"),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
               tags$li(tags$strong("timestamp"), " - date and time of reading"),
@@ -194,7 +214,19 @@ module_upload_data_ui <- function(id) {
               placeholder = "No files selected"
             )
           ),
-          tags$p("Demo data preview (FROG_WE_01):", style = "font-size: 12px; color: #888; margin-bottom: 10px;"),
+
+          tags$h4("Data Preview by Station", style = "margin-bottom: 10px;"),
+          tags$p(
+            "Select a station to preview its water level data. Each station may have data from
+            multiple logger downloads that are bound together.",
+            style = "font-size: 13px; color: #666; margin-bottom: 15px;"
+          ),
+          selectInput(ns("wl_station_select"), "Select Station:",
+            choices = c("FROG_WE_01", "BUGS_WE_01"),
+            selected = "FROG_WE_01",
+            width = "250px"
+          ),
+          uiOutput(ns("wl_station_info")),
           DT::DTOutput(ns("wl_preview")) %>% withSpinner()
         )
       ),
@@ -222,19 +254,22 @@ module_upload_data_ui <- function(id) {
               "The raw data is recorded in mg/L (milligrams per litre). In Step 2, we can
               convert this to percent air saturation using water temperature and barometric
               pressure, which makes it easier to compare across different conditions."
-            ),
-            tags$h4("Data columns:"),
+            )
+          ),
+
+          tags$div(
+            style = "background-color: #f8f9fa; padding: 20px; border-radius: 5px;",
+            tags$h4("Data columns:", style = "margin-top: 0;"),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
               tags$li(tags$strong("timestamp"), " - date and time of reading"),
               tags$li(tags$strong("do_mgl_U26"), " - dissolved oxygen in mg/L"),
               tags$li(tags$strong("watertemp_C_U26"), " - water temperature in degrees Celsius")
             ),
-            tags$h4("Common issues to watch for:"),
+            tags$h4("Common issues:", style = "margin-top: 15px;"),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
-              tags$li("Gradual decline indicating biofouling on the sensor"),
-              tags$li("Supersaturation (>100%) during algae blooms"),
+              tags$li("Gradual decline indicating biofouling"),
               tags$li("Error codes (-888.88) indicating sensor problems")
             )
           )
@@ -250,7 +285,18 @@ module_upload_data_ui <- function(id) {
               placeholder = "No files selected"
             )
           ),
-          tags$p("Demo data preview (FROG_WE_01):", style = "font-size: 12px; color: #888; margin-bottom: 10px;"),
+
+          tags$h4("Data Preview by Station", style = "margin-bottom: 10px;"),
+          tags$p(
+            "Select a station to preview its dissolved oxygen data.",
+            style = "font-size: 13px; color: #666; margin-bottom: 15px;"
+          ),
+          selectInput(ns("do_station_select"), "Select Station:",
+            choices = c("FROG_WE_01"),
+            selected = "FROG_WE_01",
+            width = "250px"
+          ),
+          uiOutput(ns("do_station_info")),
           DT::DTOutput(ns("do_preview")) %>% withSpinner()
         )
       ),
@@ -279,19 +325,22 @@ module_upload_data_ui <- function(id) {
               drift correction (using field reference measurements) and temperature compensation
               to produce specific conductance values that can be compared across different
               temperatures."
-            ),
-            tags$h4("Data columns:"),
+            )
+          ),
+
+          tags$div(
+            style = "background-color: #f8f9fa; padding: 20px; border-radius: 5px;",
+            tags$h4("Data columns:", style = "margin-top: 0;"),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
               tags$li(tags$strong("timestamp"), " - date and time of reading"),
               tags$li(tags$strong("conduct_uScm_U24"), " - conductivity in microsiemens/cm"),
               tags$li(tags$strong("watertemp_C_U24"), " - water temperature in degrees Celsius")
             ),
-            tags$h4("Common issues to watch for:"),
+            tags$h4("Common issues:", style = "margin-top: 15px;"),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
               tags$li("Sudden spikes from sediment disturbance"),
-              tags$li("Gradual increase from sensor fouling"),
               tags$li("Drops to near zero when logger is dry or frozen")
             )
           )
@@ -307,7 +356,18 @@ module_upload_data_ui <- function(id) {
               placeholder = "No files selected"
             )
           ),
-          tags$p("Demo data preview (BUGS_WE_01):", style = "font-size: 12px; color: #888; margin-bottom: 10px;"),
+
+          tags$h4("Data Preview by Station", style = "margin-bottom: 10px;"),
+          tags$p(
+            "Select a station to preview its conductivity data.",
+            style = "font-size: 13px; color: #666; margin-bottom: 15px;"
+          ),
+          selectInput(ns("cond_station_select"), "Select Station:",
+            choices = c("BUGS_WE_01"),
+            selected = "BUGS_WE_01",
+            width = "250px"
+          ),
+          uiOutput(ns("cond_station_info")),
           DT::DTOutput(ns("cond_preview")) %>% withSpinner()
         )
       ),
@@ -377,10 +437,36 @@ module_upload_data_server <- function(id) {
         )
     })
 
-    # Barometric data preview
+    # ============================================================
+    # Barometric data - reactive based on station selection
+    # ============================================================
+    baro_data_selected <- reactive({
+      req(input$baro_station_select)
+      demo_baro_list[[input$baro_station_select]]
+    })
+
+    output$baro_station_info <- renderUI({
+      req(input$baro_station_select)
+      data <- baro_data_selected()
+      n_records <- nrow(data)
+      date_range <- paste(
+        format(min(data$timestamp), "%Y-%m-%d"),
+        "to",
+        format(max(data$timestamp), "%Y-%m-%d")
+      )
+      tags$div(
+        style = "background-color: #e3f2fd; padding: 10px; border-radius: 5px; margin-bottom: 15px;",
+        tags$p(style = "margin: 0; font-size: 13px;",
+          tags$strong("Station: "), input$baro_station_select, " | ",
+          tags$strong("Records: "), format(n_records, big.mark = ","), " | ",
+          tags$strong("Date Range: "), date_range
+        )
+      )
+    })
+
     output$baro_preview <- DT::renderDT({
       DT::datatable(
-        head(demo_baro, 50),
+        head(baro_data_selected(), 50),
         options = list(
           pageLength = 5,
           scrollX = TRUE,
@@ -391,10 +477,36 @@ module_upload_data_server <- function(id) {
       )
     })
 
-    # Water level data preview
+    # ============================================================
+    # Water level data - reactive based on station selection
+    # ============================================================
+    wl_data_selected <- reactive({
+      req(input$wl_station_select)
+      demo_waterlevel_list[[input$wl_station_select]]
+    })
+
+    output$wl_station_info <- renderUI({
+      req(input$wl_station_select)
+      data <- wl_data_selected()
+      n_records <- nrow(data)
+      date_range <- paste(
+        format(min(data$timestamp), "%Y-%m-%d"),
+        "to",
+        format(max(data$timestamp), "%Y-%m-%d")
+      )
+      tags$div(
+        style = "background-color: #e8f5e9; padding: 10px; border-radius: 5px; margin-bottom: 15px;",
+        tags$p(style = "margin: 0; font-size: 13px;",
+          tags$strong("Station: "), input$wl_station_select, " | ",
+          tags$strong("Records: "), format(n_records, big.mark = ","), " | ",
+          tags$strong("Date Range: "), date_range
+        )
+      )
+    })
+
     output$wl_preview <- DT::renderDT({
       DT::datatable(
-        head(demo_waterlevel, 50),
+        head(wl_data_selected(), 50),
         options = list(
           pageLength = 5,
           scrollX = TRUE,
@@ -405,10 +517,36 @@ module_upload_data_server <- function(id) {
       )
     })
 
-    # Dissolved oxygen data preview
+    # ============================================================
+    # Dissolved oxygen data - reactive based on station selection
+    # ============================================================
+    do_data_selected <- reactive({
+      req(input$do_station_select)
+      demo_dissox_list[[input$do_station_select]]
+    })
+
+    output$do_station_info <- renderUI({
+      req(input$do_station_select)
+      data <- do_data_selected()
+      n_records <- nrow(data)
+      date_range <- paste(
+        format(min(data$timestamp), "%Y-%m-%d"),
+        "to",
+        format(max(data$timestamp), "%Y-%m-%d")
+      )
+      tags$div(
+        style = "background-color: #fce4ec; padding: 10px; border-radius: 5px; margin-bottom: 15px;",
+        tags$p(style = "margin: 0; font-size: 13px;",
+          tags$strong("Station: "), input$do_station_select, " | ",
+          tags$strong("Records: "), format(n_records, big.mark = ","), " | ",
+          tags$strong("Date Range: "), date_range
+        )
+      )
+    })
+
     output$do_preview <- DT::renderDT({
       DT::datatable(
-        head(demo_dissox, 50),
+        head(do_data_selected(), 50),
         options = list(
           pageLength = 5,
           scrollX = TRUE,
@@ -419,10 +557,36 @@ module_upload_data_server <- function(id) {
       )
     })
 
-    # Conductivity data preview
+    # ============================================================
+    # Conductivity data - reactive based on station selection
+    # ============================================================
+    cond_data_selected <- reactive({
+      req(input$cond_station_select)
+      demo_conductivity_list[[input$cond_station_select]]
+    })
+
+    output$cond_station_info <- renderUI({
+      req(input$cond_station_select)
+      data <- cond_data_selected()
+      n_records <- nrow(data)
+      date_range <- paste(
+        format(min(data$timestamp), "%Y-%m-%d"),
+        "to",
+        format(max(data$timestamp), "%Y-%m-%d")
+      )
+      tags$div(
+        style = "background-color: #fff8e1; padding: 10px; border-radius: 5px; margin-bottom: 15px;",
+        tags$p(style = "margin: 0; font-size: 13px;",
+          tags$strong("Station: "), input$cond_station_select, " | ",
+          tags$strong("Records: "), format(n_records, big.mark = ","), " | ",
+          tags$strong("Date Range: "), date_range
+        )
+      )
+    })
+
     output$cond_preview <- DT::renderDT({
       DT::datatable(
-        head(demo_conductivity, 50),
+        head(cond_data_selected(), 50),
         options = list(
           pageLength = 5,
           scrollX = TRUE,

@@ -160,7 +160,7 @@ module_step3_qaqc_ui <- function(id) {
 "# Run automatic QAQC on water level data
 station_wl_dat2 <- waterlevel_qaqc(
   input_data = station_wl_dat,
-  select_station = \"FROG_WE_01\",
+  select_station = \"ALBR_ST_30\",
   plot_only = FALSE
 )
 
@@ -246,7 +246,7 @@ station_wl_dat2[[2]]"
 # Flatten an ice-related spike
 station_wl_dat3 <- adjust_waterlevel_spike(
   input_data = station_wl_dat2[[1]],
-  select_station = \"FROG_WE_01\",
+  select_station = \"ALBR_ST_30\",
   timestamp_start = \"2024-01-11 08:00:00\",
   timestamp_end = \"2024-02-07 07:00:00\",
   reason_to_adjust = \"ice\"
@@ -254,7 +254,7 @@ station_wl_dat3 <- adjust_waterlevel_spike(
 
 # View the result
 waterlevel_qaqc(input_data = station_wl_dat3,
-                select_station = \"FROG_WE_01\",
+                select_station = \"ALBR_ST_30\",
                 plot_only = TRUE)"
           ),
 
@@ -267,7 +267,7 @@ station_wl_dat4 <- adjust_waterlevel_cablebreak(
   input_data = station_wl_dat3,
   timestamp_start = \"2024-10-01 18:00:00\",
   timestamp_end = \"2024-10-01 19:00:00\",
-  select_station = \"FROG_WE_01\"
+  select_station = \"ALBR_ST_30\"
 )"
           )
         )
@@ -332,24 +332,24 @@ station_wl_dat4 <- adjust_waterlevel_cablebreak(
 "# Run automatic QAQC on dissolved oxygen data
 station_do_dat2 <- dissox_qaqc(
   input_data = station_do_dat,
-  select_station = \"FROG_WE_01\"
+  select_station = \"ALBR_ST_30\"
 )
 
 # Include water level data for better detection
 station_do_dat2 <- dissox_qaqc(
   input_data = station_do_dat,
-  select_station = \"FROG_WE_01\",
-  var_waterlevel_m = \"waterlevel_m_U20_adj\",
-  var_watertemp_C_2 = \"watertemp_C_U20_adj\"
+  select_station = \"ALBR_ST_30\",
+  var_waterlevel_m = \"waterlevel_m_adj\",
+  var_watertemp_C_2 = \"watertemp_C_adj\"
 )
 
 # Remove a dry period
 station_do_dat3 <- adjust_logger_NA(
   input_data = station_do_dat2[[1]],
-  select_station = \"FROG_WE_01\",
+  select_station = \"ALBR_ST_30\",
   timestamp_start = \"2024-09-09 06:00:00\",
   timestamp_end = \"2024-09-25 21:00:00\",
-  logger_to_adjust = \"dissolvedoxygen_U26\",
+  logger_to_adjust = \"dissolvedoxygen\",
   reason_to_adjust = \"dry\"
 )"
           )

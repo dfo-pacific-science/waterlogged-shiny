@@ -103,7 +103,7 @@ module_step5_summarize_ui <- function(id) {
             ),
             tags$tr(
               tags$td(style = "border: 1px solid #ddd; padding: 8px;", tags$code("logger_type")),
-              tags$td(style = "border: 1px solid #ddd; padding: 8px;", "dissolvedoxygen_U26, waterlevel_U20, or baro_U20")
+              tags$td(style = "border: 1px solid #ddd; padding: 8px;", "dissolvedoxygen, waterlevel, or baro")
             ),
             tags$tr(
               tags$td(style = "border: 1px solid #ddd; padding: 8px;", tags$code("data_processing")),
@@ -128,7 +128,7 @@ module_step5_summarize_ui <- function(id) {
 "# Get daily summary of water level for all stations
 wl_daily <- get_logger_data(
   path_to_data = \"data/waterlevel/2024/clean\",
-  logger_type = \"waterlevel_U20\",
+  logger_type = \"waterlevel\",
   data_processing = \"clean\",
   select_station = \"all\",
   temporal_scale = \"daily\"
@@ -137,9 +137,9 @@ wl_daily <- get_logger_data(
 # Get monthly summary of dissolved oxygen for one station
 do_monthly <- get_logger_data(
   path_to_data = \"data/dissolved_oxygen/2024/clean\",
-  logger_type = \"dissolvedoxygen_U26\",
+  logger_type = \"dissolvedoxygen\",
   data_processing = \"clean\",
-  select_station = \"FROG_WE_01\",
+  select_station = \"COOK_WE_40\",
   temporal_scale = \"monthly\"
 )"
           )
@@ -231,7 +231,7 @@ do_monthly <- get_logger_data(
           ),
           tags$tbody(
             tags$tr(
-              tags$td("SLUG_ST_01", style = "border: 1px solid #ddd; padding: 8px;"),
+              tags$td("ALBR_ST_30", style = "border: 1px solid #ddd; padding: 8px;"),
               tags$td("May-Oct 2024", style = "border: 1px solid #ddd; padding: 8px;"),
               tags$td("4,380", style = "border: 1px solid #ddd; padding: 8px;"),
               tags$td("1.25 m", style = "border: 1px solid #ddd; padding: 8px;"),
@@ -240,7 +240,7 @@ do_monthly <- get_logger_data(
               tags$td("0.32", style = "border: 1px solid #ddd; padding: 8px;")
             ),
             tags$tr(
-              tags$td("SLUG_ST_02", style = "border: 1px solid #ddd; padding: 8px;"),
+              tags$td("COOK_WE_40", style = "border: 1px solid #ddd; padding: 8px;"),
               tags$td("May-Oct 2024", style = "border: 1px solid #ddd; padding: 8px;"),
               tags$td("4,320", style = "border: 1px solid #ddd; padding: 8px;"),
               tags$td("0.85 m", style = "border: 1px solid #ddd; padding: 8px;"),

@@ -36,8 +36,7 @@ module_step1_overview_ui <- function(id) {
             tags$div(
               style = "border-left: 3px solid #1976D2; padding-left: 10px;",
               selectInput(ns("baro_station"), "Barometric:",
-                choices = c("SLUG_ST_01", "BUGS_WE_01"),
-                selected = "SLUG_ST_01",
+                choices = NULL,
                 width = "100%"
               )
             )
@@ -47,8 +46,7 @@ module_step1_overview_ui <- function(id) {
             tags$div(
               style = "border-left: 3px solid #2E7D32; padding-left: 10px;",
               selectInput(ns("wl_station"), "Water Level:",
-                choices = c("FROG_WE_01", "BUGS_WE_01"),
-                selected = "FROG_WE_01",
+                choices = NULL,
                 width = "100%"
               )
             )
@@ -58,8 +56,7 @@ module_step1_overview_ui <- function(id) {
             tags$div(
               style = "border-left: 3px solid #7B1FA2; padding-left: 10px;",
               selectInput(ns("do_station"), "Dissolved Oxygen:",
-                choices = c("FROG_WE_01"),
-                selected = "FROG_WE_01",
+                choices = NULL,
                 width = "100%"
               )
             )
@@ -69,8 +66,7 @@ module_step1_overview_ui <- function(id) {
             tags$div(
               style = "border-left: 3px solid #FF6F00; padding-left: 10px;",
               selectInput(ns("cond_station"), "Conductivity:",
-                choices = c("BUGS_WE_01"),
-                selected = "BUGS_WE_01",
+                choices = NULL,
                 width = "100%"
               )
             )
@@ -180,25 +176,47 @@ module_step1_overview_ui <- function(id) {
 module_step1_overview_server <- function(id) {
   moduleServer(id, function(input, output, session) {
 
+    # Update station choices when data changes
+    observe({
+      baro <- session$userData$rv_raw_data$baro_data; req(baro)
+      updateSelectInput(session, "baro_station", choices = names(baro), selected = names(baro)[1])
+    })
+    observe({
+      wl <- session$userData$rv_raw_data$waterlevel_data; req(wl)
+      updateSelectInput(session, "wl_station", choices = names(wl), selected = names(wl)[1])
+    })
+    observe({
+      do_list <- session$userData$rv_raw_data$do_data; req(do_list)
+      updateSelectInput(session, "do_station", choices = names(do_list), selected = names(do_list)[1])
+    })
+    observe({
+      cond <- session$userData$rv_raw_data$conductivity_data; req(cond)
+      updateSelectInput(session, "cond_station", choices = names(cond), selected = names(cond)[1])
+    })
+
     # Reactive data for each logger type based on station selection
     baro_data <- reactive({
       req(input$baro_station)
-      demo_baro_list[[input$baro_station]]
+      req(session$userData$rv_raw_data$baro_data)
+      session$userData$rv_raw_data$baro_data[[input$baro_station]]
     })
 
     wl_data <- reactive({
       req(input$wl_station)
-      demo_waterlevel_list[[input$wl_station]]
+      req(session$userData$rv_raw_data$waterlevel_data)
+      session$userData$rv_raw_data$waterlevel_data[[input$wl_station]]
     })
 
     do_data <- reactive({
       req(input$do_station)
-      demo_dissox_list[[input$do_station]]
+      req(session$userData$rv_raw_data$do_data)
+      session$userData$rv_raw_data$do_data[[input$do_station]]
     })
 
     cond_data <- reactive({
       req(input$cond_station)
-      demo_conductivity_list[[input$cond_station]]
+      req(session$userData$rv_raw_data$conductivity_data)
+      session$userData$rv_raw_data$conductivity_data[[input$cond_station]]
     })
 
     # Coverage summary display
@@ -253,28 +271,28 @@ module_step1_overview_server <- function(id) {
 
       plot_ly() %>%
         # Barometric pressure - left axis 1
-        add_trace(data = baro, x = ~timestamp, y = ~airpress_kPa_U20,
+        add_trace(data = baro, x = ~timestamp, y = ~airpress_kPa,
                   type = "scattergl", mode = "lines",
                   line = list(color = "#1976D2", width = 1.5),
                   name = paste("Baro -", input$baro_station),
                   yaxis = "y",
                   hovertemplate = "Baro: %{y:.2f} kPa<extra></extra>") %>%
         # Water pressure - left axis 2
-        add_trace(data = wl, x = ~timestamp, y = ~waterpress_kPa_U20,
+        add_trace(data = wl, x = ~timestamp, y = ~waterpress_kPa,
                   type = "scattergl", mode = "lines",
                   line = list(color = "#2E7D32", width = 1.5),
                   name = paste("WL -", input$wl_station),
                   yaxis = "y2",
                   hovertemplate = "Water: %{y:.2f} kPa<extra></extra>") %>%
         # Dissolved oxygen - right axis 1
-        add_trace(data = do_dat, x = ~timestamp, y = ~do_mgl_U26,
+        add_trace(data = do_dat, x = ~timestamp, y = ~do_mgl,
                   type = "scattergl", mode = "lines",
                   line = list(color = "#7B1FA2", width = 1.5),
                   name = paste("DO -", input$do_station),
                   yaxis = "y3",
                   hovertemplate = "DO: %{y:.2f} mg/L<extra></extra>") %>%
         # Conductivity - right axis 2
-        add_trace(data = cond, x = ~timestamp, y = ~conduct_uScm_U24,
+        add_trace(data = cond, x = ~timestamp, y = ~conduct_uScm,
                   type = "scattergl", mode = "lines",
                   line = list(color = "#FF6F00", width = 1.5),
                   name = paste("Cond -", input$cond_station),
@@ -361,34 +379,34 @@ module_step1_overview_server <- function(id) {
           nrow(cond), nrow(cond)
         ),
         Min = c(
-          round(min(baro$airpress_kPa_U20, na.rm = TRUE), 2),
-          round(min(baro$airtemp_C_U20, na.rm = TRUE), 2),
-          round(min(wl$waterpress_kPa_U20, na.rm = TRUE), 2),
-          round(min(wl$watertemp_C_U20, na.rm = TRUE), 2),
-          round(min(do_dat$do_mgl_U26, na.rm = TRUE), 2),
-          round(min(do_dat$watertemp_C_U26, na.rm = TRUE), 2),
-          round(min(cond$conduct_uScm_U24, na.rm = TRUE), 2),
-          round(min(cond$watertemp_C_U24, na.rm = TRUE), 2)
+          round(min(baro$airpress_kPa, na.rm = TRUE), 2),
+          round(min(baro$airtemp_C, na.rm = TRUE), 2),
+          round(min(wl$waterpress_kPa, na.rm = TRUE), 2),
+          round(min(wl$watertemp_C, na.rm = TRUE), 2),
+          round(min(do_dat$do_mgl, na.rm = TRUE), 2),
+          round(min(do_dat$watertemp_C, na.rm = TRUE), 2),
+          round(min(cond$conduct_uScm, na.rm = TRUE), 2),
+          round(min(cond$watertemp_C, na.rm = TRUE), 2)
         ),
         Mean = c(
-          round(mean(baro$airpress_kPa_U20, na.rm = TRUE), 2),
-          round(mean(baro$airtemp_C_U20, na.rm = TRUE), 2),
-          round(mean(wl$waterpress_kPa_U20, na.rm = TRUE), 2),
-          round(mean(wl$watertemp_C_U20, na.rm = TRUE), 2),
-          round(mean(do_dat$do_mgl_U26, na.rm = TRUE), 2),
-          round(mean(do_dat$watertemp_C_U26, na.rm = TRUE), 2),
-          round(mean(cond$conduct_uScm_U24, na.rm = TRUE), 2),
-          round(mean(cond$watertemp_C_U24, na.rm = TRUE), 2)
+          round(mean(baro$airpress_kPa, na.rm = TRUE), 2),
+          round(mean(baro$airtemp_C, na.rm = TRUE), 2),
+          round(mean(wl$waterpress_kPa, na.rm = TRUE), 2),
+          round(mean(wl$watertemp_C, na.rm = TRUE), 2),
+          round(mean(do_dat$do_mgl, na.rm = TRUE), 2),
+          round(mean(do_dat$watertemp_C, na.rm = TRUE), 2),
+          round(mean(cond$conduct_uScm, na.rm = TRUE), 2),
+          round(mean(cond$watertemp_C, na.rm = TRUE), 2)
         ),
         Max = c(
-          round(max(baro$airpress_kPa_U20, na.rm = TRUE), 2),
-          round(max(baro$airtemp_C_U20, na.rm = TRUE), 2),
-          round(max(wl$waterpress_kPa_U20, na.rm = TRUE), 2),
-          round(max(wl$watertemp_C_U20, na.rm = TRUE), 2),
-          round(max(do_dat$do_mgl_U26, na.rm = TRUE), 2),
-          round(max(do_dat$watertemp_C_U26, na.rm = TRUE), 2),
-          round(max(cond$conduct_uScm_U24, na.rm = TRUE), 2),
-          round(max(cond$watertemp_C_U24, na.rm = TRUE), 2)
+          round(max(baro$airpress_kPa, na.rm = TRUE), 2),
+          round(max(baro$airtemp_C, na.rm = TRUE), 2),
+          round(max(wl$waterpress_kPa, na.rm = TRUE), 2),
+          round(max(wl$watertemp_C, na.rm = TRUE), 2),
+          round(max(do_dat$do_mgl, na.rm = TRUE), 2),
+          round(max(do_dat$watertemp_C, na.rm = TRUE), 2),
+          round(max(cond$conduct_uScm, na.rm = TRUE), 2),
+          round(max(cond$watertemp_C, na.rm = TRUE), 2)
         )
       )
 

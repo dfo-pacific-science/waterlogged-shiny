@@ -26,46 +26,44 @@ options(scipen = 999)
 options(spinner.type = 8)
 
 # Load demo data at startup
-demo_sites <- read.csv("inst/extdata/site_station_manager.csv")
-demo_metadata <- read.csv("inst/extdata/logger_manager.csv")
+demo_metadata <- read.csv("inst/extdata/metadata.csv")
+demo_sites <- unique(demo_metadata[, c("site_station_code", "latitude", "longitude")])
 
 # Load barometric data for multiple stations
-demo_baro_SLUG_ST_01 <- readRDS("inst/extdata/baro_demo.rds")
-demo_baro_BUGS_WE_01 <- readRDS("inst/extdata/baro_BUGS_WE_01.rds")
-
-# Combine into a list for easy access by station
 demo_baro_list <- list(
-  "SLUG_ST_01" = demo_baro_SLUG_ST_01,
-  "BUGS_WE_01" = demo_baro_BUGS_WE_01
+  "ALBR_ST_30" = read.csv("inst/extdata/baro_ALBR_ST_30.csv"),
+  "DARL_ST_30" = read.csv("inst/extdata/baro_DARL_ST_30.csv")
 )
+# Parse timestamps
+for (nm in names(demo_baro_list)) {
+  demo_baro_list[[nm]]$timestamp <- as.POSIXct(demo_baro_list[[nm]]$timestamp, tz = "UTC")
+}
 
-# Load water level data for multiple stations
-demo_waterlevel_FROG_WE_01 <- readRDS("inst/extdata/waterlevel_demo.rds")
-demo_waterlevel_BUGS_WE_01 <- readRDS("inst/extdata/waterlevel_BUGS_WE_01.rds")
-
+# Load water level data
 demo_waterlevel_list <- list(
-  "FROG_WE_01" = demo_waterlevel_FROG_WE_01,
-  "BUGS_WE_01" = demo_waterlevel_BUGS_WE_01
+  "ALBR_ST_30" = read.csv("inst/extdata/waterlevel_ALBR_ST_30.csv")
 )
+for (nm in names(demo_waterlevel_list)) {
+  demo_waterlevel_list[[nm]]$timestamp <- as.POSIXct(demo_waterlevel_list[[nm]]$timestamp, tz = "UTC")
+}
 
-# Load dissolved oxygen data (single station for demo)
-demo_dissox_FROG_WE_01 <- read.csv("inst/extdata/dissox_demo.csv")
-demo_dissox_FROG_WE_01$timestamp <- as.POSIXct(demo_dissox_FROG_WE_01$timestamp, format = "%m/%d/%Y %H:%M", tz = "UTC")
-
+# Load dissolved oxygen data
 demo_dissox_list <- list(
-  "FROG_WE_01" = demo_dissox_FROG_WE_01
+  "COOK_WE_40" = read.csv("inst/extdata/dissox_COOK_WE_40.csv")
 )
+for (nm in names(demo_dissox_list)) {
+  demo_dissox_list[[nm]]$timestamp <- as.POSIXct(demo_dissox_list[[nm]]$timestamp, tz = "UTC")
+}
 
-# Load conductivity data (single station for demo)
-demo_conductivity_BUGS_WE_01 <- read.csv("inst/extdata/conductivity_demo.csv")
-demo_conductivity_BUGS_WE_01$timestamp <- as.POSIXct(demo_conductivity_BUGS_WE_01$timestamp, format = "%m/%d/%Y %H:%M", tz = "UTC")
-
+# Load conductivity data
 demo_conductivity_list <- list(
-  "BUGS_WE_01" = demo_conductivity_BUGS_WE_01
+  "TUMT_WE_40" = read.csv("inst/extdata/conductivity_TUMT_WE_40.csv")
 )
+for (nm in names(demo_conductivity_list)) {
+  demo_conductivity_list[[nm]]$timestamp <- as.POSIXct(demo_conductivity_list[[nm]]$timestamp, tz = "UTC")
+}
 
-# Keep single dataframes for backwards compatibility with review modules
-demo_baro <- demo_baro_SLUG_ST_01
-demo_waterlevel <- demo_waterlevel_FROG_WE_01
-demo_dissox <- demo_dissox_FROG_WE_01
-demo_conductivity <- demo_conductivity_BUGS_WE_01
+# Supplementary data
+demo_stage_readings <- read.csv("inst/extdata/stage_readings.csv")
+demo_field_references <- read.csv("inst/extdata/field_references.csv")
+demo_benchmarks <- read.csv("inst/extdata/benchmarks.csv")

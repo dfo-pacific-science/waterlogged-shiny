@@ -59,7 +59,7 @@ module_welcome_ui <- function(id) {
               ),
               tags$div(style = "display: flex; align-items: flex-start; padding: 12px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #3498db;",
                 tags$span(style = "font-weight: bold; color: #3498db; min-width: 70px;", "Step 1"),
-                tags$span(style = "color: #555;", "Review Series - inspect time series for each logger type to identify data quality issues")
+                tags$span(style = "color: #555;", "Raw Series - inspect time series for each logger type to identify data quality issues")
               ),
               tags$div(style = "display: flex; align-items: flex-start; padding: 12px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #9b59b6;",
                 tags$span(style = "font-weight: bold; color: #9b59b6; min-width: 70px;", "Step 2"),

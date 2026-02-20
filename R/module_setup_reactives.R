@@ -15,9 +15,22 @@ module_setup_reactives <- function(session = NA) {
     waterlevel_data = NULL,
     do_data = NULL,
     conductivity_data = NULL,
-    metadata = NULL
+    metadata = NULL,
+    stage_readings = NULL,
+    field_references = NULL,
+    benchmarks = NULL
   )
   session$userData$rv_raw_data <- rv_raw_data
+
+  # Populate with demo data from global.R so app works immediately
+  rv_raw_data$metadata <- demo_metadata
+  rv_raw_data$baro_data <- demo_baro_list
+  rv_raw_data$waterlevel_data <- demo_waterlevel_list
+  rv_raw_data$do_data <- demo_dissox_list
+  rv_raw_data$conductivity_data <- demo_conductivity_list
+  rv_raw_data$stage_readings <- demo_stage_readings
+  rv_raw_data$field_references <- demo_field_references
+  rv_raw_data$benchmarks <- demo_benchmarks
 
   # Bound data storage (Step 1 outputs)
   rv_bound_data <- reactiveValues(
@@ -35,8 +48,9 @@ module_setup_reactives <- function(session = NA) {
   )
   session$userData$rv_converted_data <- rv_converted_data
 
-  # QAQC data storage (Step 3 outputs)
+  # QAQC data storage (Step 2 baro + Step 3 outputs)
   rv_qaqc_data <- reactiveValues(
+    baro_qaqc = NULL,
     waterlevel_qaqc = NULL,
     do_qaqc = NULL,
     qaqc_flags = NULL

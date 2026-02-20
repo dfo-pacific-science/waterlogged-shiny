@@ -33,8 +33,7 @@ module_step1_cond_ui <- function(id) {
           column(
             width = 4,
             selectInput(ns("station_select"), "Select Station:",
-              choices = c("BUGS_WE_01"),
-              selected = "BUGS_WE_01",
+              choices = NULL,
               width = "100%"
             )
           ),
@@ -151,10 +150,21 @@ module_step1_cond_ui <- function(id) {
 module_step1_cond_server <- function(id) {
   moduleServer(id, function(input, output, session) {
 
+    # Update station choices when data changes
+    observe({
+      data_list <- session$userData$rv_raw_data$conductivity_data
+      req(data_list)
+      stations <- names(data_list)
+      updateSelectInput(session, "station_select",
+        choices = stations, selected = stations[1]
+      )
+    })
+
     # Reactive data based on station selection
     selected_data <- reactive({
       req(input$station_select)
-      demo_conductivity_list[[input$station_select]]
+      req(session$userData$rv_raw_data$conductivity_data)
+      session$userData$rv_raw_data$conductivity_data[[input$station_select]]
     })
 
     # Station info display
@@ -183,13 +193,13 @@ module_step1_cond_server <- function(id) {
       data <- selected_data()
       station <- input$station_select
 
-      p1 <- plot_ly(data, x = ~timestamp, y = ~conduct_uScm_U24,
+      p1 <- plot_ly(data, x = ~timestamp, y = ~conduct_uScm,
               type = "scattergl", mode = "lines",
               line = list(color = "#FF6F00", width = 1),
               name = "Conductivity",
               hovertemplate = "Cond: %{y:.1f} uS/cm<extra></extra>")
 
-      p2 <- plot_ly(data, x = ~timestamp, y = ~watertemp_C_U24,
+      p2 <- plot_ly(data, x = ~timestamp, y = ~watertemp_C,
               type = "scattergl", mode = "lines",
               line = list(color = "#E65100", width = 1),
               name = "Temperature",
@@ -211,13 +221,13 @@ module_step1_cond_server <- function(id) {
     # Summary statistics for conductivity
     output$cond_summary <- renderPrint({
       data <- selected_data()
-      summary(data$conduct_uScm_U24)
+      summary(data$conduct_uScm)
     })
 
     # Summary statistics for temperature
     output$cond_temp_summary <- renderPrint({
       data <- selected_data()
-      summary(data$watertemp_C_U24)
+      summary(data$watertemp_C)
     })
   })
 }

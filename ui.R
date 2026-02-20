@@ -55,21 +55,61 @@ ui <- dashboardPage(
         "t_step1_overview",
         module_step1_overview_ui("step1_overview")
       ),
+      # Step 2: Barometric QAQC
+      tabItem(
+        "t_step2_baro_qaqc",
+        module_step2_baro_qaqc_ui("step2_baro_qaqc")
+      ),
+      # Step 3: Water Level subtabs
+      tabItem(
+        "t_step3_wl_baro",
+        module_step3_wl_baro_ui("step3_wl_baro")
+      ),
+      tabItem(
+        "t_step3_wl_convert",
+        module_step3_wl_convert_ui("step3_wl_convert")
+      ),
+      tabItem(
+        "t_step3_wl_qaqc",
+        module_step3_wl_qaqc_ui("step3_wl_qaqc")
+      ),
+      # Step 4: Dissolved Oxygen subtabs
+      tabItem(
+        "t_step4_do_baro",
+        module_step4_do_baro_ui("step4_do_baro")
+      ),
+      tabItem(
+        "t_step4_do_convert",
+        module_step4_do_convert_ui("step4_do_convert")
+      ),
+      tabItem(
+        "t_step4_do_qaqc",
+        module_step4_do_qaqc_ui("step4_do_qaqc")
+      ),
+      tabItem(
+        "t_step4_do_drift",
+        module_step4_do_drift_ui("step4_do_drift")
+      ),
+      # Step 5: Conductivity subtabs
+      tabItem(
+        "t_step5_cond_qaqc",
+        module_step5_cond_qaqc_ui("step5_cond_qaqc")
+      ),
+      tabItem(
+        "t_step5_cond_drift",
+        module_step5_cond_drift_ui("step5_cond_drift")
+      ),
+      tabItem(
+        "t_step5_cond_tempcomp",
+        module_step5_cond_tempcomp_ui("step5_cond_tempcomp")
+      ),
       # Remaining steps
       tabItem(
-        "t_step2_convert",
-        module_step2_convert_ui("step2_convert")
-      ),
-      tabItem(
-        "t_step3_qaqc",
-        module_step3_qaqc_ui("step3_qaqc")
-      ),
-      tabItem(
-        "t_step4_save",
+        "t_step6_save",
         module_step4_save_ui("step4_save")
       ),
       tabItem(
-        "t_step5_summarize",
+        "t_step7_summarize",
         module_step5_summarize_ui("step5_summarize")
       )
     )

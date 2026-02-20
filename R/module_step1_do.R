@@ -33,8 +33,7 @@ module_step1_do_ui <- function(id) {
           column(
             width = 4,
             selectInput(ns("station_select"), "Select Station:",
-              choices = c("FROG_WE_01"),
-              selected = "FROG_WE_01",
+              choices = NULL,
               width = "100%"
             )
           ),
@@ -150,10 +149,21 @@ module_step1_do_ui <- function(id) {
 module_step1_do_server <- function(id) {
   moduleServer(id, function(input, output, session) {
 
+    # Update station choices when data changes
+    observe({
+      data_list <- session$userData$rv_raw_data$do_data
+      req(data_list)
+      stations <- names(data_list)
+      updateSelectInput(session, "station_select",
+        choices = stations, selected = stations[1]
+      )
+    })
+
     # Reactive data based on station selection
     selected_data <- reactive({
       req(input$station_select)
-      demo_dissox_list[[input$station_select]]
+      req(session$userData$rv_raw_data$do_data)
+      session$userData$rv_raw_data$do_data[[input$station_select]]
     })
 
     # Station info display
@@ -182,13 +192,13 @@ module_step1_do_server <- function(id) {
       data <- selected_data()
       station <- input$station_select
 
-      p1 <- plot_ly(data, x = ~timestamp, y = ~do_mgl_U26,
+      p1 <- plot_ly(data, x = ~timestamp, y = ~do_mgl,
               type = "scattergl", mode = "lines",
               line = list(color = "#7B1FA2", width = 1),
               name = "DO",
               hovertemplate = "DO: %{y:.2f} mg/L<extra></extra>")
 
-      p2 <- plot_ly(data, x = ~timestamp, y = ~watertemp_C_U26,
+      p2 <- plot_ly(data, x = ~timestamp, y = ~watertemp_C,
               type = "scattergl", mode = "lines",
               line = list(color = "#C2185B", width = 1),
               name = "Temperature",
@@ -210,13 +220,13 @@ module_step1_do_server <- function(id) {
     # Summary statistics for DO
     output$do_conc_summary <- renderPrint({
       data <- selected_data()
-      summary(data$do_mgl_U26)
+      summary(data$do_mgl)
     })
 
     # Summary statistics for temperature
     output$do_temp_summary <- renderPrint({
       data <- selected_data()
-      summary(data$watertemp_C_U26)
+      summary(data$watertemp_C)
     })
   })
 }

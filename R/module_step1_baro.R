@@ -32,8 +32,7 @@ module_step1_baro_ui <- function(id) {
           column(
             width = 4,
             selectInput(ns("station_select"), "Select Station:",
-              choices = c("SLUG_ST_01", "BUGS_WE_01"),
-              selected = "SLUG_ST_01",
+              choices = NULL,
               width = "100%"
             )
           ),
@@ -148,10 +147,21 @@ module_step1_baro_ui <- function(id) {
 module_step1_baro_server <- function(id) {
   moduleServer(id, function(input, output, session) {
 
+    # Update station choices when data changes
+    observe({
+      data_list <- session$userData$rv_raw_data$baro_data
+      req(data_list)
+      stations <- names(data_list)
+      updateSelectInput(session, "station_select",
+        choices = stations, selected = stations[1]
+      )
+    })
+
     # Reactive data based on station selection
     selected_data <- reactive({
       req(input$station_select)
-      demo_baro_list[[input$station_select]]
+      req(session$userData$rv_raw_data$baro_data)
+      session$userData$rv_raw_data$baro_data[[input$station_select]]
     })
 
     # Station info display
@@ -180,13 +190,13 @@ module_step1_baro_server <- function(id) {
       data <- selected_data()
       station <- input$station_select
 
-      p1 <- plot_ly(data, x = ~timestamp, y = ~airpress_kPa_U20,
+      p1 <- plot_ly(data, x = ~timestamp, y = ~airpress_kPa,
               type = "scattergl", mode = "lines",
               line = list(color = "#1976D2", width = 1),
               name = "Pressure",
               hovertemplate = "Pressure: %{y:.2f} kPa<extra></extra>")
 
-      p2 <- plot_ly(data, x = ~timestamp, y = ~airtemp_C_U20,
+      p2 <- plot_ly(data, x = ~timestamp, y = ~airtemp_C,
               type = "scattergl", mode = "lines",
               line = list(color = "#F57C00", width = 1),
               name = "Temperature",
@@ -208,13 +218,13 @@ module_step1_baro_server <- function(id) {
     # Summary statistics for pressure
     output$baro_pressure_summary <- renderPrint({
       data <- selected_data()
-      summary(data$airpress_kPa_U20)
+      summary(data$airpress_kPa)
     })
 
     # Summary statistics for temperature
     output$baro_temp_summary <- renderPrint({
       data <- selected_data()
-      summary(data$airtemp_C_U20)
+      summary(data$airtemp_C)
     })
   })
 }

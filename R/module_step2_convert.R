@@ -70,9 +70,9 @@ module_step2_convert_ui <- function(id) {
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
               tags$li(tags$strong("baro_code"), " - which baro station was used"),
-              tags$li(tags$strong("airpress_kPa_U20"), " - atmospheric pressure"),
-              tags$li(tags$strong("airtemp_C_U20"), " - air temperature"),
-              tags$li(tags$strong("airpress_kPa_U20_adj"), " - altitude-adjusted pressure")
+              tags$li(tags$strong("airpress_kPa"), " - atmospheric pressure"),
+              tags$li(tags$strong("airtemp_C"), " - air temperature"),
+              tags$li(tags$strong("airpress_kPa_adj"), " - altitude-adjusted pressure")
             ),
             tags$p(
               style = "margin-top: 15px; font-size: 13px; color: #666;",
@@ -111,9 +111,9 @@ module_step2_convert_ui <- function(id) {
 "# Add barometric data to water level data
 wl_baro_dat <- add_nearest_baro(
   input_data = wl_dat,
-  input_logger_type = \"waterlevel_U20\",
+  metric = \"water level\",
   baro_data = baro_dat,
-  metadata = metadat
+  metadata_path = metadat_file
 )
 
 # View the result
@@ -209,7 +209,7 @@ ref_dat <- read.csv(\"manual_measurements.csv\")
 # Convert water level for a specific station
 station_wl <- convert_waterlevel_kPa_m(
   input_data = wl_baro_dat,
-  select_station = \"FROG_WE_01\",
+  select_station = \"ALBR_ST_30\",
   reference_data = ref_dat,
   var_reference_waterlevel_m = \"waterlevel_m_depth\",
   reference_type = \"depth\",
@@ -217,7 +217,7 @@ station_wl <- convert_waterlevel_kPa_m(
 )
 
 # Returns a list:
-# [[1]] dataframe with waterlevel_m_U20 column
+# [[1]] dataframe with waterlevel_m column
 # [[2]] reference measurements used
 # [[3]] plot showing fit to reference points
 
@@ -303,9 +303,9 @@ station_wl[[3]]"
 "# First, add barometric data to DO data
 do_baro_dat <- add_nearest_baro(
   input_data = do_dat,
-  input_logger_type = \"dissolvedoxygen_U26\",
+  metric = \"dissolvedoxygen\",
   baro_data = baro_dat,
-  metadata = metadat
+  metadata_path = metadat_file
 )
 
 # Convert DO from mg/L to percent saturation
@@ -313,7 +313,7 @@ do_converted <- convert_do_mgl_percsat(
   input_data = do_baro_dat
 )
 
-# New column added: do_percsat_U26
+# New column added: do_percsat
 head(do_converted)"
           )
         )
@@ -361,7 +361,7 @@ head(do_converted)"
 cond_corrected <- correct_drift(
   input_data = cond_dat,
   ref_data = ysi_measurements,
-  select_station = \"BUGS_WE_01\",
+  select_station = \"TUMT_WE_40\",
   var_ref_conduct_uScm = \"ysi_conduct_uScm\",
   var_ref_timestamp = \"ysi_timestamp\"
 )
@@ -371,7 +371,7 @@ cond_final <- conduct_temp_comp(
   input_data = cond_corrected[[1]]
 )
 
-# New column: spc_uScm_U24 (specific conductance)"
+# New column: spc_uScm (specific conductance)"
           )
         )
       ),

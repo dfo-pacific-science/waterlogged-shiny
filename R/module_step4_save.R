@@ -55,7 +55,7 @@ module_step4_save_ui <- function(id) {
             ),
             tags$p(
               style = "margin-top: 10px; font-size: 13px;",
-              "Example: FROG_WE_01_WL_20240101_20241009_v1.0.rds"
+              "Example: ALBR_ST_30_WL_20241010_20251022_v1.0.rds"
             )
           ),
 
@@ -98,7 +98,7 @@ module_step4_save_ui <- function(id) {
             ),
             tags$tr(
               tags$td(style = "border: 1px solid #ddd; padding: 10px;", tags$code("logger_type")),
-              tags$td(style = "border: 1px solid #ddd; padding: 10px;", "Type: waterlevel_U20, baro_U20, dissolvedoxygen_U26, conductivity_U24, watertemp_TidbiT, airtemp_TidbiT")
+              tags$td(style = "border: 1px solid #ddd; padding: 10px;", "Type: waterlevel, baro, dissolvedoxygen, conductivity, watertemp_TidbiT, airtemp_TidbiT")
             )
           )
         )
@@ -111,19 +111,19 @@ module_step4_save_ui <- function(id) {
 "# Save clean water level data
 write_clean_data(
   input_data = station_wl_dat_final,
-  logger_type = \"waterlevel_U20\"
+  logger_type = \"waterlevel\"
 )
 
 # Save clean dissolved oxygen data
 write_clean_data(
   input_data = station_do_dat_final,
-  logger_type = \"dissolvedoxygen_U26\"
+  logger_type = \"dissolvedoxygen\"
 )
 
 # Save clean conductivity data
 write_clean_data(
   input_data = cond_dat_final,
-  logger_type = \"conductivity_U24\"
+  logger_type = \"conductivity\"
 )"
           )
         )
@@ -143,25 +143,25 @@ write_clean_data(
         style = "display: flex; gap: 20px; flex-wrap: wrap; margin: 20px 0;",
         tags$div(
           style = "flex: 1; min-width: 250px; border: 1px solid #ddd; padding: 15px; border-radius: 5px;",
-          tags$h4("Water Level (waterlevel_U20)", style = "margin-top: 0; color: #00AFDB;"),
+          tags$h4("Water Level (waterlevel)", style = "margin-top: 0; color: #00AFDB;"),
           tags$ul(style = "padding-left: 20px; margin: 0;",
             tags$li("timestamp"),
             tags$li("site_station_code"),
-            tags$li("waterlevel_m_U20"),
-            tags$li("watertemp_C_U20"),
+            tags$li("waterlevel_m"),
+            tags$li("watertemp_C"),
             tags$li("wl_qaqc_code"),
             tags$li("wl_qaqc_note")
           )
         ),
         tags$div(
           style = "flex: 1; min-width: 250px; border: 1px solid #ddd; padding: 15px; border-radius: 5px;",
-          tags$h4("Dissolved Oxygen (dissolvedoxygen_U26)", style = "margin-top: 0; color: #00AFDB;"),
+          tags$h4("Dissolved Oxygen (dissolvedoxygen)", style = "margin-top: 0; color: #00AFDB;"),
           tags$ul(style = "padding-left: 20px; margin: 0;",
             tags$li("timestamp"),
             tags$li("site_station_code"),
-            tags$li("do_mgl_U26"),
-            tags$li("do_percsat_U26"),
-            tags$li("watertemp_C_U26"),
+            tags$li("do_mgl"),
+            tags$li("do_percsat"),
+            tags$li("watertemp_C"),
             tags$li("do_qaqc_code"),
             tags$li("do_qaqc_note")
           )
@@ -200,15 +200,15 @@ write_clean_data(
         style = "background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 15px 0;",
         tags$div(style = "margin: 8px 0;",
           tags$input(type = "checkbox", checked = "checked", style = "margin-right: 10px;"),
-          "SLUG_ST_01 - Water Level (8,500 records)"
+          "ALBR_ST_30 - Water Level (8,500 records)"
         ),
         tags$div(style = "margin: 8px 0;",
           tags$input(type = "checkbox", checked = "checked", style = "margin-right: 10px;"),
-          "SLUG_ST_02 - Water Level (8,700 records)"
+          "COOK_WE_40 - Water Level (8,700 records)"
         ),
         tags$div(style = "margin: 8px 0;",
           tags$input(type = "checkbox", style = "margin-right: 10px;"),
-          "SLUG_ST_01 - Dissolved Oxygen (8,200 records)"
+          "ALBR_ST_30 - Dissolved Oxygen (8,200 records)"
         ),
         tags$div(style = "margin: 8px 0;",
           tags$input(type = "checkbox", checked = "checked", style = "margin-right: 10px;"),

@@ -306,7 +306,7 @@ module_step3_wl_convert_server <- function(id) {
 
 
 # -----------------------------------------------------------------------------
-# 3c  Water Level QAQC  (waterlevel_qaqc)
+# 3c  Water Level QAQC  (qc_waterlevel)
 # -----------------------------------------------------------------------------
 module_step3_wl_qaqc_ui <- function(id) {
   ns <- NS(id)
@@ -347,7 +347,7 @@ module_step3_wl_qaqc_ui <- function(id) {
           tags$div(
             style = "background-color: #e8f5e9; padding: 20px; border-radius: 5px; margin-bottom: 20px;",
             tags$h4("Automatic QAQC rules", style = "margin-top: 0;"),
-            tags$p("waterlevel_qaqc() applies these checks:"),
+            tags$p("qc_waterlevel() applies these checks:"),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
               tags$li(tags$strong("NEGATIVE_WL"), " \u2014 Negative water level set to 0"),
@@ -389,7 +389,7 @@ module_step3_wl_qaqc_ui <- function(id) {
         # Right column - code examples
         column(
           width = 8,
-          tags$h4("waterlevel_qaqc()"),
+          tags$h4("qc_waterlevel()"),
           tags$p(
             "Performs preliminary QAQC, automatically identifying and flagging common
             issues. Returns the data frame with QAQC columns added.",
@@ -399,7 +399,7 @@ module_step3_wl_qaqc_ui <- function(id) {
             class = "clean-print",
             style = "background-color: #f5f5f5; padding: 15px; font-family: monospace; font-size: 12px;",
 "# Run automatic QAQC on the converted water level data
-wl_qc <- waterlevel_qaqc(
+wl_qc <- qc_waterlevel(
   input_data     = site_wl,
   select_station = \"ALBR_ST_30\"
 )

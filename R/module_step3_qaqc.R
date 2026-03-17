@@ -97,22 +97,22 @@ module_step3_qaqc_ui <- function(id) {
             style = "display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin: 15px 0;",
             tags$div(
               style = "background: #f8f9fa; padding: 15px; border-radius: 5px;",
-              tags$code("waterlevel_qaqc()"),
+              tags$code("qc_waterlevel()"),
               tags$p(style = "font-size: 13px; color: #666; margin: 5px 0 0 0;", "Water level loggers")
             ),
             tags$div(
               style = "background: #f8f9fa; padding: 15px; border-radius: 5px;",
-              tags$code("dissox_qaqc()"),
+              tags$code("qc_dissox()"),
               tags$p(style = "font-size: 13px; color: #666; margin: 5px 0 0 0;", "Dissolved oxygen loggers")
             ),
             tags$div(
               style = "background: #f8f9fa; padding: 15px; border-radius: 5px;",
-              tags$code("conductivity_qaqc()"),
+              tags$code("qc_conductivity()"),
               tags$p(style = "font-size: 13px; color: #666; margin: 5px 0 0 0;", "Conductivity loggers")
             ),
             tags$div(
               style = "background: #f8f9fa; padding: 15px; border-radius: 5px;",
-              tags$code("barometric_qaqc()"),
+              tags$code("qc_barometric()"),
               tags$p(style = "font-size: 13px; color: #666; margin: 5px 0 0 0;", "Barometric loggers")
             )
           )
@@ -132,7 +132,7 @@ module_step3_qaqc_ui <- function(id) {
           tags$div(
             style = "background-color: #e8f5e9; padding: 20px; border-radius: 5px; margin-bottom: 20px;",
             tags$h4("Automatic QAQC Rules", style = "margin-top: 0;"),
-            tags$p("The waterlevel_qaqc() function applies these rules:"),
+            tags$p("The qc_waterlevel() function applies these rules:"),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
               tags$li(tags$strong("NEGATIVE_WL"), " - Negative water level set to 0"),
@@ -146,7 +146,7 @@ module_step3_qaqc_ui <- function(id) {
         ),
         column(
           width = 8,
-          tags$h4("waterlevel_qaqc() - Automatic flagging"),
+          tags$h4("qc_waterlevel() - Automatic flagging"),
           tags$p(
             "This function performs preliminary QAQC, automatically identifying and flagging
             common issues based on the rules shown.",
@@ -158,7 +158,7 @@ module_step3_qaqc_ui <- function(id) {
             class = "clean-print",
             style = "background-color: #f5f5f5; padding: 15px; font-family: monospace; font-size: 12px;",
 "# Run automatic QAQC on water level data
-station_wl_dat2 <- waterlevel_qaqc(
+station_wl_dat2 <- qc_waterlevel(
   input_data = station_wl_dat,
   select_station = \"ALBR_ST_30\",
   plot_only = FALSE
@@ -217,7 +217,7 @@ station_wl_dat2[[2]]"
               a spike because the offset continues."
             ),
             tags$p(
-              "Use ", tags$code("adjust_waterlevel_cablebreak()"), " to correct for sudden
+              "Use ", tags$code("adjust_WL_offset()"), " to correct for sudden
               shifts in the reference level."
             )
           ),
@@ -253,7 +253,7 @@ station_wl_dat3 <- adjust_waterlevel_spike(
 )
 
 # View the result
-waterlevel_qaqc(input_data = station_wl_dat3,
+qc_waterlevel(input_data = station_wl_dat3,
                 select_station = \"ALBR_ST_30\",
                 plot_only = TRUE)"
           ),
@@ -263,11 +263,12 @@ waterlevel_qaqc(input_data = station_wl_dat3,
             class = "clean-print",
             style = "background-color: #f5f5f5; padding: 15px; font-family: monospace; font-size: 12px;",
 "# Correct for a sudden shift in water level
-station_wl_dat4 <- adjust_waterlevel_cablebreak(
+station_wl_dat4 <- adjust_WL_offset(
   input_data = station_wl_dat3,
+  select_station = \"ALBR_ST_30\",
   timestamp_start = \"2024-10-01 18:00:00\",
   timestamp_end = \"2024-10-01 19:00:00\",
-  select_station = \"ALBR_ST_30\"
+  manual_note = \"Cable break - logger shifted position\"
 )"
           )
         )
@@ -286,7 +287,7 @@ station_wl_dat4 <- adjust_waterlevel_cablebreak(
           tags$div(
             style = "background-color: #fce4ec; padding: 20px; border-radius: 5px; margin-bottom: 20px;",
             tags$h4("Automatic QAQC Rules", style = "margin-top: 0;"),
-            tags$p("The dissox_qaqc() function applies these rules:"),
+            tags$p("The qc_dissox() function applies these rules:"),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
               tags$li(tags$strong("DO_ERROR"), " - Error code (-888.88) set to NA"),
@@ -318,7 +319,7 @@ station_wl_dat4 <- adjust_waterlevel_cablebreak(
         ),
         column(
           width = 8,
-          tags$h4("dissox_qaqc() Function"),
+          tags$h4("qc_dissox() Function"),
           tags$p(
             "Similar to water level QAQC, this function performs preliminary quality control
             on dissolved oxygen data and produces interactive plots for visual assessment.",
@@ -330,13 +331,13 @@ station_wl_dat4 <- adjust_waterlevel_cablebreak(
             class = "clean-print",
             style = "background-color: #f5f5f5; padding: 15px; font-family: monospace; font-size: 12px;",
 "# Run automatic QAQC on dissolved oxygen data
-station_do_dat2 <- dissox_qaqc(
+station_do_dat2 <- qc_dissox(
   input_data = station_do_dat,
   select_station = \"ALBR_ST_30\"
 )
 
 # Include water level data for better detection
-station_do_dat2 <- dissox_qaqc(
+station_do_dat2 <- qc_dissox(
   input_data = station_do_dat,
   select_station = \"ALBR_ST_30\",
   var_waterlevel_m = \"waterlevel_m_adj\",

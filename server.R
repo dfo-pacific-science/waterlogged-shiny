@@ -8,39 +8,34 @@ server <- function(input, output, session) {
   # Prepare reactive values for session and use in modules
   module_setup_reactives(session)
 
-  # Load modules
-
+  # Welcome
   module_welcome_server("welcome")
-  module_upload_data_server("upload_data")
 
-  # Step 1 subtab modules
-  module_step1_baro_server("step1_baro")
-  module_step1_wl_server("step1_wl")
-  module_step1_do_server("step1_do")
-  module_step1_cond_server("step1_cond")
-  module_step1_overview_server("step1_overview")
+  # Temperature
+  module_temp_upload_server("temp_upload")
+  module_temp_snap_server("temp_snap")
+  module_temp_baro_server("temp_baro")
+  module_temp_qc_air_server("temp_qc_air")
+  module_temp_qc_water_server("temp_qc_water")
 
-  # Step 2: Barometric QAQC
-  module_step2_baro_qaqc_server("step2_baro_qaqc")
+  # Barometric Pressure
+  module_baro_upload_server("baro_upload")
+  module_baro_qc_server("baro_qc")
 
-  # Step 3: Water Level subtab modules
-  module_step3_wl_baro_server("step3_wl_baro")
-  module_step3_wl_convert_server("step3_wl_convert")
-  module_step3_wl_qaqc_server("step3_wl_qaqc")
+  # Water Level (Pressure)
+  module_wl_upload_server("wl_upload")
+  module_wl_convert_server("wl_convert")
+  module_wl_qaqc_server("wl_qaqc")
+  module_wl_adjust_server("wl_adjust")
 
-  # Step 4: Dissolved Oxygen subtab modules
-  module_step4_do_baro_server("step4_do_baro")
-  module_step4_do_convert_server("step4_do_convert")
-  module_step4_do_qaqc_server("step4_do_qaqc")
-  module_step4_do_drift_server("step4_do_drift")
+  # Dissolved Oxygen
+  module_do_upload_server("do_upload")
+  module_do_baro_server("do_baro")
+  module_do_convert_server("do_convert")
+  module_do_qc_server("do_qc")
 
-  # Step 5: Conductivity subtab modules
-  module_step5_cond_qaqc_server("step5_cond_qaqc")
-  module_step5_cond_drift_server("step5_cond_drift")
-  module_step5_cond_tempcomp_server("step5_cond_tempcomp")
-
-  # Remaining step modules
-  module_step4_save_server("step4_save")
-  module_step5_summarize_server("step5_summarize")
+  # Conductivity
+  module_cond_upload_server("cond_upload")
+  module_cond_convert_server("cond_convert")
 
 }

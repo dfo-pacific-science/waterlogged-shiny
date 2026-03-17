@@ -281,7 +281,7 @@ module_step4_do_convert_server <- function(id) {
 
 
 # -----------------------------------------------------------------------------
-# 4c  DO QAQC  (dissox_qaqc)
+# 4c  DO QAQC  (qc_dissox)
 # -----------------------------------------------------------------------------
 module_step4_do_qaqc_ui <- function(id) {
   ns <- NS(id)
@@ -319,7 +319,7 @@ module_step4_do_qaqc_ui <- function(id) {
           tags$div(
             style = "background-color: #fce4ec; padding: 20px; border-radius: 5px; margin-bottom: 20px;",
             tags$h4("Automatic QAQC rules", style = "margin-top: 0;"),
-            tags$p("dissox_qaqc() applies these checks:"),
+            tags$p("qc_dissox() applies these checks:"),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
               tags$li(tags$strong("DO_ERROR"), " \u2014 error code (-888.88) set to NA"),
@@ -364,7 +364,7 @@ module_step4_do_qaqc_ui <- function(id) {
 
         column(
           width = 8,
-          tags$h4("dissox_qaqc()"),
+          tags$h4("qc_dissox()"),
           tags$p(
             "Performs preliminary quality control on dissolved oxygen data and produces
             interactive plots for visual assessment.",
@@ -374,7 +374,7 @@ module_step4_do_qaqc_ui <- function(id) {
             class = "clean-print",
             style = "background-color: #f5f5f5; padding: 15px; font-family: monospace; font-size: 12px;",
 "# Run automatic QAQC on dissolved oxygen data
-do_qc <- dissox_qaqc(
+do_qc <- qc_dissox(
   input_data     = do_data,
   select_station = \"COOK_WE_40\"
 )
@@ -608,7 +608,7 @@ print(drift_log)"
           style = "margin: 0; font-size: 12px;",
 "Step 4a:  add_nearest_baro()       \u2192  DO + baro attached
 Step 4b:  convert_do_mgl_percsat() \u2192  adds do_percsat column
-Step 4c:  dissox_qaqc()            \u2192  auto QAQC + manual adjustments
+Step 4c:  qc_dissox()            \u2192  auto QAQC + manual adjustments
 Step 4d:  wq_drift_correction()    \u2192  drift corrected
 
 Key columns for analysis:

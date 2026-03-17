@@ -1,74 +1,61 @@
-#' Sidebar navigation tab for Waterlogged app
+#' Sidebar navigation for Waterlogged app
+#'
+#' Organized by logger type / metric workflow rather than step numbers.
 page_sidebar_tab_ui <- function(id) {
   ns <- NS(id)
 
-  sidebar <- dashboardSidebar(
+  dashboardSidebar(
+    width = 280,
     sidebarMenu(
-      # Setting id makes input$tabs give the tabName of currently-selected tab
       id = "tabs",
-      sidebarMenu(
-        menuItem("Welcome", tabName = "t_welcome", icon = icon("home")),
-        menuItem(
-          "Upload Data",
-          tabName = "t_upload_data",
-          icon = icon("upload")
-        ),
 
-        # Expandable Step 1 menu with subtabs
-        menuItem(
-          "Step 1: Raw Series",
-          icon = icon("chart-line"),
-          menuSubItem("Barometric", tabName = "t_step1_baro"),
-          menuSubItem("Water Level", tabName = "t_step1_wl"),
-          menuSubItem("Dissolved Oxygen", tabName = "t_step1_do"),
-          menuSubItem("Conductivity", tabName = "t_step1_cond"),
-          menuSubItem("Overview", tabName = "t_step1_overview")
-        ),
+      menuItem("Welcome", tabName = "t_welcome", icon = icon("home")),
 
-        menuItem(
-          "Step 2: Baro QAQC",
-          tabName = "t_step2_baro_qaqc",
-          icon = icon("filter")
-        ),
+      # ---- Temperature (TidbiT / air / water temp channels) ----
+      menuItem(
+        "Temperature",
+        icon = icon("thermometer-half"),
+        menuSubItem("Import Data",          tabName = "t_temp_upload"),
+        menuSubItem("Snap Timestamps",      tabName = "t_temp_snap"),
+        menuSubItem("Add Nearest Baro",     tabName = "t_temp_baro"),
+        menuSubItem("QC Air Temperature",   tabName = "t_temp_qc_air"),
+        menuSubItem("QC Water Temperature", tabName = "t_temp_qc_water")
+      ),
 
-        # Expandable Step 3 menu with subtabs
-        menuItem(
-          "Step 3: Water Level",
-          icon = icon("water"),
-          menuSubItem("Join Baro Data", tabName = "t_step3_wl_baro"),
-          menuSubItem("Convert to Metres", tabName = "t_step3_wl_convert"),
-          menuSubItem("Water Level QAQC", tabName = "t_step3_wl_qaqc")
-        ),
+      # ---- Barometric Pressure ----
+      menuItem(
+        "Barometric Pressure",
+        icon = icon("cloud"),
+        menuSubItem("Import Data",    tabName = "t_baro_upload"),
+        menuSubItem("QC Barometric",  tabName = "t_baro_qc")
+      ),
 
-        # Expandable Step 4 menu with subtabs
-        menuItem(
-          "Step 4: Dissolved Oxygen",
-          icon = icon("lungs"),
-          menuSubItem("Join Baro Data", tabName = "t_step4_do_baro"),
-          menuSubItem("Convert to %Sat", tabName = "t_step4_do_convert"),
-          menuSubItem("DO QAQC", tabName = "t_step4_do_qaqc"),
-          menuSubItem("Drift Correction", tabName = "t_step4_do_drift")
-        ),
+      # ---- Water Level (Pressure) ----
+      menuItem(
+        "Water Level (Pressure)",
+        icon = icon("water"),
+        menuSubItem("Import Data",          tabName = "t_wl_upload"),
+        menuSubItem("Convert to Meters", tabName = "t_wl_convert"),
+        menuSubItem("QC Water Level",       tabName = "t_wl_qaqc"),
+        menuSubItem("Manual Adjustments",   tabName = "t_wl_adjust")
+      ),
 
-        # Expandable Step 5 menu with subtabs
-        menuItem(
-          "Step 5: Conductivity",
-          icon = icon("bolt"),
-          menuSubItem("Conductivity QAQC", tabName = "t_step5_cond_qaqc"),
-          menuSubItem("Drift Correction", tabName = "t_step5_cond_drift"),
-          menuSubItem("Temp Compensation", tabName = "t_step5_cond_tempcomp")
-        ),
+      # ---- Dissolved Oxygen ----
+      menuItem(
+        "Dissolved Oxygen",
+        icon = icon("lungs"),
+        menuSubItem("Import Data",          tabName = "t_do_upload"),
+        menuSubItem("Add Nearest Baro",     tabName = "t_do_baro"),
+        menuSubItem("Convert Data Metrics", tabName = "t_do_convert"),
+        menuSubItem("QC & Export",          tabName = "t_do_qc")
+      ),
 
-        menuItem(
-          "Step 6: Save Data",
-          tabName = "t_step6_save",
-          icon = icon("save")
-        ),
-        menuItem(
-          "Step 7: Summarize",
-          tabName = "t_step7_summarize",
-          icon = icon("chart-bar")
-        )
+      # ---- Conductivity ----
+      menuItem(
+        "Conductivity",
+        icon = icon("bolt"),
+        menuSubItem("Import Data",  tabName = "t_cond_upload"),
+        menuSubItem("Convert & QC", tabName = "t_cond_convert")
       )
     )
   )

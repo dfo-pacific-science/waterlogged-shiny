@@ -102,7 +102,7 @@ module_step5_summarize_ui <- function(id) {
               tags$td(style = "border: 1px solid #ddd; padding: 8px;", "Path to folder containing clean data files")
             ),
             tags$tr(
-              tags$td(style = "border: 1px solid #ddd; padding: 8px;", tags$code("logger_type")),
+              tags$td(style = "border: 1px solid #ddd; padding: 8px;", tags$code("metric")),
               tags$td(style = "border: 1px solid #ddd; padding: 8px;", "dissolvedoxygen, waterlevel, or baro")
             ),
             tags$tr(
@@ -128,7 +128,7 @@ module_step5_summarize_ui <- function(id) {
 "# Get daily summary of water level for all stations
 wl_daily <- get_logger_data(
   path_to_data = \"data/waterlevel/2024/clean\",
-  logger_type = \"waterlevel\",
+  metric = \"waterlevel\",
   data_processing = \"clean\",
   select_station = \"all\",
   temporal_scale = \"daily\"
@@ -137,7 +137,7 @@ wl_daily <- get_logger_data(
 # Get monthly summary of dissolved oxygen for one station
 do_monthly <- get_logger_data(
   path_to_data = \"data/dissolved_oxygen/2024/clean\",
-  logger_type = \"dissolvedoxygen\",
+  metric = \"dissolvedoxygen\",
   data_processing = \"clean\",
   select_station = \"COOK_WE_40\",
   temporal_scale = \"monthly\"

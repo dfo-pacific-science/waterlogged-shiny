@@ -358,17 +358,17 @@ head(do_converted)"
             class = "clean-print",
             style = "background-color: #f5f5f5; padding: 15px; font-family: monospace; font-size: 12px;",
 "# Drift correction using field YSI measurements
-cond_corrected <- correct_drift(
+cond_corrected <- wq_drift_correction(
   input_data = cond_dat,
   ref_data = ysi_measurements,
   select_station = \"TUMT_WE_40\",
-  var_ref_conduct_uScm = \"ysi_conduct_uScm\",
-  var_ref_timestamp = \"ysi_timestamp\"
+  metric = \"conductivity\",
+  method = \"ratio\"
 )
 
 # Temperature compensation to get specific conductance
-cond_final <- conduct_temp_comp(
-  input_data = cond_corrected[[1]]
+cond_final <- conductivity_temp_compensation(
+  input_data = cond_corrected
 )
 
 # New column: spc_uScm (specific conductance)"

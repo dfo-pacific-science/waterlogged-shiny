@@ -789,7 +789,7 @@ module_upload_data_server <- function(id) {
       tryCatch({
         result <- waterlogged::bind_hobo_files(baro_dir, metadata_path = meta_path)
         bound_df <- result[[1]]
-        bound_df$timestamp <- as.POSIXct(bound_df$timestamp, tz = "UTC")
+        bound_df$timestamp <- .parse_timestamp(bound_df$timestamp)
         station_list <- split(bound_df, bound_df$site_station_code)
         session$userData$rv_raw_data$baro_data <- as.list(station_list)
       }, error = function(e) {
@@ -816,7 +816,7 @@ module_upload_data_server <- function(id) {
       tryCatch({
         result <- waterlogged::bind_hobo_files(wl_dir, metadata_path = meta_path)
         bound_df <- result[[1]]
-        bound_df$timestamp <- as.POSIXct(bound_df$timestamp, tz = "UTC")
+        bound_df$timestamp <- .parse_timestamp(bound_df$timestamp)
         station_list <- split(bound_df, bound_df$site_station_code)
         session$userData$rv_raw_data$waterlevel_data <- as.list(station_list)
       }, error = function(e) {
@@ -843,7 +843,7 @@ module_upload_data_server <- function(id) {
       tryCatch({
         result <- waterlogged::bind_hobo_files(do_dir, metadata_path = meta_path)
         bound_df <- result[[1]]
-        bound_df$timestamp <- as.POSIXct(bound_df$timestamp, tz = "UTC")
+        bound_df$timestamp <- .parse_timestamp(bound_df$timestamp)
         station_list <- split(bound_df, bound_df$site_station_code)
         session$userData$rv_raw_data$do_data <- as.list(station_list)
       }, error = function(e) {
@@ -870,7 +870,7 @@ module_upload_data_server <- function(id) {
       tryCatch({
         result <- waterlogged::bind_hobo_files(cond_dir, metadata_path = meta_path)
         bound_df <- result[[1]]
-        bound_df$timestamp <- as.POSIXct(bound_df$timestamp, tz = "UTC")
+        bound_df$timestamp <- .parse_timestamp(bound_df$timestamp)
         station_list <- split(bound_df, bound_df$site_station_code)
         session$userData$rv_raw_data$conductivity_data <- as.list(station_list)
       }, error = function(e) {

@@ -3,7 +3,7 @@
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# 5a  Conductivity QAQC  (conductivity_qaqc)
+# 5a  Conductivity QAQC  (qc_conductivity)
 # -----------------------------------------------------------------------------
 module_step5_cond_qaqc_ui <- function(id) {
   ns <- NS(id)
@@ -39,7 +39,7 @@ module_step5_cond_qaqc_ui <- function(id) {
           tags$div(
             style = "background-color: #fff8e1; padding: 20px; border-radius: 5px; margin-bottom: 20px;",
             tags$h4("Automatic QAQC rules", style = "margin-top: 0;"),
-            tags$p("conductivity_qaqc() applies these checks:"),
+            tags$p("qc_conductivity() applies these checks:"),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
               tags$li(tags$strong("Spikes"), " \u2014 sudden large jumps in conductivity between
@@ -81,7 +81,7 @@ module_step5_cond_qaqc_ui <- function(id) {
 
         column(
           width = 8,
-          tags$h4("conductivity_qaqc()"),
+          tags$h4("qc_conductivity()"),
           tags$p(
             "Runs automatic quality checks on conductivity data and flags suspicious
             values. Returns the data frame with QAQC columns added.",
@@ -91,7 +91,7 @@ module_step5_cond_qaqc_ui <- function(id) {
             class = "clean-print",
             style = "background-color: #f5f5f5; padding: 15px; font-family: monospace; font-size: 12px;",
 "# Run automatic QAQC on conductivity data
-cond_qc <- conductivity_qaqc(
+cond_qc <- qc_conductivity(
   input_data                 = cond_data,
   select_station             = \"TUMT_WE_40\",
   temp_low_limit_C           = -2,
@@ -468,7 +468,7 @@ print(sample_rows)"
             style = "background-color: #f8f9fa; padding: 20px; border-radius: 5px;",
             tags$pre(
               style = "margin: 0; font-size: 12px;",
-"Step 5a:  conductivity_qaqc()              \u2192  auto QAQC + manual adjustments
+"Step 5a:  qc_conductivity()              \u2192  auto QAQC + manual adjustments
 Step 5b:  wq_drift_correction()            \u2192  drift corrected
 Step 5c:  conductivity_temp_compensation() \u2192  specific conductance at 25\u00B0C
 

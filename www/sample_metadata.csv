@@ -1,0 +1,4 @@
+site_station_code,timestamp_deploy,timestamp_remove,model,sn,metric,status,latitude,longitude
+ALBR_ST_30,10/18/2023 14:00,6/3/2025 8:00,HOBO_U20,20810501,barometric,logging,52.589762,-119.10045
+DARL_ST_30,10/18/2023 14:00,6/3/2025 8:00,HOBO_U20,20810312,barometric,logging,51.320648,-120.180203
+DARL_ST_30,6/3/2025 10:00,10/24/2025 10:00,HOBO_U20,20810312,barometric,logging,51.320648,-120.180203

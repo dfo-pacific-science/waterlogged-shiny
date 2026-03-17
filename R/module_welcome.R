@@ -5,11 +5,10 @@ module_welcome_ui <- function(id) {
   tagList(
     fluidRow(
       column(
-        width = 10,
-        offset = 1,
+        width = 12,
 
         tags$div(
-          style = "max-width: 900px; margin: 0 auto; padding: 20px 0;",
+          style = "margin: 0 auto; padding: 20px 15px;",
 
           # Hero section
           tags$div(
@@ -38,44 +37,53 @@ module_welcome_ui <- function(id) {
             )
           ),
 
-          # Workflow Overview card
+          # Workflow Overview card - full width with no padding around flowchart
           tags$div(
-            style = "background-color: #fff; padding: 25px; border-radius: 8px; margin-bottom: 25px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);",
+            style = "background-color: #fff; border-radius: 8px; margin-bottom: 25px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden;",
 
-            tags$h2("Workflow Overview", style = "margin-top: 0; color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;"),
-            tags$p(
-              "This application guides you through a step-by-step workflow for processing
-              your water logger data:",
-              style = "color: #666; margin-bottom: 20px;"
+            tags$div(
+              style = "padding: 25px 25px 10px 25px;",
+              tags$h2("Workflow Overview", style = "margin-top: 0; color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;"),
+              tags$p(
+                "This application guides you through a step-by-step workflow for processing
+                your water logger data:",
+                style = "color: #666; margin-bottom: 15px;"
+              )
             ),
 
-            # Workflow steps
-            tags$div(
-              style = "display: flex; flex-direction: column; gap: 12px;",
+            # Flowchart image - no horizontal padding, spans full card width
+            tags$img(
+              src = "img/flowchart.png",
+              style = "width: 100%; display: block; height: auto;"
+            ),
 
-              tags$div(style = "display: flex; align-items: flex-start; padding: 12px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #95a5a6;",
-                tags$span(style = "font-weight: bold; color: #95a5a6; min-width: 70px;", "Prep"),
-                tags$span(style = "color: #555;", "Download data from HOBO loggers and organize raw CSV files and metadata")
-              ),
-              tags$div(style = "display: flex; align-items: flex-start; padding: 12px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #3498db;",
-                tags$span(style = "font-weight: bold; color: #3498db; min-width: 70px;", "Step 1"),
-                tags$span(style = "color: #555;", "Raw Series - inspect time series for each logger type to identify data quality issues")
-              ),
-              tags$div(style = "display: flex; align-items: flex-start; padding: 12px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #9b59b6;",
-                tags$span(style = "font-weight: bold; color: #9b59b6; min-width: 70px;", "Step 2"),
-                tags$span(style = "color: #555;", "Convert raw measurements - apply barometric compensation to get water level (m) and DO (% sat)")
-              ),
-              tags$div(style = "display: flex; align-items: flex-start; padding: 12px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #e67e22;",
-                tags$span(style = "font-weight: bold; color: #e67e22; min-width: 70px;", "Step 3"),
-                tags$span(style = "color: #555;", "QAQC - flag ice, dry periods, disturbances, and correct spikes")
-              ),
-              tags$div(style = "display: flex; align-items: flex-start; padding: 12px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #27ae60;",
-                tags$span(style = "font-weight: bold; color: #27ae60; min-width: 70px;", "Step 4"),
-                tags$span(style = "color: #555;", "Save clean data - export processed data with QAQC flags for each station")
-              ),
-              tags$div(style = "display: flex; align-items: flex-start; padding: 12px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #e74c3c;",
-                tags$span(style = "font-weight: bold; color: #e74c3c; min-width: 70px;", "Step 5"),
-                tags$span(style = "color: #555;", "Summarize - generate daily, monthly, and annual summaries and visualizations")
+            # Repository links - inside padded area below
+            tags$div(
+              style = "padding: 20px 25px 25px 25px;",
+              tags$div(
+                style = "display: flex; gap: 20px; flex-wrap: wrap;",
+                tags$div(
+                  style = "flex: 1; min-width: 250px; background: #f8f9fa; padding: 12px 16px; border-radius: 6px; border-left: 4px solid #3498db;",
+                  icon("box-open", style = "color: #3498db; margin-right: 6px;"),
+                  tags$span(style = "color: #555;", "Follow along in the R package: "),
+                  tags$a(
+                    href = "https://github.com/dfo-pacific-science/waterlogged",
+                    target = "_blank",
+                    style = "color: #3498db; font-weight: bold;",
+                    "github.com/dfo-pacific-science/waterlogged"
+                  )
+                ),
+                tags$div(
+                  style = "flex: 1; min-width: 250px; background: #f8f9fa; padding: 12px 16px; border-radius: 6px; border-left: 4px solid #27ae60;",
+                  icon("desktop", style = "color: #27ae60; margin-right: 6px;"),
+                  tags$span(style = "color: #555;", "Shiny app repository: "),
+                  tags$a(
+                    href = "https://github.com/dfo-pacific-science/waterlogged-shiny",
+                    target = "_blank",
+                    style = "color: #27ae60; font-weight: bold;",
+                    "github.com/dfo-pacific-science/waterlogged-shiny"
+                  )
+                )
               )
             )
           ),
@@ -164,7 +172,7 @@ module_welcome_ui <- function(id) {
               tags$div(style = "background: #f8f9fa; padding: 12px; border-radius: 6px;",
                 tags$span(style = "color: #888; font-size: 12px;", "QAQC"),
                 tags$br(),
-                tags$code(style = "color: #e74c3c;", "waterlevel_qaqc(), dissox_qaqc()")
+                tags$code(style = "color: #e74c3c;", "qc_waterlevel(), qc_dissox()")
               ),
               tags$div(style = "background: #f8f9fa; padding: 12px; border-radius: 6px;",
                 tags$span(style = "color: #888; font-size: 12px;", "Data Export"),
@@ -188,7 +196,7 @@ module_welcome_ui <- function(id) {
             fluidRow(
               column(
                 width = 4,
-                tags$h4("Authors", style = "color: #3498db; font-size: 14px; margin-bottom: 10px;"),
+                tags$h4("Lead Authors/Developers", style = "color: #3498db; font-size: 14px; margin-bottom: 10px;"),
                 tags$div(style = "font-size: 13px; line-height: 1.8;",
                   tags$div("Daniella Lo"),
                   tags$div("Amanda Martens"),
@@ -197,7 +205,7 @@ module_welcome_ui <- function(id) {
               ),
               column(
                 width = 4,
-                tags$h4("Development", style = "color: #3498db; font-size: 14px; margin-bottom: 10px;"),
+                tags$h4("R Package Contributions", style = "color: #3498db; font-size: 14px; margin-bottom: 10px;"),
                 tags$div(style = "font-size: 13px; line-height: 1.8;",
                   tags$div("Paula Soto")
                 )
@@ -206,8 +214,8 @@ module_welcome_ui <- function(id) {
                 width = 4,
                 tags$h4("Technical Support", style = "color: #3498db; font-size: 14px; margin-bottom: 10px;"),
                 tags$div(style = "font-size: 13px; line-height: 1.8;",
-                  tags$div("Frank Poulsen"),
-                  tags$div("Matthew Bayly")
+                  tags$div("Matthew Bayly: MJBA (App Development)"),
+                  tags$div("Frank Poulsen: Ashlu (Techical Support)")
                 )
               )
             ),

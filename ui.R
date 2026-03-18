@@ -132,17 +132,16 @@ ui <- dashboardPage(
       tabItem("t_wl_upload",  module_wl_upload_ui("wl_upload")),
       tabItem("t_wl_convert", module_wl_convert_ui("wl_convert")),
       tabItem("t_wl_qaqc",   module_wl_qaqc_ui("wl_qaqc")),
-      tabItem("t_wl_adjust",  module_wl_adjust_ui("wl_adjust")),
 
       # ---- Dissolved Oxygen ----
       tabItem("t_do_upload",  module_do_upload_ui("do_upload")),
-      tabItem("t_do_baro",   module_do_baro_ui("do_baro")),
       tabItem("t_do_convert", module_do_convert_ui("do_convert")),
       tabItem("t_do_qc",     module_do_qc_ui("do_qc")),
 
       # ---- Conductivity ----
       tabItem("t_cond_upload",  module_cond_upload_ui("cond_upload")),
-      tabItem("t_cond_convert", module_cond_convert_ui("cond_convert"))
+      tabItem("t_cond_convert", module_cond_convert_ui("cond_convert")),
+      tabItem("t_cond_qc",     module_cond_qc_ui("cond_qc"))
     )
   )
 )

@@ -41,14 +41,16 @@ module_setup_reactives <- function(session = NA) {
     waterlevel_with_baro = NULL,
     do_bound = NULL,
     do_with_baro = NULL,
-    conductivity_bound = NULL
+    conductivity_bound = NULL,
+    conductivity_with_baro = NULL
   )
   session$userData$rv_bound_data <- rv_bound_data
 
   # Converted data storage (Step 2 outputs)
   rv_converted_data <- reactiveValues(
     waterlevel_converted = NULL,
-    do_converted = NULL
+    do_converted = NULL,
+    conductivity_converted = NULL
   )
   session$userData$rv_converted_data <- rv_converted_data
 

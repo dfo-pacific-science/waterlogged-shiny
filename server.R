@@ -26,16 +26,15 @@ server <- function(input, output, session) {
   module_wl_upload_server("wl_upload")
   module_wl_convert_server("wl_convert")
   module_wl_qaqc_server("wl_qaqc")
-  module_wl_adjust_server("wl_adjust")
 
   # Dissolved Oxygen
   module_do_upload_server("do_upload")
-  module_do_baro_server("do_baro")
   module_do_convert_server("do_convert")
   module_do_qc_server("do_qc")
 
   # Conductivity
   module_cond_upload_server("cond_upload")
   module_cond_convert_server("cond_convert")
+  module_cond_qc_server("cond_qc")
 
 }

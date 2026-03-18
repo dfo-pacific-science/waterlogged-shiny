@@ -248,7 +248,8 @@ module_baro_upload_ui <- function(id) {
               icon = icon("file-import"),
               width = "100%",
               style = "color: #ffffff;"
-            )
+            ),
+            uiOutput(ns("bind_summary"))
           )
         )
       ),
@@ -605,6 +606,16 @@ module_baro_upload_server <- function(id) {
       }
     })
 
+    # ------ Bind result tracking ------
+    rv_bind_result <- reactiveValues(
+      success = FALSE,
+      n_stations = 0,
+      n_records = 0,
+      matched_stations = character(0),
+      unmatched_sns = character(0),
+      metadata_stations = character(0)
+    )
+
     # ------ Bind & Import button ------
     observeEvent(input$bind_btn, {
       meta_file <- input$meta_file
@@ -644,15 +655,31 @@ module_baro_upload_server <- function(id) {
             rv_raw_data$metadata <- metadata
           }
 
+          # Track bind results for summary display
+          bound_stations <- unique(bound_data$site_station_code)
+          meta_baro_stations <- unique(
+            metadata$site_station_code[metadata$metric %in% c("barometric")]
+          )
+          matched <- intersect(bound_stations, meta_baro_stations)
+          unmatched_in_data <- setdiff(bound_stations, meta_baro_stations)
+
+          rv_bind_result$success <- TRUE
+          rv_bind_result$n_stations <- length(bound_stations)
+          rv_bind_result$n_records <- nrow(bound_data)
+          rv_bind_result$matched_stations <- matched
+          rv_bind_result$unmatched_sns <- unmatched_in_data
+          rv_bind_result$metadata_stations <- meta_baro_stations
+
           removeNotification("bind_progress")
           n_rows <- format(nrow(bound_data), big.mark = ",")
-          n_stns <- length(unique(bound_data$site_station_code))
+          n_stns <- length(bound_stations)
           showNotification(
             sprintf("Import complete: %s records from %d station(s)", n_rows, n_stns),
             type = "message", duration = 5
           )
         }, error = function(e) {
           removeNotification("bind_progress")
+          rv_bind_result$success <- FALSE
           showNotification(paste("Import error:", conditionMessage(e)),
             type = "error", duration = 8)
         })
@@ -668,6 +695,68 @@ module_baro_upload_server <- function(id) {
           )
         }
       }
+    })
+
+    # ------ Bind summary display ------
+    output$bind_summary <- renderUI({
+      if (!rv_bind_result$success) return(NULL)
+
+      n_stns <- rv_bind_result$n_stations
+      n_recs <- format(rv_bind_result$n_records, big.mark = ",")
+      matched <- rv_bind_result$matched_stations
+      unmatched <- rv_bind_result$unmatched_sns
+      meta_stns <- rv_bind_result$metadata_stations
+
+      # Stations in metadata but not in bound data
+      missing_from_data <- setdiff(meta_stns, matched)
+
+      items <- tagList(
+        tags$li(sprintf("Stations loaded: %d", n_stns)),
+        tags$li(sprintf("Total records: %s", n_recs))
+      )
+
+      if (length(matched) > 0) {
+        items <- tagList(items,
+          tags$li(
+            style = "color: #155724;",
+            sprintf("Matched to metadata (%d): ", length(matched)),
+            paste(matched, collapse = ", ")
+          )
+        )
+      }
+
+      if (length(unmatched) > 0) {
+        items <- tagList(items,
+          tags$li(
+            style = "color: #856404;",
+            icon("exclamation-triangle"),
+            sprintf(" Not found in metadata (%d): ", length(unmatched)),
+            paste(unmatched, collapse = ", ")
+          )
+        )
+      }
+
+      if (length(missing_from_data) > 0) {
+        items <- tagList(items,
+          tags$li(
+            style = "color: #856404;",
+            icon("info-circle"),
+            sprintf(" In metadata but no data loaded (%d): ", length(missing_from_data)),
+            paste(missing_from_data, collapse = ", ")
+          )
+        )
+      }
+
+      border_color <- if (length(unmatched) > 0) "#ffc107" else "#28a745"
+
+      tags$div(
+        style = sprintf("background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 15px; border-left: 4px solid %s;", border_color),
+        tags$h5("Import Summary", style = "margin-top: 0; margin-bottom: 8px;"),
+        tags$ul(
+          style = "padding-left: 20px; font-size: 13px; margin-bottom: 0;",
+          items
+        )
+      )
     })
 
     # ------ Snap timestamps button ------
@@ -1559,6 +1648,37 @@ module_baro_qc_server <- function(id) {
     selected_ranges <- reactiveVal(list())
     range_history   <- reactiveVal(list())
 
+    # Helper: parse plotly timestamp strings robustly
+    # Plotly sends timestamps in various formats (with/without fractional seconds,
+    # date-only at edges, or epoch ms). Try multiple parsers to handle all cases.
+    parse_plotly_ts <- function(ts_char) {
+      ts <- lubridate::ymd_hms(ts_char, quiet = TRUE)
+      if (!is.na(ts)) return(ts)
+      ts <- lubridate::ymd_hm(ts_char, quiet = TRUE)
+      if (!is.na(ts)) return(ts)
+      ts <- lubridate::ymd(ts_char, quiet = TRUE)
+      if (!is.na(ts)) return(ts)
+      stripped <- sub("\\.\\d+$", "", ts_char)
+      ts <- lubridate::ymd_hms(stripped, quiet = TRUE)
+      if (!is.na(ts)) return(ts)
+      ts <- tryCatch(as.POSIXct(ts_char), error = function(e) NA)
+      ts
+    }
+
+    snap_to_data <- function(ts_char, timestamps) {
+      ts <- parse_plotly_ts(ts_char)
+      if (is.na(ts)) return(ts_char)
+      idx <- which.min(abs(as.numeric(difftime(timestamps, ts, units = "secs"))))
+      format(timestamps[idx], "%Y-%m-%d %H:%M:%S")
+    }
+
+    snap_ranges <- function(ranges, station_timestamps) {
+      lapply(ranges, function(r) {
+        c(snap_to_data(r[1], station_timestamps),
+          snap_to_data(r[2], station_timestamps))
+      })
+    }
+
     # Helper: merge overlapping ranges (sorted by start)
     merge_ranges <- function(ranges) {
       if (length(ranges) <= 1) return(ranges)
@@ -1698,7 +1818,10 @@ module_baro_qc_server <- function(id) {
         station_data <- dplyr::filter(qc_data, site_station_code == station)
         other_data   <- dplyr::filter(qc_data, site_station_code != station)
 
-        for (r in ranges) {
+        # Snap range endpoints to nearest actual timestamps in data
+        snapped <- snap_ranges(ranges, station_data$timestamp)
+
+        for (r in snapped) {
           station_data <- waterlogged::adjust_logger_NA(
             input_data        = station_data,
             select_station    = station,

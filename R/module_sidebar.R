@@ -36,18 +36,16 @@ page_sidebar_tab_ui <- function(id) {
         icon = icon("water"),
         menuSubItem("Import Data",          tabName = "t_wl_upload"),
         menuSubItem("Convert to Meters", tabName = "t_wl_convert"),
-        menuSubItem("QC Water Level",       tabName = "t_wl_qaqc"),
-        menuSubItem("Manual Adjustments",   tabName = "t_wl_adjust")
+        menuSubItem("QC Water Level",       tabName = "t_wl_qaqc")
       ),
 
       # ---- Dissolved Oxygen ----
       menuItem(
         "Dissolved Oxygen",
         icon = icon("lungs"),
-        menuSubItem("Import Data",          tabName = "t_do_upload"),
-        menuSubItem("Add Nearest Baro",     tabName = "t_do_baro"),
-        menuSubItem("Convert Data Metrics", tabName = "t_do_convert"),
-        menuSubItem("QC & Export",          tabName = "t_do_qc")
+        menuSubItem("Import Data",            tabName = "t_do_upload"),
+        menuSubItem("Convert to % Sat.",    tabName = "t_do_convert"),
+        menuSubItem("QC Dissolved Oxygen",  tabName = "t_do_qc")
       ),
 
       # ---- Conductivity ----
@@ -55,7 +53,8 @@ page_sidebar_tab_ui <- function(id) {
         "Conductivity",
         icon = icon("bolt"),
         menuSubItem("Import Data",  tabName = "t_cond_upload"),
-        menuSubItem("Convert & QC", tabName = "t_cond_convert")
+        menuSubItem("Convert to Spec. Cond.", tabName = "t_cond_convert"),
+        menuSubItem("QC Conductivity", tabName = "t_cond_qc")
       )
     )
   )

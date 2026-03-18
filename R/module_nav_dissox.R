@@ -1,30 +1,27 @@
 # =============================================================================
-# Dissolved Oxygen Workflow Modules — Full Implementation
+# Dissolved Oxygen Workflow Modules
 # =============================================================================
 #
 # Pipeline for HOBO U26 dissolved oxygen loggers:
-#   1. Import Data        — bind_hobo_files() + resample_timestamps()
-#   2. Add Nearest Baro   — add_nearest_baro(metric="DO")
-#   3. Convert Metrics    — convert_do_mgl_percsat()
-#   4. QC & Export        — qc_dissox() + wq_drift_correction() + adjust_logger_NA() + export
-#
-# Pre-loaded with demo data from inst/extdata/ (COOK_WE_40).
-#
-# Data flow:
-#   rv_raw_data$do_data (named list, demo)
-#     -> rv_bound_data$do_bound (combined DF, import tab)
-#       -> rv_bound_data$do_with_baro (with baro joined, baro tab)
-#         -> rv_converted_data$do_converted (with %sat, convert tab)
-#           -> rv_qaqc_data$do_qaqc (QC'd DF, QC tab)
+#   1. Import Data          — bind_hobo_files() + resample_timestamps()
+#   2. Convert to % Sat.    — add_nearest_baro() + convert_do_mgl_percsat()
+#   3. QC Dissolved Oxygen  — dissox_qaqc() + manual adjustments + export
 # =============================================================================
 
 
-# =============================================================================
-# 1. Import Data — UI
-# =============================================================================
+# -----------------------------------------------------------------------------
+# 1. Import Data
+# -----------------------------------------------------------------------------
 module_do_upload_ui <- function(id) {
   ns <- NS(id)
   tagList(
+    # CSS keyframes for processing spinner animation
+    tags$style(HTML("
+      @keyframes do-spin {
+        0%   { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    ")),
     shinydashboard::box(
       width = 12,
       tags$h1("Import Dissolved Oxygen Data", class = "custom-h1"),
@@ -35,17 +32,26 @@ module_do_upload_ui <- function(id) {
         class = "clean-print",
         "Import raw HOBO CSV files from dissolved oxygen loggers ",
         "(HOBO U26). These loggers record DO concentration (mg/L) and water ",
-        "temperature (\u00b0C). Barometric pressure data is required in the ",
-        "next step for percent saturation conversion."
+        "temperature in \u00b0C. The raw data columns are ",
+        tags$code("do_mgl"), " and ", tags$code("watertemp_C"), ". ",
+        "Barometric pressure is needed for the subsequent % saturation ",
+        "conversion step."
       ),
 
       tags$div(
         class = "clean-print",
         style = "background-color: #fff3cd; padding: 15px; border-radius: 5px; margin: 15px 0;",
         tags$p(style = "margin: 0;",
-          tags$strong("Important:"), " Process and QC your ",
-          tags$strong("barometric"), " data first. It is needed to convert ",
-          "DO from mg/L to percent saturation (%sat) and for dry-sensor detection."
+          tags$strong("Important:"), " Barometric pressure data must be processed ",
+          "and QC'd ", tags$strong("before"), " dissolved oxygen conversion. If you ",
+          "haven't done so yet, complete the ",
+          tags$a(
+            href = "#",
+            onclick = "$(\"a[href='#shiny-tab-t_baro_upload']\").tab('show'); return false;",
+            style = "color: #856404; font-weight: bold;",
+            "Barometric Pressure"
+          ),
+          " workflow first."
         )
       ),
 
@@ -56,62 +62,61 @@ module_do_upload_ui <- function(id) {
 
       hr(),
 
-      fluidRow(
-        # ---- Left info panel ----
-        column(
-          width = 4,
+      # ================================================================
+      # Row 1: Metadata & Station Locations
+      # ================================================================
+      tags$div(
+        style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+        tags$span(
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          "Metadata & Station Locations"
+        )
+      ),
+
+      tags$div(
+        style = "display: flex; flex-wrap: wrap; margin: 0 -15px;",
+        # ---- Left: Metadata instructions ----
+        tags$div(
+          style = "flex: 0 0 33.333%; max-width: 33.333%; padding: 0 15px; display: flex;",
           tags$div(
-            style = "background-color: #e8f5e9; padding: 20px; border-radius: 5px; margin-bottom: 15px;",
-            tags$h4("About HOBO U26 DO Loggers", style = "margin-top: 0;"),
+            style = "background-color: #f0f0f0; padding: 20px; border-radius: 5px; margin-bottom: 15px; flex: 1;",
+            tags$h4("Metadata File", style = "margin-top: 0;"),
             tags$p(
-              "The HOBO U26 uses an optical fluorescence sensor to measure ",
-              "dissolved oxygen. It records concentration in mg/L directly. ",
-              "To get percent saturation, atmospheric pressure must be added ",
-              "in the Convert step."
+              "The metadata file (", tags$code("logger_manager.csv"), ") describes ",
+              "each logger deployment. It links logger serial numbers to station ",
+              "codes, coordinates, and deployment periods."
+            ),
+            tags$p(style = "font-weight: bold; margin-bottom: 5px;",
+              "Required columns:"
             ),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
-              tags$li("Optical DO sensor (not electrochemical)"),
-              tags$li("Records DO mg/L + water temperature"),
-              tags$li("Requires baro data for %sat conversion"),
-              tags$li("Field references used for drift correction")
-            )
-          ),
-
-          tags$div(
-            style = "background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 15px;",
-            tags$h4("Functions Used", style = "margin-top: 0;"),
-            tags$code("bind_hobo_files()"),
-            tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
-                   "Parse raw HOBO CSVs, match serial numbers to metadata"),
-            tags$code("resample_timestamps()"),
-            tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
-                   "Snap timestamps to regular grid for baro join")
-          ),
-
-          tags$div(
-            style = "background-color: #fff3e0; padding: 15px; border-radius: 5px;",
-            tags$h4("Columns Produced", style = "margin-top: 0;"),
-            tags$ul(
-              style = "padding-left: 20px; font-size: 13px; margin-bottom: 0;",
-              tags$li(tags$code("site_station_code"), " \u2014 station ID"),
-              tags$li(tags$code("timestamp"), " \u2014 date-time"),
-              tags$li(tags$code("do_mgl"), " \u2014 DO concentration (mg/L)"),
-              tags$li(tags$code("watertemp_C"), " \u2014 water temperature (\u00b0C)"),
+              tags$li(tags$code("site_station_code"), " \u2014 station identifier"),
+              tags$li(tags$code("timestamp_deploy"), " / ", tags$code("timestamp_remove")),
+              tags$li(tags$code("model"), " \u2014 logger model (e.g. HOBO_U26)"),
               tags$li(tags$code("sn"), " \u2014 logger serial number"),
-              tags$li(tags$code("metric"), " \u2014 \"dissolvedoxygen\"")
+              tags$li(tags$code("metric"), " \u2014 ", tags$code("\"dissolvedoxygen\""),
+                      " or ", tags$code("\"barometric\"")),
+              tags$li(tags$code("status"), " \u2014 deployment status"),
+              tags$li(tags$code("latitude"), " / ", tags$code("longitude"))
+            ),
+            tags$p(style = "font-size: 13px; color: #666;",
+              "Upload your own metadata CSV, or use the pre-loaded sample. ",
+              "The file must contain one row per deployment period per logger. ",
+              "Include metadata for barometric stations as well, so they can be ",
+              "matched to DO stations."
             )
           )
         ),
 
-        # ---- Right main panel ----
-        column(
-          width = 8,
+        # ---- Right: Metadata upload + Station locations ----
+        tags$div(
+          style = "flex: 0 0 66.667%; max-width: 66.667%; padding: 0 15px;",
 
           # Metadata upload
           tags$div(
             style = "background-color: #fafafa; padding: 15px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #e0e0e0;",
-            tags$h4("Metadata", style = "margin-top: 0;"),
+            tags$h4("Upload Metadata", style = "margin-top: 0;"),
             tags$p(style = "font-size: 13px; color: #666;",
               "Upload a ", tags$code("logger_manager.csv"), " with deployment ",
               "metadata, or use the pre-loaded sample."
@@ -120,40 +125,120 @@ module_do_upload_ui <- function(id) {
               accept = ".csv",
               placeholder = "Choose metadata CSV...",
               width = "100%"
+            ),
+            tags$p(style = "font-size: 12px; margin-top: -5px;",
+              tags$a(
+                href = "sample_metadata.csv",
+                download = "sample_metadata.csv",
+                icon("download"),
+                " Download sample metadata template",
+                style = "color: #1565c0;"
+              )
             )
           ),
 
-          # Sample metadata preview
+          # Station Locations — tabbed map/table
           tags$div(
-            style = "background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 15px; overflow-x: auto;",
-            tags$h4("Sample Metadata (DO entries)", style = "margin-top: 0;"),
-            tags$pre(
-              style = "font-size: 11px; margin: 0; white-space: pre; overflow-x: auto;",
-"site_station_code,timestamp_deploy,timestamp_remove,model,sn,metric,status,latitude,longitude
-GOOS_WE_30,4/14/2025 12:00,10/21/2025 16:00,HOBO_U26,21155021,dissolvedoxygen,logging,49.347,-123.000633
-COOK_WE_40,4/14/2025 12:00,10/21/2025 17:00,HOBO_U26,21473863,dissolvedoxygen,logging,49.33973,-123.001504"
-            )
-          ),
-
-          # Station map
-          tags$div(
-            style = "margin-bottom: 0;",
+            style = "margin-bottom: 15px;",
             tags$h4("Station Locations", style = "margin-top: 0;"),
-            leafletOutput(ns("station_map"), height = "280px")
-          ),
+            tabsetPanel(
+              id = ns("station_tabs"),
+              tabPanel("Map",
+                tags$div(
+                  style = "padding-top: 10px;",
+                  leafletOutput(ns("station_map"), height = "560px")
+                )
+              ),
+              tabPanel("Table",
+                tags$div(
+                  style = "padding-top: 10px;",
+                  DT::DTOutput(ns("station_table"))
+                )
+              ),
+              tabPanel("Timeline",
+                tags$div(
+                  style = "padding-top: 10px;",
+                  uiOutput(ns("deployment_timeline_ui"))
+                )
+              )
+            )
+          )
+        )
+      ),
 
-          # ---- Visual separator between metadata and raw files ----
+      # ================================================================
+      # Row 2: Raw DO Logger Data
+      # ================================================================
+      tags$div(
+        style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+        tags$span(
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          "Raw Dissolved Oxygen Logger Data"
+        )
+      ),
+
+      tags$div(
+        style = "display: flex; flex-wrap: wrap; margin: 0 -15px;",
+        # ---- Left: Instructions (wide) ----
+        tags$div(
+          style = "flex: 0 0 66.667%; max-width: 66.667%; padding: 0 15px;",
           tags$div(
-            style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
-            tags$span(
-              style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
-              "Raw Logger Data"
+            style = "background-color: #f0f0f0; padding: 20px; border-radius: 5px; margin-bottom: 15px;",
+            tags$h4("How to Import", style = "margin-top: 0;"),
+            tags$p(
+              "Upload the raw CSV files exported from HOBOware for your ",
+              "dissolved oxygen loggers. You can select multiple files at once."
+            ),
+            tags$ol(
+              style = "padding-left: 20px; font-size: 13px;",
+              tags$li("Ensure metadata is loaded (above) so logger serial ",
+                      "numbers can be matched to stations."),
+              tags$li("Select one or more raw HOBO U26 CSV files."),
+              tags$li("Click ", tags$strong("Bind & Import Files"), " to parse ",
+                      "and combine the data."),
+              tags$li("Optionally use ", tags$strong("Snap Timestamps"), " to ",
+                      "align readings to a regular interval (e.g. 15 min).")
+            ),
+            tags$p(style = "font-size: 13px; color: #666;",
+              "If no files are uploaded, the app will use pre-loaded sample ",
+              "data for demonstration."
             )
           ),
+
+          tags$div(
+            style = "background-color: #f0f0f0; padding: 15px; border-radius: 5px; margin-bottom: 15px;",
+            tags$h4("Follow Along in the R Package (waterlogged)", style = "margin-top: 0;"),
+            tags$p(style = "font-size: 13px; color: #666;",
+              "This step calls the following function from the ",
+              tags$code("waterlogged"), " package:"
+            ),
+            tags$code("bind_hobo_files()"),
+            tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
+                   "Parse raw HOBO CSVs, match serial numbers to metadata")
+          ),
+
+          tags$div(
+            style = "background-color: #f0f0f0; padding: 15px; border-radius: 5px;",
+            tags$h4("Columns Produced", style = "margin-top: 0;"),
+            tags$ul(
+              style = "padding-left: 20px; font-size: 13px; margin-bottom: 0;",
+              tags$li(tags$code("site_station_code"), " \u2014 station ID"),
+              tags$li(tags$code("timestamp"), " \u2014 date-time"),
+              tags$li(tags$code("do_mgl"), " \u2014 dissolved oxygen (mg/L)"),
+              tags$li(tags$code("watertemp_C"), " \u2014 water temperature"),
+              tags$li(tags$code("sn"), " \u2014 logger serial number"),
+              tags$li(tags$code("metric"), " \u2014 \"dissolvedoxygen\"")
+            )
+          )
+        ),
+
+        # ---- Right: File upload (narrow) ----
+        tags$div(
+          style = "flex: 0 0 33.333%; max-width: 33.333%; padding: 0 15px; display: flex;",
 
           # Raw HOBO files upload
           tags$div(
-            style = "background-color: #fafafa; padding: 15px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #e0e0e0;",
+            style = "background-color: #fafafa; padding: 15px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #e0e0e0; flex: 1;",
             tags$h4("Raw DO Logger Files", style = "margin-top: 0;"),
             tags$p(style = "font-size: 13px; color: #666;",
               "Upload one or more raw HOBO U26 CSV files, or use the ",
@@ -168,21 +253,165 @@ COOK_WE_40,4/14/2025 12:00,10/21/2025 17:00,HOBO_U26,21473863,dissolvedoxygen,lo
             actionButton(ns("bind_btn"), "Bind & Import Files",
               class = "btn-primary",
               icon = icon("file-import"),
+              width = "100%",
+              style = "color: #ffffff;"
+            ),
+            # Processing spinner (hidden by default, shown while binding)
+            tags$div(
+              id = ns("bind_spinner"),
+              style = "display: none; text-align: center; padding: 15px; margin-top: 10px; background-color: #e3f2fd; border-radius: 5px;",
+              tags$div(
+                style = "display: inline-block; width: 24px; height: 24px; border: 3px solid #90caf9; border-top: 3px solid #1565c0; border-radius: 50%; animation: do-spin 0.8s linear infinite; vertical-align: middle;"
+              ),
+              tags$span(style = "margin-left: 10px; color: #1565c0; font-weight: bold;",
+                "Processing... binding HOBO files")
+            ),
+            uiOutput(ns("bind_summary"))
+          )
+        )
+      ),
+
+      # ================================================================
+      # Row 3: Processed Barometric Data
+      # ================================================================
+      tags$div(
+        style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+        tags$span(
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          "Processed Barometric Data"
+        )
+      ),
+
+      tags$div(
+        style = "display: flex; flex-wrap: wrap; margin: 0 -15px;",
+        # ---- Left: Baro info ----
+        tags$div(
+          style = "flex: 0 0 33.333%; max-width: 33.333%; padding: 0 15px; display: flex;",
+          tags$div(
+            style = "background-color: #f0f0f0; padding: 20px; border-radius: 5px; margin-bottom: 15px; flex: 1;",
+            tags$h4("Processed Baro File", style = "margin-top: 0;"),
+            tags$p(
+              "This file is the output of the Barometric Pressure QAQC workflow. ",
+              "You must run through the ",
+              tags$a(
+                href = "#",
+                onclick = "$(\"a[href='#shiny-tab-t_baro_upload']\").tab('show'); return false;",
+                style = "color: #1565c0; font-weight: bold;",
+                "Barometric Pressure"
+              ),
+              " section first, or upload a previously exported processed baro CSV."
+            ),
+            tags$p(style = "font-weight: bold; margin-bottom: 5px;",
+              "Required columns:"
+            ),
+            tags$ul(
+              style = "padding-left: 20px; font-size: 13px;",
+              tags$li(tags$code("site_station_code")),
+              tags$li(tags$code("timestamp")),
+              tags$li(tags$code("airpress_kPa")),
+              tags$li(tags$code("airpress_kPa_adj")),
+              tags$li(tags$code("airtemp_C")),
+              tags$li(tags$code("airtemp_C_adj")),
+              tags$li("Plus any ", tags$code("edit_*"), " / ", tags$code("flag_*"), " columns")
+            ),
+            tags$div(
+              style = "background-color: #e8e8e8; padding: 10px; border-radius: 4px; margin-top: 10px;",
+              tags$h5("Follow Along in the R package", style = "margin-top: 0; margin-bottom: 5px;"),
+              tags$code("barometric_qaqc_all()"),
+              tags$p(style = "font-size: 12px; color: #666; margin-top: 5px; margin-bottom: 0;",
+                     "Run automated QAQC on baro data (produces the required columns)")
+            )
+          )
+        ),
+
+        # ---- Right: Baro upload ----
+        tags$div(
+          style = "flex: 0 0 66.667%; max-width: 66.667%; padding: 0 15px;",
+
+          # Status message
+          uiOutput(ns("baro_status_message")),
+
+          # File upload
+          tags$div(
+            style = "background-color: #fafafa; padding: 15px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #e0e0e0;",
+            tags$h4("Upload Processed Barometric CSV", style = "margin-top: 0;"),
+            tags$p(style = "font-size: 13px; color: #666;",
+              "Upload a processed baro CSV file (output of baro QAQC), or use ",
+              "session data from the Barometric Pressure tab if available."
+            ),
+            fileInput(ns("baro_qc_file"), NULL,
+              accept = ".csv",
+              placeholder = "Choose processed baro CSV...",
               width = "100%"
+            ),
+            actionButton(ns("load_baro_btn"), "Load Barometric Data (wait until above section says Upload Complete before pressing this button)",
+              class = "btn-primary",
+              icon = icon("cloud-download-alt"),
+              width = "100%",
+              style = "color: #ffffff;"
+            ),
+            # Processing spinner (hidden by default, shown while loading)
+            tags$div(
+              id = ns("baro_spinner"),
+              style = "display: none; text-align: center; padding: 15px; margin-top: 10px; background-color: #e3f2fd; border-radius: 5px;",
+              tags$div(
+                style = "display: inline-block; width: 24px; height: 24px; border: 3px solid #90caf9; border-top: 3px solid #1565c0; border-radius: 50%; animation: do-spin 0.8s linear infinite; vertical-align: middle;"
+              ),
+              tags$span(style = "margin-left: 10px; color: #1565c0; font-weight: bold;",
+                "Processing... loading barometric data")
             )
           ),
 
-          hr(),
+          # Validation results
+          uiOutput(ns("baro_validation"))
+        )
+      ),
 
-          # ---- Snap Timestamps ----
+      # ================================================================
+      # Row 4: Snap Timestamps
+      # ================================================================
+      tags$div(
+        style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+        tags$span(
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          "Snap Timestamps: Dissolved Oxygen and Air Pressure"
+        )
+      ),
+
+      tags$div(
+        style = "display: flex; flex-wrap: wrap; margin: 0 -15px;",
+        # ---- Left: Snap explanation ----
+        tags$div(
+          style = "flex: 0 0 33.333%; max-width: 33.333%; padding: 0 15px;",
           tags$div(
-            style = "background-color: #d1ecf1; padding: 15px; border-radius: 5px; margin-bottom: 15px;",
-            tags$h4("Snap Logger Timestamps (Optional)", style = "margin-top: 0;"),
+            style = "background-color: #f0f0f0; padding: 20px; border-radius: 5px; margin-bottom: 15px;",
+            tags$h4("Timestamp Alignment", style = "margin-top: 0;"),
             tags$p(style = "font-size: 13px;",
-              "Round timestamps to a regular interval so DO data aligns ",
-              "with barometric data for the pressure join. Original ",
-              "timestamps preserved in ", tags$code("timestamp_raw"), "."
+              "Round timestamps to a regular interval so dissolved oxygen and ",
+              "barometric stations align. Original timestamps are preserved in ",
+              tags$code("timestamp_raw"), "."
             ),
+            tags$p(style = "font-size: 13px; color: #666;",
+              "This is optional but recommended when combining data from ",
+              "multiple loggers that may have been launched at slightly ",
+              "different times."
+            )
+          ),
+          tags$div(
+            style = "background-color: #f0f0f0; padding: 15px; border-radius: 5px;",
+            tags$h4("Follow Along in the R Package (waterlogged)", style = "margin-top: 0;"),
+            tags$code("resample_timestamps()"),
+            tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
+                   "Snap timestamps to regular grid (optional)")
+          )
+        ),
+
+        # ---- Right: Snap controls ----
+        tags$div(
+          style = "flex: 0 0 66.667%; max-width: 66.667%; padding: 0 15px; display: flex;",
+          tags$div(
+            style = "background-color: #d1ecf1; padding: 15px; border-radius: 5px; margin-bottom: 15px; flex: 1;",
+            tags$h4("Snap Logger Timestamps (Optional)", style = "margin-top: 0;"),
             fluidRow(
               column(4,
                 selectInput(ns("snap_station"), "Station",
@@ -207,21 +436,55 @@ COOK_WE_40,4/14/2025 12:00,10/21/2025 17:00,HOBO_U26,21473863,dissolvedoxygen,lo
             ),
             actionButton(ns("snap_btn"), "Snap Timestamps",
               class = "btn-secondary",
-              icon = icon("clock")
+              icon = icon("clock"),
+              width = "100%"
             )
+          )
+        )
+      ),
+
+      # ================================================================
+      # Row 5: Review Raw Series
+      # ================================================================
+      tags$div(
+        style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+        tags$span(
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          "Review Raw Series"
+        )
+      ),
+
+      tags$p(
+        class = "clean-print",
+        "Visually inspect the time series plots and summary statistics below ",
+        "to look for anomalies such as spikes, flatlines, or gaps in the data. ",
+        "The top two panels show dissolved oxygen data; the bottom two show barometric ",
+        "data (if loaded)."
+      ),
+
+      # ---- Import Summary (full width) ----
+      tags$h4("Import Summary"),
+      DT::DTOutput(ns("import_summary")),
+
+      tags$div(style = "margin-top: 15px;"),
+
+      # ---- Preview Plot (full width, 4 panels) ----
+      tags$h4("Data Preview"),
+      plotlyOutput(ns("preview_plot"), height = "1065px") %>% withSpinner(),
+
+      # ---- Next step link ----
+      tags$div(
+        style = "margin-top: 25px; padding: 15px; background-color: #e3f2fd; border-radius: 5px; text-align: center;",
+        tags$p(style = "margin: 0; font-size: 14px;",
+          icon("arrow-right"),
+          " Ready to proceed? Continue to ",
+          tags$a(
+            href = "#",
+            onclick = "$(\"a[href='#shiny-tab-t_do_convert']\").tab('show'); window.scrollTo(0,0); return false;",
+            style = "color: #1565c0; font-weight: bold;",
+            "Convert to % Saturation"
           ),
-
-          hr(),
-
-          # ---- Import Summary ----
-          tags$h4("Import Summary"),
-          DT::DTOutput(ns("import_summary")),
-
-          tags$div(style = "margin-top: 15px;"),
-
-          # ---- Preview Plot ----
-          tags$h4("Data Preview"),
-          plotlyOutput(ns("preview_plot"), height = "650px") %>% withSpinner()
+          " to add barometric pressure and convert DO units."
         )
       )
     ),
@@ -238,6 +501,7 @@ module_do_upload_server <- function(id) {
 
     rv_raw_data   <- session$userData$rv_raw_data
     rv_bound_data <- session$userData$rv_bound_data
+    rv_qaqc_data  <- session$userData$rv_qaqc_data
 
     # ------ Initialize from demo data ------
     observe({
@@ -252,63 +516,288 @@ module_do_upload_server <- function(id) {
       }
     })
 
-    # ------ Current DO data reactive ------
+    # ------ Convenience reactives ------
     do_current <- reactive({
       rv_bound_data$do_bound
     })
 
+    baro_qc_current <- reactive({
+      rv_qaqc_data$baro_qaqc
+    })
+
     # ------ Data status display ------
     output$data_status <- renderUI({
-      df <- do_current()
-      if (is.null(df) || nrow(df) == 0) {
+      do_df <- do_current()
+      baro_df <- baro_qc_current()
+
+      do_msg <- if (is.null(do_df) || nrow(do_df) == 0) {
         tags$div(
-          style = "color: #856404; background: #fff3cd; padding: 12px; border-radius: 5px;",
+          style = "color: #856404; background: #fff3cd; padding: 12px; border-radius: 5px; margin-bottom: 8px;",
           icon("info-circle"),
-          " No DO data loaded. Upload files above or use pre-loaded sample data."
+          " No dissolved oxygen data loaded. Upload files below or use pre-loaded sample data."
         )
       } else {
-        n_stations <- length(unique(df$site_station_code))
-        n_records <- format(nrow(df), big.mark = ",")
-        date_min <- format(min(df$timestamp, na.rm = TRUE), "%Y-%m-%d")
-        date_max <- format(max(df$timestamp, na.rm = TRUE), "%Y-%m-%d")
+        n_stations <- length(unique(do_df$site_station_code))
+        n_records <- format(nrow(do_df), big.mark = ",")
+        date_min <- format(min(do_df$timestamp, na.rm = TRUE), "%Y-%m-%d")
+        date_max <- format(max(do_df$timestamp, na.rm = TRUE), "%Y-%m-%d")
         tags$div(
-          style = "color: #155724; background: #d4edda; padding: 12px; border-radius: 5px;",
+          style = "color: #155724; background: #d4edda; padding: 12px; border-radius: 5px; margin-bottom: 8px;",
           icon("check-circle"),
-          sprintf(" Data loaded: %d station(s), %s records (%s to %s)",
+          sprintf(" DO data loaded: %d station(s), %s records (%s to %s)",
                   n_stations, n_records, date_min, date_max)
         )
       }
+
+      baro_msg <- if (is.null(baro_df) || nrow(baro_df) == 0) {
+        tags$div(
+          style = "color: #856404; background: #fff3cd; padding: 12px; border-radius: 5px;",
+          icon("info-circle"),
+          " No processed barometric data available. Load baro data below."
+        )
+      } else {
+        n_baro <- length(unique(baro_df$site_station_code))
+        n_baro_rec <- format(nrow(baro_df), big.mark = ",")
+        tags$div(
+          style = "color: #155724; background: #d4edda; padding: 12px; border-radius: 5px;",
+          icon("check-circle"),
+          sprintf(" Processed baro data: %d station(s), %s records",
+                  n_baro, n_baro_rec)
+        )
+      }
+
+      tagList(do_msg, baro_msg)
     })
 
-    # ------ Station map ------
+    # ------ Station map (both DO + baro, colored by metric) ------
     output$station_map <- renderLeaflet({
       metadata <- rv_raw_data$metadata
       req(metadata)
 
-      do_meta <- metadata[metadata$metric == "dissolvedoxygen", ]
-      do_sites <- unique(do_meta[, c("site_station_code", "latitude", "longitude")])
-      do_sites <- do_sites[!is.na(do_sites$latitude) & !is.na(do_sites$longitude), ]
+      # Filter to dissolvedoxygen + barometric stations
+      do_baro_meta <- metadata[metadata$metric %in% c("dissolvedoxygen", "barometric"), ]
+      sites <- unique(do_baro_meta[, c("site_station_code", "latitude", "longitude", "metric")])
+      sites <- sites[!is.na(sites$latitude) & !is.na(sites$longitude), ]
 
-      req(nrow(do_sites) > 0)
+      req(nrow(sites) > 0)
 
-      leaflet(do_sites) %>%
+      # Split by metric for toggleable overlay groups
+      do_sites   <- sites[sites$metric == "dissolvedoxygen", ]
+      baro_sites <- sites[sites$metric == "barometric", ]
+
+      map <- leaflet(sites) %>%
         addProviderTiles("Esri.WorldImagery", group = "Satellite") %>%
-        addProviderTiles("Esri.WorldTopoMap", group = "Topo") %>%
-        addCircleMarkers(
+        addProviderTiles("Esri.WorldTopoMap", group = "Topo")
+
+      if (nrow(do_sites) > 0) {
+        map <- map %>% addCircleMarkers(
+          data = do_sites,
           lng = ~longitude, lat = ~latitude,
           radius = 7, weight = 2,
-          color = "#fff", fillColor = "#2e7d32", fillOpacity = 0.9,
+          color = "#fff", fillColor = "#1565C0", fillOpacity = 0.9,
           label = ~site_station_code,
           popup = ~paste0(
             "<strong>", site_station_code, "</strong><br>",
+            "Metric: ", metric, "<br>",
             "Lat: ", round(latitude, 4), "<br>",
             "Lon: ", round(longitude, 4)
+          ),
+          group = "Dissolved Oxygen",
+          clusterOptions = markerClusterOptions(
+            maxClusterRadius = 20,
+            spiderfyOnMaxZoom = TRUE,
+            disableClusteringAtZoom = 14
           )
+        )
+      }
+
+      if (nrow(baro_sites) > 0) {
+        map <- map %>% addCircleMarkers(
+          data = baro_sites,
+          lng = ~longitude, lat = ~latitude,
+          radius = 7, weight = 2,
+          color = "#fff", fillColor = "#FF8F00", fillOpacity = 0.9,
+          label = ~site_station_code,
+          popup = ~paste0(
+            "<strong>", site_station_code, "</strong><br>",
+            "Metric: ", metric, "<br>",
+            "Lat: ", round(latitude, 4), "<br>",
+            "Lon: ", round(longitude, 4)
+          ),
+          group = "Barometric",
+          clusterOptions = markerClusterOptions(
+            maxClusterRadius = 20,
+            spiderfyOnMaxZoom = TRUE,
+            disableClusteringAtZoom = 14
+          )
+        )
+      }
+
+      map %>%
+        addLegend(
+          position = "bottomright",
+          colors = c("#1565C0", "#FF8F00"),
+          labels = c("Dissolved Oxygen", "Barometric"),
+          title = "Metric"
         ) %>%
         addLayersControl(
           baseGroups = c("Satellite", "Topo"),
-          options = layersControlOptions(collapsed = TRUE)
+          overlayGroups = c("Dissolved Oxygen", "Barometric"),
+          options = layersControlOptions(collapsed = FALSE)
         )
+    })
+
+    # ------ Station metadata table (both metrics) ------
+    output$station_table <- DT::renderDT({
+      metadata <- rv_raw_data$metadata
+      req(metadata)
+
+      do_baro_meta <- metadata[metadata$metric %in% c("dissolvedoxygen", "barometric"), ]
+      req(nrow(do_baro_meta) > 0)
+
+      display_cols <- intersect(
+        c("site_station_code", "timestamp_deploy", "timestamp_remove",
+          "model", "sn", "metric", "status", "latitude", "longitude"),
+        names(do_baro_meta)
+      )
+
+      DT::datatable(do_baro_meta[, display_cols],
+        options = list(
+          dom = "tip",
+          pageLength = 20,
+          scrollX = TRUE
+        ),
+        rownames = FALSE
+      )
+    })
+
+    # ------ Deployment timeline (dynamic height, both metrics) ------
+    output$deployment_timeline_ui <- renderUI({
+      metadata <- rv_raw_data$metadata
+      req(metadata)
+      n_rows <- sum(metadata$metric %in% c("dissolvedoxygen", "barometric"))
+      height_px <- max(200, n_rows * 50 + 80)
+      plotlyOutput(session$ns("deployment_timeline"),
+        height = paste0(height_px, "px")) %>% withSpinner()
+    })
+
+    # ------ Deployment timeline (Gantt chart, colored by SN) ------
+    output$deployment_timeline <- renderPlotly({
+      metadata <- rv_raw_data$metadata
+      req(metadata)
+
+      do_baro_meta <- metadata[metadata$metric %in% c("dissolvedoxygen", "barometric"), ]
+      req(nrow(do_baro_meta) > 0)
+
+      # Parse deploy/remove timestamps
+      do_baro_meta$deploy <- as.POSIXct(do_baro_meta$timestamp_deploy,
+        format = "%m/%d/%Y %H:%M", tz = "UTC")
+      do_baro_meta$remove <- as.POSIXct(do_baro_meta$timestamp_remove,
+        format = "%m/%d/%Y %H:%M", tz = "UTC")
+
+      # Order by metric then station then deploy time
+      do_baro_meta <- do_baro_meta[order(do_baro_meta$metric,
+                                          do_baro_meta$site_station_code,
+                                          do_baro_meta$deploy), ]
+
+      # Create a unique label per row for the y-axis
+      do_baro_meta$row_label <- paste0(
+        do_baro_meta$site_station_code, " (SN: ", do_baro_meta$sn, ") [",
+        seq_len(nrow(do_baro_meta)), "]"
+      )
+      # Preserve order as factor
+      do_baro_meta$row_label <- factor(do_baro_meta$row_label,
+        levels = rev(do_baro_meta$row_label))
+
+      # Colour by unique serial number
+      do_baro_meta$sn_factor <- as.character(do_baro_meta$sn)
+
+      # Build colour palette
+      unique_sns <- unique(do_baro_meta$sn_factor)
+      palette <- RColorBrewer::brewer.pal(max(3, length(unique_sns)), "Set2")
+      sn_colors <- setNames(palette[seq_along(unique_sns)], unique_sns)
+
+      # Build plot with one trace per SN (for legend grouping)
+      p <- plot_ly()
+      legend_shown <- character(0)
+
+      for (i in seq_len(nrow(do_baro_meta))) {
+        row <- do_baro_meta[i, ]
+        show_legend <- !(row$sn_factor %in% legend_shown)
+        if (show_legend) legend_shown <- c(legend_shown, row$sn_factor)
+
+        metric_label <- ifelse(row$metric == "dissolvedoxygen", "Dissolved Oxygen", "Barometric")
+
+        p <- p %>% add_trace(
+          x = c(row$deploy, row$remove),
+          y = c(as.character(row$row_label), as.character(row$row_label)),
+          type = "scatter", mode = "lines",
+          line = list(width = 16, color = sn_colors[row$sn_factor]),
+          name = paste("SN:", row$sn_factor),
+          legendgroup = row$sn_factor,
+          showlegend = show_legend,
+          hoverinfo = "text",
+          text = paste0(
+            "<b>", row$site_station_code, "</b><br>",
+            "Metric: ", metric_label, "<br>",
+            "SN: ", row$sn, "<br>",
+            "Deploy: ", format(row$deploy, "%Y-%m-%d %H:%M"), "<br>",
+            "Remove: ", format(row$remove, "%Y-%m-%d %H:%M")
+          )
+        )
+      }
+
+      p %>% layout(
+        title = list(text = "Deployment Timeline", font = list(size = 14)),
+        xaxis = list(title = "Date", type = "date"),
+        yaxis = list(title = "", categoryorder = "array",
+                     categoryarray = rev(levels(do_baro_meta$row_label))),
+        legend = list(title = list(text = "Serial Number"),
+                      orientation = "h", y = -0.2),
+        margin = list(l = 180, b = 60)
+      )
+    })
+
+    # ------ Update metadata immediately on upload ------
+    observeEvent(input$meta_file, {
+      req(input$meta_file)
+      tryCatch({
+        metadata <- read.csv(input$meta_file$datapath, stringsAsFactors = FALSE)
+
+        # Check required columns
+        required_cols <- c("site_station_code", "timestamp_deploy", "timestamp_remove",
+                           "model", "sn", "metric", "status", "latitude", "longitude")
+        missing_cols <- setdiff(required_cols, names(metadata))
+        if (length(missing_cols) > 0) {
+          showNotification(
+            paste0("Metadata upload rejected. Missing required column(s): ",
+                   paste(missing_cols, collapse = ", ")),
+            type = "error", duration = 10
+          )
+          return()
+        }
+
+        # Normalize metric column: lowercase, strip spaces
+        metadata$metric <- tolower(trimws(gsub("\\s+", "", metadata$metric)))
+
+        # Validate: allow dissolvedoxygen, barometric, and waterlevel
+        valid_metrics <- c("dissolvedoxygen", "barometric", "waterlevel")
+        invalid <- unique(metadata$metric[!metadata$metric %in% valid_metrics])
+        if (length(invalid) > 0) {
+          showNotification(
+            paste0("Invalid metric values removed: ", paste(invalid, collapse = ", "),
+                   ". Allowed values: ", paste(valid_metrics, collapse = ", "), "."),
+            type = "warning", duration = 8
+          )
+          metadata <- metadata[metadata$metric %in% valid_metrics, ]
+        }
+
+        rv_raw_data$metadata <- metadata
+        showNotification("Metadata updated.", type = "message", duration = 3)
+      }, error = function(e) {
+        showNotification(paste("Error reading metadata:", conditionMessage(e)),
+          type = "error", duration = 5)
+      })
     })
 
     # ------ Update station selector for snap ------
@@ -321,16 +810,20 @@ module_do_upload_server <- function(id) {
       }
     })
 
+    # ------ Bind result tracking ------
+    rv_bind_result <- reactiveValues(
+      success = FALSE,
+      n_stations = 0,
+      n_records = 0,
+      matched_stations = character(0),
+      unmatched_sns = character(0),
+      metadata_stations = character(0)
+    )
+
     # ------ Bind & Import button ------
     observeEvent(input$bind_btn, {
-      meta_file <- input$meta_file
       raw_files <- input$raw_files
-
-      if (!is.null(meta_file)) {
-        metadata <- read.csv(meta_file$datapath, stringsAsFactors = FALSE)
-      } else {
-        metadata <- rv_raw_data$metadata
-      }
+      metadata <- rv_raw_data$metadata
 
       if (is.null(metadata)) {
         showNotification("No metadata available. Upload a metadata CSV first.",
@@ -338,46 +831,121 @@ module_do_upload_server <- function(id) {
         return()
       }
 
+      # If raw files were uploaded, bind them
       if (!is.null(raw_files)) {
-        tryCatch({
-          showNotification("Binding HOBO files...", type = "message",
-            duration = NULL, id = "do_bind_progress")
+        # Show spinner & disable button
+        shinyjs::show("bind_spinner")
+        shinyjs::disable("bind_btn")
 
+        tryCatch({
           result <- waterlogged::bind_hobo_files(
             file_paths = raw_files$datapath,
             metadata = metadata
           )
 
           bound_data <- result[[1]]
+
+          # Update shared reactive
           rv_bound_data$do_bound <- bound_data
 
-          if (!is.null(meta_file)) {
-            rv_raw_data$metadata <- metadata
-          }
+          # Track bind results for summary display
+          bound_stations <- unique(bound_data$site_station_code)
+          meta_do_stations <- unique(
+            metadata$site_station_code[metadata$metric %in% c("dissolvedoxygen")]
+          )
+          matched <- intersect(bound_stations, meta_do_stations)
+          unmatched_in_data <- setdiff(bound_stations, meta_do_stations)
 
-          removeNotification("do_bind_progress")
+          rv_bind_result$success <- TRUE
+          rv_bind_result$n_stations <- length(bound_stations)
+          rv_bind_result$n_records <- nrow(bound_data)
+          rv_bind_result$matched_stations <- matched
+          rv_bind_result$unmatched_sns <- unmatched_in_data
+          rv_bind_result$metadata_stations <- meta_do_stations
+
+          shinyjs::hide("bind_spinner")
+          shinyjs::enable("bind_btn")
           n_rows <- format(nrow(bound_data), big.mark = ",")
-          n_stns <- length(unique(bound_data$site_station_code))
+          n_stns <- length(bound_stations)
           showNotification(
             sprintf("Import complete: %s records from %d station(s)", n_rows, n_stns),
             type = "message", duration = 5
           )
         }, error = function(e) {
-          removeNotification("do_bind_progress")
+          shinyjs::hide("bind_spinner")
+          shinyjs::enable("bind_btn")
+          rv_bind_result$success <- FALSE
           showNotification(paste("Import error:", conditionMessage(e)),
             type = "error", duration = 8)
         })
       } else {
-        if (!is.null(meta_file)) {
-          rv_raw_data$metadata <- metadata
-          showNotification("Metadata updated.", type = "message", duration = 3)
-        } else {
-          showNotification(
-            "No files selected. Using pre-loaded sample data.",
-            type = "warning", duration = 3
-          )
-        }
+        showNotification(
+          "No raw files selected. Upload HOBO CSV files first.",
+          type = "warning", duration = 3
+        )
       }
+    })
+
+    # ------ Bind summary display ------
+    output$bind_summary <- renderUI({
+      if (!rv_bind_result$success) return(NULL)
+
+      n_stns <- rv_bind_result$n_stations
+      n_recs <- format(rv_bind_result$n_records, big.mark = ",")
+      matched <- rv_bind_result$matched_stations
+      unmatched <- rv_bind_result$unmatched_sns
+      meta_stns <- rv_bind_result$metadata_stations
+
+      # Stations in metadata but not in bound data
+      missing_from_data <- setdiff(meta_stns, matched)
+
+      items <- tagList(
+        tags$li(sprintf("Stations loaded: %d", n_stns)),
+        tags$li(sprintf("Total records: %s", n_recs))
+      )
+
+      if (length(matched) > 0) {
+        items <- tagList(items,
+          tags$li(
+            style = "color: #155724;",
+            sprintf("Matched to metadata (%d): ", length(matched)),
+            paste(matched, collapse = ", ")
+          )
+        )
+      }
+
+      if (length(unmatched) > 0) {
+        items <- tagList(items,
+          tags$li(
+            style = "color: #856404;",
+            icon("exclamation-triangle"),
+            sprintf(" Not found in metadata (%d): ", length(unmatched)),
+            paste(unmatched, collapse = ", ")
+          )
+        )
+      }
+
+      if (length(missing_from_data) > 0) {
+        items <- tagList(items,
+          tags$li(
+            style = "color: #856404;",
+            icon("info-circle"),
+            sprintf(" In metadata but no data loaded (%d): ", length(missing_from_data)),
+            paste(missing_from_data, collapse = ", ")
+          )
+        )
+      }
+
+      border_color <- if (length(unmatched) > 0) "#ffc107" else "#28a745"
+
+      tags$div(
+        style = sprintf("background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 15px; border-left: 4px solid %s;", border_color),
+        tags$h5("Import Summary", style = "margin-top: 0; margin-bottom: 8px;"),
+        tags$ul(
+          style = "padding-left: 20px; font-size: 13px; margin-bottom: 0;",
+          items
+        )
+      )
     })
 
     # ------ Snap timestamps button ------
@@ -387,7 +955,7 @@ module_do_upload_server <- function(id) {
 
       tryCatch({
         showNotification("Snapping timestamps...", type = "message",
-          duration = NULL, id = "do_snap_progress")
+          duration = NULL, id = "snap_progress")
 
         station_arg <- if (input$snap_station == "all") NULL else input$snap_station
 
@@ -401,13 +969,137 @@ module_do_upload_server <- function(id) {
 
         rv_bound_data$do_bound <- result
 
-        removeNotification("do_snap_progress")
+        removeNotification("snap_progress")
         showNotification("Timestamps snapped.", type = "message", duration = 3)
       }, error = function(e) {
-        removeNotification("do_snap_progress")
+        removeNotification("snap_progress")
         showNotification(paste("Snap error:", conditionMessage(e)),
           type = "error", duration = 8)
       })
+    })
+
+    # ------ Baro status message ------
+    output$baro_status_message <- renderUI({
+      baro_df <- baro_qc_current()
+      if (!is.null(baro_df) && nrow(baro_df) > 0) {
+        n_stns <- length(unique(baro_df$site_station_code))
+        n_recs <- format(nrow(baro_df), big.mark = ",")
+        tags$div(
+          style = "color: #155724; background: #d4edda; padding: 12px; border-radius: 5px; margin-bottom: 15px;",
+          icon("check-circle"),
+          sprintf(" Processed baro data loaded: %d station(s), %s records.",
+                  n_stns, n_recs)
+        )
+      } else {
+        tags$div(
+          style = "color: #856404; background: #fff3cd; padding: 12px; border-radius: 5px; margin-bottom: 15px;",
+          icon("exclamation-triangle"),
+          " No processed baro data loaded. Upload a processed baro CSV below, ",
+          "or complete the Barometric Pressure workflow first."
+        )
+      }
+    })
+
+    # ------ Load baro button ------
+    observeEvent(input$load_baro_btn, {
+      baro_file <- input$baro_qc_file
+
+      if (is.null(baro_file)) {
+        showNotification("No baro file selected. Please upload a processed baro CSV.",
+          type = "error", duration = 5)
+        return()
+      }
+
+      # Show spinner & disable button
+      shinyjs::show("baro_spinner")
+      shinyjs::disable("load_baro_btn")
+
+      tryCatch({
+        baro_data <- read.csv(baro_file$datapath, stringsAsFactors = FALSE)
+
+        # Validate required columns
+        required_cols <- c("site_station_code", "timestamp",
+                           "airpress_kPa", "airpress_kPa_adj",
+                           "airtemp_C", "airtemp_C_adj")
+        missing_cols <- setdiff(required_cols, names(baro_data))
+
+        if (length(missing_cols) > 0) {
+          shinyjs::hide("baro_spinner")
+          shinyjs::enable("load_baro_btn")
+          showNotification(
+            paste("Missing required columns:", paste(missing_cols, collapse = ", ")),
+            type = "error", duration = 8
+          )
+          return()
+        }
+
+        # Parse timestamps
+        if (is.character(baro_data$timestamp)) {
+          baro_data$timestamp <- .parse_timestamp(baro_data$timestamp)
+        }
+
+        # Validate station codes against metadata
+        metadata <- rv_raw_data$metadata
+        if (!is.null(metadata)) {
+          meta_stations <- unique(metadata$site_station_code)
+          baro_stations <- unique(baro_data$site_station_code)
+          missing_stns <- setdiff(baro_stations, meta_stations)
+          if (length(missing_stns) > 0) {
+            showNotification(
+              paste("Warning: baro stations not in metadata:",
+                    paste(missing_stns, collapse = ", ")),
+              type = "warning", duration = 8
+            )
+          }
+        }
+
+        # Store in session
+        rv_qaqc_data$baro_qaqc <- baro_data
+
+        shinyjs::hide("baro_spinner")
+        shinyjs::enable("load_baro_btn")
+        n_rows <- format(nrow(baro_data), big.mark = ",")
+        n_stns <- length(unique(baro_data$site_station_code))
+        showNotification(
+          sprintf("Baro data loaded: %s records from %d station(s)", n_rows, n_stns),
+          type = "message", duration = 5
+        )
+      }, error = function(e) {
+        shinyjs::hide("baro_spinner")
+        shinyjs::enable("load_baro_btn")
+        showNotification(paste("Error reading baro file:", conditionMessage(e)),
+          type = "error", duration = 8)
+      })
+    })
+
+    # ------ Baro validation display ------
+    output$baro_validation <- renderUI({
+      baro_df <- baro_qc_current()
+      if (is.null(baro_df) || nrow(baro_df) == 0) return(NULL)
+
+      n_stns <- length(unique(baro_df$site_station_code))
+      n_recs <- format(nrow(baro_df), big.mark = ",")
+      date_min <- format(min(baro_df$timestamp, na.rm = TRUE), "%Y-%m-%d")
+      date_max <- format(max(baro_df$timestamp, na.rm = TRUE), "%Y-%m-%d")
+
+      # Check for edit/flag columns
+      edit_cols <- grep("^edit_", names(baro_df), value = TRUE)
+      flag_cols <- grep("^flag_", names(baro_df), value = TRUE)
+
+      tags$div(
+        style = "background-color: #e8f5e9; padding: 15px; border-radius: 5px; margin-bottom: 15px;",
+        tags$h4("Loaded Barometric Data", style = "margin-top: 0;"),
+        tags$ul(
+          style = "padding-left: 20px; font-size: 13px; margin-bottom: 5px;",
+          tags$li(sprintf("Stations: %d", n_stns)),
+          tags$li(sprintf("Records: %s", n_recs)),
+          tags$li(sprintf("Date range: %s to %s", date_min, date_max)),
+          if (length(edit_cols) > 0)
+            tags$li(paste("Edit columns:", paste(edit_cols, collapse = ", "))),
+          if (length(flag_cols) > 0)
+            tags$li(paste("Flag columns:", paste(flag_cols, collapse = ", ")))
+        )
+      )
     })
 
     # ------ Import summary table ------
@@ -434,48 +1126,113 @@ module_do_upload_server <- function(id) {
       )
     })
 
-    # ------ Preview plot ------
+    # ------ Preview plot (4 panels: DO mg/L, water temp, baro press, baro temp) ------
     output$preview_plot <- renderPlotly({
-      df <- do_current()
-      req(df, nrow(df) > 0)
+      do_df <- do_current()
+      req(do_df, nrow(do_df) > 0)
 
-      stations <- unique(df$site_station_code)
+      baro_df <- baro_qc_current()
 
-      # DO panel
+      do_stations <- unique(do_df$site_station_code)
+
+      # Panel 1: DO concentration (mg/L)
       p1 <- plot_ly()
-      for (stn in stations) {
-        stn_data <- dplyr::filter(df, site_station_code == stn)
+      for (stn in do_stations) {
+        stn_data <- dplyr::filter(do_df, site_station_code == stn)
         p1 <- p1 %>% add_trace(
           data = stn_data, x = ~timestamp, y = ~do_mgl,
           type = "scattergl", mode = "lines",
           line = list(width = 1),
           name = paste(stn, "- DO"),
+          legendgroup = stn,
           hovertemplate = paste0(stn, ": %{y:.2f} mg/L<extra></extra>")
         )
       }
 
-      # Temperature panel
+      # Panel 2: Water temperature (C)
       p2 <- plot_ly()
-      for (stn in stations) {
-        stn_data <- dplyr::filter(df, site_station_code == stn)
+      for (stn in do_stations) {
+        stn_data <- dplyr::filter(do_df, site_station_code == stn)
         p2 <- p2 %>% add_trace(
           data = stn_data, x = ~timestamp, y = ~watertemp_C,
           type = "scattergl", mode = "lines",
           line = list(width = 1),
-          name = paste(stn, "- Temp"),
+          name = paste(stn, "- Water Temp"),
+          legendgroup = stn,
           showlegend = FALSE,
           hovertemplate = paste0(stn, ": %{y:.1f} \u00b0C<extra></extra>")
         )
       }
 
-      subplot(p1, p2, nrows = 2, shareX = TRUE, titleY = TRUE) %>%
+      # Panels 3-4: Barometric data (if available)
+      if (!is.null(baro_df) && nrow(baro_df) > 0) {
+        baro_stations <- unique(baro_df$site_station_code)
+
+        # Use adjusted columns if available, fall back to raw
+        press_col <- if ("airpress_kPa_adj" %in% names(baro_df)) "airpress_kPa_adj" else "airpress_kPa"
+        temp_col <- if ("airtemp_C_adj" %in% names(baro_df)) "airtemp_C_adj" else "airtemp_C"
+
+        # Panel 3: Air pressure
+        p3 <- plot_ly()
+        for (stn in baro_stations) {
+          stn_data <- dplyr::filter(baro_df, site_station_code == stn)
+          p3 <- p3 %>% add_trace(
+            data = stn_data, x = ~timestamp, y = as.formula(paste0("~", press_col)),
+            type = "scattergl", mode = "lines",
+            line = list(width = 1),
+            name = paste(stn, "- Air Press"),
+            legendgroup = paste0("baro_", stn),
+            hovertemplate = paste0(stn, ": %{y:.2f} kPa<extra></extra>")
+          )
+        }
+
+        # Panel 4: Air temperature
+        p4 <- plot_ly()
+        for (stn in baro_stations) {
+          stn_data <- dplyr::filter(baro_df, site_station_code == stn)
+          p4 <- p4 %>% add_trace(
+            data = stn_data, x = ~timestamp, y = as.formula(paste0("~", temp_col)),
+            type = "scattergl", mode = "lines",
+            line = list(width = 1),
+            name = paste(stn, "- Air Temp"),
+            legendgroup = paste0("baro_", stn),
+            showlegend = FALSE,
+            hovertemplate = paste0(stn, ": %{y:.1f} \u00b0C<extra></extra>")
+          )
+        }
+      } else {
+        # Empty baro panels with annotation
+        p3 <- plot_ly() %>%
+          layout(
+            annotations = list(list(
+              text = "No barometric data loaded",
+              xref = "paper", yref = "paper",
+              x = 0.5, y = 0.5, showarrow = FALSE,
+              font = list(size = 14, color = "#999")
+            ))
+          )
+        p4 <- plot_ly() %>%
+          layout(
+            annotations = list(list(
+              text = "No barometric data loaded",
+              xref = "paper", yref = "paper",
+              x = 0.5, y = 0.5, showarrow = FALSE,
+              font = list(size = 14, color = "#999")
+            ))
+          )
+      }
+
+      subplot(p1, p2, p3, p4, nrows = 4, shareX = TRUE, titleY = TRUE) %>%
         layout(
-          title = list(text = "Dissolved Oxygen Data Preview", font = list(size = 14)),
-          xaxis2 = list(title = "Date"),
+          title = list(text = "Dissolved Oxygen & Barometric Data Preview",
+                       font = list(size = 14)),
+          xaxis4 = list(title = "Date"),
           yaxis = list(title = "DO (mg/L)"),
           yaxis2 = list(title = "Water Temp (\u00b0C)"),
+          yaxis3 = list(title = "Air Press (kPa)"),
+          yaxis4 = list(title = "Air Temp (\u00b0C)"),
           hovermode = "x unified",
-          legend = list(orientation = "h", y = -0.15),
+          legend = list(orientation = "h", y = -0.08),
           margin = list(b = 80)
         )
     })
@@ -484,95 +1241,343 @@ module_do_upload_server <- function(id) {
 }
 
 
-# =============================================================================
-# 2. Add Nearest Baro — UI
-# =============================================================================
-module_do_baro_ui <- function(id) {
+# -----------------------------------------------------------------------------
+# 2. Convert to % Sat.
+# -----------------------------------------------------------------------------
+module_do_convert_ui <- function(id) {
   ns <- NS(id)
   tagList(
     shinydashboard::box(
       width = 12,
-      tags$h1("Add Nearest Barometric Station", class = "custom-h1"),
-      tags$h2("Attach barometric pressure data to DO records",
+      tags$h1("Convert to % Saturation", class = "custom-h1"),
+      tags$h2("Add nearest barometric station and convert DO units",
               class = "custom-h2"),
 
       tags$p(
         class = "clean-print",
-        "Attach barometric pressure data to each DO timestamp. ",
-        "Atmospheric pressure is needed for the Weiss equation that ",
-        "calculates percent saturation in the next step. Air temperature ",
-        "also helps detect dry-sensor conditions."
+        "Dissolved oxygen loggers record concentration in mg/L, but percent ",
+        "air saturation (%sat) is needed for cross-site comparison. %sat depends ",
+        "on water temperature AND barometric pressure, so this step first joins ",
+        "baro data, then applies the Weiss (1970/1974) solubility equations to ",
+        "compute %sat."
       ),
 
-      # ---- Data readiness ----
-      uiOutput(ns("baro_status")),
+      tags$div(
+        class = "clean-print",
+        tags$h4("Why Barometric Pressure?", style = "margin-top: 10px;"),
+        tags$p(
+          "DO saturation depends on atmospheric pressure. At higher altitudes, ",
+          "lower air pressure means lower O\u2082 partial pressure, so the same ",
+          "mg/L value represents a higher % saturation. Without pressure ",
+          "correction, cross-site comparisons are biased."
+        ),
+        tags$h4("The Weiss Equation", style = "margin-top: 15px;"),
+        tags$p(
+          "The Weiss (1970/1974) equations compute the theoretical DO saturation ",
+          "at 1 atm from the water temperature (in Kelvin), then apply a pressure ",
+          "correction factor using barometric pressure. Percent saturation is ",
+          "then: ", tags$code("%sat = 100 \u00d7 (measured mg/L / corrected saturation)"), "."
+        )
+      ),
 
       hr(),
+
+      # ===== Part A: Add Nearest Baro =====
+      tags$h3("Part A: Add Nearest Barometric Station",
+              style = "color: #1565c0; margin-bottom: 15px;"),
 
       fluidRow(
         column(
           width = 4,
           tags$div(
-            style = "background-color: #e3f2fd; padding: 20px; border-radius: 5px; margin-bottom: 15px;",
-            tags$h4("Why Baro for DO?", style = "margin-top: 0;"),
-            tags$p(
-              "Oxygen saturation depends on the partial pressure of oxygen in ",
-              "the atmosphere. Atmospheric pressure is needed for the Weiss ",
-              "equation that calculates %sat."
+            style = "background-color: #f0f0f0; padding: 20px; border-radius: 5px; margin-bottom: 15px;",
+
+            tags$h4("How Station Matching Works", style = "margin-top: 0;"),
+            tags$p(style = "font-size: 13px;",
+              "The function uses ", tags$code("geosphere::distHaversine()"), " to ",
+              "rank all barometric stations by horizontal distance (lat/lon) from ",
+              "each DO site. It keeps the nearest ", tags$code("max_stations"),
+              " (default 5) within an optional ", tags$code("max_km"), " radius."
             ),
-            tags$p(style = "font-size: 13px; color: #666;",
-              "Air temperature also helps detect dry-sensor conditions ",
-              "(when water temp converges with air temp)."
+            tags$p(style = "font-size: 13px;",
+              "Barometric data is joined to DO data by an exact ",
+              tags$strong("timestamp match"), " (left join) \u2014 no interpolation is ",
+              "performed. If timestamps don't align, the function warns about the ",
+              "offset. Use ", tags$strong("Snap Timestamps"), " in the Import step ",
+              "to ensure both series are on the same grid."
+            ),
+
+            tags$h4("Multi-Station Gap-Filling", style = "margin-top: 15px;"),
+            tags$p(style = "font-size: 13px;",
+              "When multiple baro stations are available, the function builds a ",
+              "composite series. Secondary stations are calibrated to the nearest ",
+              "(reference) station via linear regression over their overlapping ",
+              "timestamps (minimum 10 points). Values are then coalesced ",
+              "nearest-first: the closest station fills first, then calibrated ",
+              "alternates fill any remaining gaps."
+            ),
+            tags$p(style = "font-size: 13px;",
+              "A ", tags$code("baro_site_stn_code"), " column is added to track ",
+              "which baro station provided each row's value."
             )
           ),
+
           tags$div(
             style = "background-color: #f0f0f0; padding: 15px; border-radius: 5px;",
             tags$h4("Follow Along in the R Package (waterlogged)", style = "margin-top: 0;"),
             tags$code("add_nearest_baro()"),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
-                   "Matches each DO station to the nearest barometric station(s) by GPS ",
-                   "distance and joins baro pressure/temperature by timestamp. Outputs ",
-                   "the data frame with added ", tags$code("airpress_kPa"), ", ",
-                   tags$code("airtemp_C"), ", and ", tags$code("baro_site_stn_code"),
-                   " columns.")
+                   "Matches each DO station to the nearest barometric station(s) ",
+                   "by GPS distance and joins baro pressure/temperature by timestamp. ",
+                   "Called with ", tags$code('metric = "DO"'), ". Outputs the input ",
+                   "data frame with added ",
+                   tags$code("airpress_kPa"), ", ", tags$code("airtemp_C"), ", and ",
+                   tags$code("baro_site_stn_code"), " columns.")
           )
         ),
         column(
           width = 8,
+
+          # ---- Data readiness banner ----
+          uiOutput(ns("baro_readiness")),
+
+          # ---- Run controls ----
           tags$div(
-            style = "background-color: #e3f2fd; padding: 20px; border-radius: 5px; margin-bottom: 15px;",
+            style = "background-color: #fafafa; padding: 20px; border-radius: 5px; border: 1px solid #e0e0e0; margin-bottom: 15px;",
+
+            # Station selector
+            tags$h4("Stations to Process", style = "margin-top: 0;"),
+            selectizeInput(ns("baro_do_stations"), NULL,
+              choices = NULL, multiple = TRUE,
+              width = "100%",
+              options = list(
+                placeholder = "All stations (default)",
+                plugins = list("remove_button")
+              )
+            ),
+
+            # Parameter row
             fluidRow(
               column(4,
-                selectInput(ns("baro_selection"), "Baro Station:",
+                selectInput(ns("baro_selection"), "Baro Selection Mode:",
                   choices = c("Auto (nearest)" = "auto"),
                   width = "100%"
                 )
               ),
               column(4,
                 numericInput(ns("max_km"), "Max Distance (km):",
-                  value = 30, min = 1, max = 200, step = 5)
+                  value = NA, min = 1, max = 500)
               ),
               column(4,
-                tags$div(
-                  style = "margin-top: 25px;",
-                  actionButton(ns("add_baro_btn"), "Add Baro Data",
-                    class = "btn-primary btn-lg", width = "100%",
-                    icon = icon("cloud")
-                  )
-                )
+                numericInput(ns("max_stations"), "Max Baro Stations:",
+                  value = 5, min = 1, max = 20)
               )
+            ),
+
+            tags$p(style = "font-size: 12px; color: #666; margin-top: -5px; margin-bottom: 15px;",
+              "Leave station selector empty to process all DO stations. Select ",
+              "specific stations to re-run with different settings \u2014 existing ",
+              "results for other stations are preserved."
+            ),
+
+            actionButton(ns("run_add_baro"), "Add Baro Data",
+              class = "btn-primary btn-lg", width = "100%",
+              icon = icon("cloud"),
+              style = "color: #ffffff;"
             )
           ),
 
-          # Baro match results (conditional)
+          # ---- Results (conditional) ----
           conditionalPanel(
             condition = "output.show_baro_results",
             ns = ns,
+
+            # Section divider: Baro Assignment Results
             tags$div(
-              style = "margin-bottom: 15px;",
-              uiOutput(ns("baro_match_info")),
-              DT::DTOutput(ns("baro_summary"))
+              style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+              tags$span(
+                style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+                "Baro Assignment Results"
+              )
+            ),
+
+            tags$h4("Summary by Station"),
+            DT::DTOutput(ns("baro_summary_table"))
+          )
+        )
+      ),
+
+      # ---- Station Detail (full-width, conditional on baro results) ----
+      conditionalPanel(
+        condition = "output.show_baro_results",
+        ns = ns,
+
+        # Section divider: Station Detail
+        tags$div(
+          style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+          tags$span(
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            "Station Detail"
+          )
+        ),
+
+        fluidRow(
+          column(4,
+            tags$div(
+              style = "background-color: #e3f2fd; padding: 10px; border-radius: 5px; border: 2px solid #1565c0;",
+              selectInput(ns("detail_station"), "Select Station:",
+                choices = NULL, width = "100%")
             )
+          ),
+          column(8,
+            uiOutput(ns("station_detail_info"))
+          )
+        ),
+
+        uiOutput(ns("calibration_info")),
+
+        shinycssloaders::withSpinner(
+          plotly::plotlyOutput(ns("baro_assign_plot"), height = "650px")
+        )
+      ),
+
+      hr(),
+
+      # ===== Part B: Convert DO to Percent Saturation =====
+      tags$h3("Part B: Convert DO to Percent Saturation",
+              style = "color: #2e7d32; margin-bottom: 15px;"),
+
+      fluidRow(
+        column(
+          width = 4,
+          tags$div(
+            style = "background-color: #f0f0f0; padding: 20px; border-radius: 5px; margin-bottom: 15px;",
+            tags$h4("The Conversion", style = "margin-top: 0;"),
+            tags$p(style = "font-size: 13px;",
+              "The Weiss (1970/1974) equations convert dissolved oxygen from ",
+              "mg/L to percent air saturation in three steps:"
+            ),
+            tags$ol(
+              style = "padding-left: 20px; font-size: 13px;",
+              tags$li("Compute theoretical DO saturation at 1 atm from water temperature (Kelvin)"),
+              tags$li("Apply pressure correction factor using barometric pressure"),
+              tags$li("Calculate: ", tags$code("%sat = 100 \u00d7 (measured mg/L / corrected saturation)"))
+            ),
+            tags$p(style = "font-size: 13px; margin-top: 10px; color: #666;",
+              "Values of ", tags$code("-888.88"), " in ", tags$code("do_mgl"),
+              " are treated as logger errors and produce NA."
+            ),
+            tags$p(style = "font-size: 13px; color: #666;",
+              "Rows missing barometric pressure (gaps in baro coverage) will ",
+              "also produce NA."
+            )
+          ),
+          tags$div(
+            style = "background-color: #f0f0f0; padding: 15px; border-radius: 5px;",
+            tags$h4("Follow Along in the R Package (waterlogged)", style = "margin-top: 0;"),
+            tags$code("convert_do_mgl_percsat()"),
+            tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
+                   "Applies Weiss (1970/1974) equations. Adds a ",
+                   tags$code("do_percsat"), " column (numeric, percent air saturation).")
+          )
+        ),
+        column(
+          width = 8,
+
+          # ---- Station Readiness ----
+          tags$div(
+            style = "border-top: 2px solid #2e7d32; margin: 0 0 20px 0; position: relative;",
+            tags$span(
+              style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+              "Station Readiness"
+            )
+          ),
+
+          uiOutput(ns("convert_readiness")),
+
+          # ---- Convert Dissolved Oxygen ----
+          tags$div(
+            style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+            tags$span(
+              style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+              "Convert Dissolved Oxygen"
+            )
+          ),
+
+          tags$div(
+            style = "background-color: #fafafa; padding: 20px; border-radius: 5px; border: 1px solid #e0e0e0; margin-bottom: 15px;",
+
+            selectizeInput(ns("convert_do_stations"), "Stations to Convert:",
+              choices = NULL, multiple = TRUE, width = "100%",
+              options = list(
+                placeholder = "All ready stations (default)",
+                plugins = list("remove_button")
+              )
+            ),
+
+            actionButton(ns("run_convert"), "Convert to % Saturation",
+              class = "btn-success btn-lg", width = "100%",
+              icon = icon("flask"),
+              style = "color: #ffffff;"
+            )
+          )
+        )
+      ),
+
+      # ---- Conversion Results (full-width, conditional) ----
+      conditionalPanel(
+        condition = "output.show_convert_results",
+        ns = ns,
+
+        tags$div(
+          style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+          tags$span(
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            "Conversion Results"
+          )
+        ),
+
+        tags$h4("Summary by Station"),
+        DT::DTOutput(ns("convert_summary_table")),
+
+        tags$div(
+          style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+          tags$span(
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            "Station Detail"
+          )
+        ),
+
+        fluidRow(
+          column(4,
+            tags$div(
+              style = "background-color: #e8f5e9; padding: 10px; border-radius: 5px; border: 2px solid #2e7d32;",
+              selectInput(ns("convert_detail_station"), "Select Station:",
+                choices = NULL, width = "100%")
+            )
+          ),
+          column(8,
+            uiOutput(ns("convert_station_info"))
+          )
+        ),
+
+        shinycssloaders::withSpinner(
+          plotly::plotlyOutput(ns("convert_review_plot"), height = "850px")
+        ),
+
+        # ---- Next step link ----
+        tags$div(
+          style = "margin-top: 25px; padding: 15px; background-color: #e8f5e9; border-radius: 5px; text-align: center;",
+          tags$p(style = "margin: 0; font-size: 14px;",
+            icon("arrow-right"),
+            " Ready to proceed? Continue to ",
+            tags$a(
+              href = "#",
+              onclick = "$(\"a[href='#shiny-tab-t_do_qc']\").tab('show'); window.scrollTo(0,0); return false;",
+              style = "color: #2e7d32; font-weight: bold;",
+              "QC Dissolved Oxygen"
+            ),
+            " to run automated quality checks and review flagged data."
           )
         )
       )
@@ -581,45 +1586,53 @@ module_do_baro_ui <- function(id) {
   )
 }
 
-
-# =============================================================================
-# 2. Add Nearest Baro — Server
-# =============================================================================
-module_do_baro_server <- function(id) {
+module_do_convert_server <- function(id) {
   moduleServer(id, function(input, output, session) {
 
-    rv_raw_data   <- session$userData$rv_raw_data
-    rv_bound_data <- session$userData$rv_bound_data
-    rv_qaqc_data  <- session$userData$rv_qaqc_data
+    rv_raw_data       <- session$userData$rv_raw_data
+    rv_bound_data     <- session$userData$rv_bound_data
+    rv_qaqc_data      <- session$userData$rv_qaqc_data
+    rv_converted_data <- session$userData$rv_converted_data
 
-    # Local reactive for step tracking
-    baro_added <- reactiveVal(FALSE)
+    # Module-local reactives
+    baro_result   <- reactiveVal(NULL)    # DO+baro joined data frame
+    baro_messages <- reactiveVal(NULL)    # captured message() output
+
+    convert_result <- reactiveVal(NULL)   # DO with do_percsat added
 
     # Conditional panel visibility
-    output$show_baro_results <- reactive({ baro_added() })
+    output$show_baro_results <- reactive({ !is.null(baro_result()) })
     outputOptions(output, "show_baro_results", suspendWhenHidden = FALSE)
 
-    # ------ Data readiness ------
-    output$baro_status <- renderUI({
-      df <- rv_bound_data$do_bound
-      baro <- rv_qaqc_data$baro_qaqc
-      if (is.null(df) || nrow(df) == 0) {
+    output$show_convert_results <- reactive({ !is.null(convert_result()) })
+    outputOptions(output, "show_convert_results", suspendWhenHidden = FALSE)
+
+    # =======================================================================
+    # Part A: Add Nearest Baro — Server Logic
+    # =======================================================================
+
+    # ---- Data readiness banner ----
+    output$baro_readiness <- renderUI({
+      do_data <- rv_bound_data$do_bound
+      baro    <- rv_qaqc_data$baro_qaqc
+      if (is.null(do_data) || nrow(do_data) == 0) {
         tags$div(
           style = "color: #856404; background: #fff3cd; padding: 12px; border-radius: 5px; margin-bottom: 10px;",
           icon("exclamation-triangle"),
-          " No DO data available. Import data in the Import tab first."
+          " No dissolved oxygen data available. Import data in the Import tab first."
         )
       } else if (is.null(baro) || nrow(baro) == 0) {
-        n_stns <- length(unique(df$site_station_code))
-        n_recs <- format(nrow(df), big.mark = ",")
+        n_stns <- length(unique(do_data$site_station_code))
+        n_recs <- format(nrow(do_data), big.mark = ",")
         tags$div(
           style = "color: #856404; background: #fff3cd; padding: 12px; border-radius: 5px; margin-bottom: 10px;",
           icon("exclamation-triangle"),
-          sprintf(" DO data ready (%d station(s), %s records) but no QC'd barometric data found. Process baro data first, or add baro manually.", n_stns, n_recs)
+          sprintf(" DO data ready (%d station(s), %s records) but no QC'd barometric data found. Process baro data first.",
+                  n_stns, n_recs)
         )
       } else {
-        n_stns <- length(unique(df$site_station_code))
-        n_recs <- format(nrow(df), big.mark = ",")
+        n_stns <- length(unique(do_data$site_station_code))
+        n_recs <- format(nrow(do_data), big.mark = ",")
         n_baro <- length(unique(baro$site_station_code))
         tags$div(
           style = "color: #155724; background: #d4edda; padding: 12px; border-radius: 5px; margin-bottom: 10px;",
@@ -630,24 +1643,38 @@ module_do_baro_server <- function(id) {
       }
     })
 
-    # ------ Update baro station selector ------
+    # ---- Update DO station selector ----
+    observe({
+      do_data <- rv_bound_data$do_bound
+      if (!is.null(do_data) && nrow(do_data) > 0) {
+        stns <- sort(unique(do_data$site_station_code))
+        updateSelectizeInput(session, "baro_do_stations", choices = stns,
+                             selected = character(0))
+      }
+    })
+
+    # ---- Update baro selection dropdown ----
     observe({
       baro <- rv_qaqc_data$baro_qaqc
       if (!is.null(baro)) {
-        baro_stns <- unique(baro$site_station_code)
+        baro_stns <- sort(unique(baro$site_station_code))
         choices <- c("Auto (nearest)" = "auto", setNames(baro_stns, baro_stns))
         updateSelectInput(session, "baro_selection", choices = choices)
       }
     })
 
-    # ------ Add Baro button ------
-    observeEvent(input$add_baro_btn, {
-      do_data <- rv_bound_data$do_bound
+    # ---- Run add_nearest_baro ----
+    observeEvent(input$run_add_baro, {
+      do_data   <- rv_bound_data$do_bound
       baro_data <- rv_qaqc_data$baro_qaqc
-      metadata <- rv_raw_data$metadata
+      metadata  <- rv_raw_data$metadata
 
       if (is.null(do_data) || nrow(do_data) == 0) {
         showNotification("No DO data. Import data first.", type = "error", duration = 5)
+        return()
+      }
+      if (is.null(baro_data) || nrow(baro_data) == 0) {
+        showNotification("No QC'd barometric data. Process baro data first.", type = "error", duration = 5)
         return()
       }
       if (is.null(metadata)) {
@@ -656,327 +1683,628 @@ module_do_baro_server <- function(id) {
       }
 
       tryCatch({
-        showNotification("Adding barometric data...", type = "message",
-          duration = NULL, id = "do_baro_progress")
+        showNotification("Adding barometric data to DO stations...",
+                         type = "message", duration = NULL, id = "do_baro_progress")
 
+        # Determine station subset
+        selected_stns <- input$baro_do_stations
+        run_subset <- length(selected_stns) > 0
+        input_data <- if (run_subset) {
+          dplyr::filter(do_data, site_station_code %in% selected_stns)
+        } else {
+          do_data
+        }
+
+        # Deduplicate baro and DO data by (site_station_code, timestamp)
+        n_baro_before <- nrow(baro_data)
+        baro_data <- baro_data %>%
+          dplyr::arrange(site_station_code, timestamp) %>%
+          dplyr::filter(!duplicated(paste(site_station_code, timestamp), fromLast = TRUE))
+        n_baro_dupes <- n_baro_before - nrow(baro_data)
+
+        n_do_before <- nrow(input_data)
+        input_data <- input_data %>%
+          dplyr::arrange(site_station_code, timestamp) %>%
+          dplyr::filter(!duplicated(paste(site_station_code, timestamp), fromLast = TRUE))
+        n_do_dupes <- n_do_before - nrow(input_data)
+
+        if (n_baro_dupes > 0) cat("[add_baro_do] Removed", n_baro_dupes, "duplicate baro rows\n")
+        if (n_do_dupes > 0) cat("[add_baro_do] Removed", n_do_dupes, "duplicate DO rows\n")
+
+        cat("[add_baro_do] Input data:", nrow(input_data), "rows,",
+            length(unique(input_data$site_station_code)), "station(s)\n")
+        cat("[add_baro_do] Baro data:", nrow(baro_data), "rows,",
+            length(unique(baro_data$site_station_code)), "station(s)\n")
+        cat("[add_baro_do] Metadata:", nrow(metadata), "rows\n")
+
+        # Build baro selection arg
         baro_sel <- if (input$baro_selection == "auto") "auto" else input$baro_selection
+        cat("[add_baro_do] baro_selection:", baro_sel, "\n")
 
-        result <- waterlogged::add_nearest_baro(
-          input_data = do_data,
-          metric = "DO",
-          max_km = input$max_km,
-          baro_site_selection = baro_sel,
-          metadata = metadata,
-          baro_data = baro_data
+        # Build max_km (NA -> NULL)
+        max_km_val <- input$max_km
+        if (is.na(max_km_val)) max_km_val <- NULL
+        cat("[add_baro_do] max_km:", if (is.null(max_km_val)) "NULL" else max_km_val,
+            "| max_stations:", input$max_stations, "\n")
+
+        if (run_subset) {
+          cat("[add_baro_do] Running subset for station(s):", paste(selected_stns, collapse = ", "), "\n")
+        } else {
+          cat("[add_baro_do] Running for ALL stations\n")
+        }
+
+        cat("[add_baro_do] Calling waterlogged::add_nearest_baro() ...\n")
+        t_start <- Sys.time()
+
+        # Capture message() output for calibration diagnostics
+        msgs <- character(0)
+        result <- withCallingHandlers(
+          waterlogged::add_nearest_baro(
+            input_data       = input_data,
+            metric           = "DO",
+            baro_data        = baro_data,
+            metadata         = metadata,
+            max_km           = max_km_val,
+            max_stations     = input$max_stations,
+            baro_site_selection = baro_sel
+          ),
+          message = function(m) {
+            cat("[add_baro_do][msg]", conditionMessage(m))
+            msgs <<- c(msgs, conditionMessage(m))
+            invokeRestart("muffleMessage")
+          },
+          warning = function(w) {
+            cat("[add_baro_do][warn]", conditionMessage(w), "\n")
+            invokeRestart("muffleWarning")
+          }
         )
 
-        rv_bound_data$do_with_baro <- result[[1]]
-        baro_added(TRUE)
+        t_elapsed <- round(as.numeric(difftime(Sys.time(), t_start, units = "secs")), 1)
+        cat("[add_baro_do] add_nearest_baro() returned in", t_elapsed, "sec\n")
+        cat("[add_baro_do] Result class:", paste(class(result), collapse = "/"), "\n")
+
+        # add_nearest_baro returns a list; extract the data frame
+        if (is.list(result) && !is.data.frame(result)) {
+          cat("[add_baro_do] Extracting data frame from list (length", length(result), ")\n")
+          result <- result[[1]]
+        }
+
+        cat("[add_baro_do] Result:", nrow(result), "rows,", ncol(result), "cols\n")
+        cat("[add_baro_do] Columns:", paste(names(result), collapse = ", "), "\n")
+
+        # Merge-back: preserve existing results for non-selected stations
+        if (run_subset && !is.null(baro_result())) {
+          existing <- dplyr::filter(baro_result(),
+                                    !(site_station_code %in% selected_stns))
+          cat("[add_baro_do] Merge-back: keeping", nrow(existing), "existing rows for other stations\n")
+          result <- dplyr::bind_rows(existing, result) %>%
+            dplyr::arrange(site_station_code, timestamp)
+        }
+
+        cat("[add_baro_do] Storing result in baro_result() and rv_bound_data$do_with_baro\n")
+        baro_result(result)
+        baro_messages(msgs)
+        rv_bound_data$do_with_baro <- result
 
         removeNotification("do_baro_progress")
-        showNotification("Barometric data added successfully.", type = "message", duration = 3)
+        n_stns <- length(unique(result$site_station_code))
+        cat("[add_baro_do] Done. Baro data added for", n_stns, "station(s)\n")
+        showNotification(
+          sprintf("Baro data added for %d DO station(s).", n_stns),
+          type = "message", duration = 4
+        )
+
       }, error = function(e) {
+        cat("[add_baro_do][ERROR]", conditionMessage(e), "\n")
         removeNotification("do_baro_progress")
         showNotification(paste("Baro join error:", conditionMessage(e)),
-          type = "error", duration = 8)
+                         type = "error", duration = 8)
       })
     })
 
-    # ------ Baro match info ------
-    output$baro_match_info <- renderUI({
-      df <- rv_bound_data$do_with_baro
+    # ---- Baro summary table ----
+    output$baro_summary_table <- DT::renderDT({
+      df <- baro_result()
+      req(df, "airpress_kPa" %in% names(df), "baro_site_stn_code" %in% names(df))
+
+      metadata <- rv_raw_data$metadata
+
+      # Build a lookup of lat/lon per station from metadata
+      coords <- metadata %>%
+        dplyr::select(site_station_code, latitude, longitude) %>%
+        dplyr::distinct(site_station_code, .keep_all = TRUE)
+
+      # One row per DO station x baro station
+      summary_df <- df %>%
+        dplyr::filter(!is.na(baro_site_stn_code)) %>%
+        dplyr::group_by(site_station_code, baro_site_stn_code) %>%
+        dplyr::summarise(
+          Records    = dplyr::n(),
+          `Coverage` = paste0(round(100 * sum(!is.na(airpress_kPa)) / dplyr::n(), 1), "%"),
+          `Overlap Period` = paste(
+            format(min(timestamp), "%Y-%m-%d"),
+            "\u2013",
+            format(max(timestamp), "%Y-%m-%d")
+          ),
+          .groups = "drop"
+        )
+
+      # Compute Haversine distance between each DO and baro station
+      summary_df <- summary_df %>%
+        dplyr::left_join(coords, by = "site_station_code") %>%
+        dplyr::rename(do_lat = latitude, do_lon = longitude) %>%
+        dplyr::left_join(coords, by = c("baro_site_stn_code" = "site_station_code")) %>%
+        dplyr::rename(baro_lat = latitude, baro_lon = longitude) %>%
+        dplyr::rowwise() %>%
+        dplyr::mutate(
+          `Distance (km)` = if (!is.na(do_lat) && !is.na(do_lon) &&
+                                !is.na(baro_lat) && !is.na(baro_lon)) {
+            round(geosphere::distHaversine(
+              c(do_lon, do_lat), c(baro_lon, baro_lat)
+            ) / 1000, 1)
+          } else {
+            NA_real_
+          }
+        ) %>%
+        dplyr::ungroup() %>%
+        dplyr::select(
+          `DO Station`   = site_station_code,
+          `Baro Station` = baro_site_stn_code,
+          `Distance (km)`,
+          Records,
+          Coverage,
+          `Overlap Period`
+        )
+
+      DT::datatable(summary_df,
+        selection = "single",
+        options = list(dom = "t", pageLength = 50, scrollX = TRUE),
+        rownames = FALSE
+      )
+    })
+
+    # ---- Detail station selector update ----
+    prev_detail_stations <- reactiveVal(character(0))
+    observe({
+      df <- baro_result()
       req(df)
-      n_with_baro <- sum(!is.na(df$airpress_kPa))
-      n_total <- nrow(df)
-      pct <- round(100 * n_with_baro / n_total, 1)
-      baro_stns <- if ("baro_site_stn_code" %in% names(df)) {
+      stns <- sort(unique(df$site_station_code))
+      if (!identical(stns, prev_detail_stations())) {
+        prev_detail_stations(stns)
+        current <- isolate(input$detail_station)
+        sel <- if (!is.null(current) && current %in% stns) current else stns[1]
+        updateSelectInput(session, "detail_station", choices = stns, selected = sel)
+      }
+    })
+
+    # Sync detail station from summary table click
+    observeEvent(input$baro_summary_table_rows_selected, {
+      row_idx <- input$baro_summary_table_rows_selected
+      if (length(row_idx) == 1) {
+        df <- baro_result()
+        req(df, "baro_site_stn_code" %in% names(df))
+        summary_stns <- df %>%
+          dplyr::filter(!is.na(baro_site_stn_code)) %>%
+          dplyr::distinct(site_station_code, baro_site_stn_code) %>%
+          dplyr::arrange(site_station_code, baro_site_stn_code)
+        if (row_idx <= nrow(summary_stns)) {
+          updateSelectInput(session, "detail_station",
+                            selected = summary_stns$site_station_code[row_idx])
+        }
+      }
+    })
+
+    # ---- Selected station data ----
+    selected_station_data <- reactive({
+      df <- baro_result()
+      stn <- input$detail_station
+      req(df, stn)
+      dplyr::filter(df, site_station_code == stn)
+    })
+
+    # ---- Station detail info ----
+    output$station_detail_info <- renderUI({
+      df <- selected_station_data()
+      req(nrow(df) > 0)
+
+      n_total    <- nrow(df)
+      n_baro     <- sum(!is.na(df$airpress_kPa))
+      pct        <- round(100 * n_baro / n_total, 1)
+      date_range <- paste(format(min(df$timestamp), "%Y-%m-%d"),
+                          "to", format(max(df$timestamp), "%Y-%m-%d"))
+      baro_stns  <- if ("baro_site_stn_code" %in% names(df)) {
         paste(unique(na.omit(df$baro_site_stn_code)), collapse = ", ")
       } else {
         "unknown"
       }
 
       tags$div(
-        style = "color: #155724; background: #d4edda; padding: 12px; border-radius: 5px; margin-bottom: 10px;",
-        icon("check-circle"),
-        sprintf(" Baro coverage: %s/%s records (%.1f%%) | Matched station(s): %s",
-                format(n_with_baro, big.mark = ","),
-                format(n_total, big.mark = ","),
-                pct, baro_stns)
-      )
-    })
-
-    # ------ Baro summary table ------
-    output$baro_summary <- DT::renderDT({
-      df <- rv_bound_data$do_with_baro
-      req(df, "airpress_kPa" %in% names(df))
-
-      summary_df <- df %>%
-        dplyr::group_by(site_station_code) %>%
-        dplyr::summarise(
-          Records = dplyr::n(),
-          `Baro Coverage` = paste0(round(100 * sum(!is.na(airpress_kPa)) / dplyr::n(), 1), "%"),
-          `Press Min (kPa)` = round(min(airpress_kPa, na.rm = TRUE), 2),
-          `Press Max (kPa)` = round(max(airpress_kPa, na.rm = TRUE), 2),
-          `Air Temp Min (C)` = round(min(airtemp_C, na.rm = TRUE), 1),
-          `Air Temp Max (C)` = round(max(airtemp_C, na.rm = TRUE), 1),
-          .groups = "drop"
-        )
-
-      DT::datatable(summary_df,
-        options = list(dom = "t", pageLength = 50, scrollX = TRUE),
-        rownames = FALSE
-      )
-    })
-
-  })
-}
-
-
-# =============================================================================
-# 3. Convert Data Metrics — UI
-# =============================================================================
-module_do_convert_ui <- function(id) {
-  ns <- NS(id)
-  tagList(
-    shinydashboard::box(
-      width = 12,
-      tags$h1("Convert Data Metrics", class = "custom-h1"),
-      tags$h2("Convert DO from mg/L to percent air saturation",
-              class = "custom-h2"),
-
-      tags$p(
-        class = "clean-print",
-        "Use barometric pressure (added in the previous step) along with ",
-        "water temperature to convert DO from mg/L to percent air ",
-        "saturation (%sat). Percent saturation accounts for altitude and ",
-        "temperature, making it the preferred metric for comparison."
-      ),
-
-      # ---- Data readiness ----
-      uiOutput(ns("convert_status")),
-
-      hr(),
-
-      tags$h3("Convert DO to Percent Saturation",
-              style = "color: #2e7d32; margin-bottom: 15px;"),
-
-      fluidRow(
-        column(
-          width = 4,
-          tags$div(
-            style = "background-color: #e8f5e9; padding: 20px; border-radius: 5px; margin-bottom: 15px;",
-            tags$h4("The Weiss Equation", style = "margin-top: 0;"),
-            tags$p(
-              "Using the Weiss (1970/1974) oxygen solubility equation:"
-            ),
-            tags$ol(
-              style = "padding-left: 20px; font-size: 13px;",
-              tags$li("Calculate theoretical max DO at the given temp and pressure"),
-              tags$li("Divide measured DO by the theoretical max"),
-              tags$li("Multiply by 100 to get percent")
-            ),
-            tags$p(style = "font-size: 13px; margin-top: 10px; color: #666;",
-              "~100% = well-aerated. >100% = supersaturation (algae). ",
-              "<50% = oxygen depletion."
-            )
-          ),
-          tags$div(
-            style = "background-color: #f0f0f0; padding: 15px; border-radius: 5px;",
-            tags$h4("Follow Along in the R Package (waterlogged)", style = "margin-top: 0;"),
-            tags$code("convert_do_mgl_percsat()"),
-            tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
-                   "Converts dissolved oxygen from mg/L to percent air saturation using ",
-                   "the Weiss equation with water temperature and barometric pressure. ",
-                   "Outputs the data frame with a new ", tags$code("do_percsat"), " column.")
-          )
+        style = "background-color: #f8f9fa; padding: 12px; border-radius: 5px;",
+        tags$p(style = "margin: 0;",
+          sprintf("%s records | Baro coverage: %.1f%% | %s", format(n_total, big.mark = ","), pct, date_range)
         ),
-        column(
-          width = 8,
-          actionButton(ns("convert_btn"), "Convert to % Saturation",
-            class = "btn-success btn-lg", width = "100%",
-            icon = icon("play")
-          ),
-
-          # Convert results (conditional)
-          conditionalPanel(
-            condition = "output.show_convert_results",
-            ns = ns,
-
-            tags$div(style = "margin-top: 15px;"),
-            tags$h4("Conversion Summary"),
-            DT::DTOutput(ns("convert_summary")),
-
-            tags$div(style = "margin-top: 15px;"),
-            tags$h4("DO Conversion Plot"),
-            plotlyOutput(ns("convert_plot"), height = "650px") %>% withSpinner()
-          )
+        tags$p(style = "margin: 5px 0 0 0; color: #555;",
+          "Matched baro: ", tags$strong(baro_stns)
         )
       )
-    ),
-    .wireframe_footer()
-  )
-}
+    })
 
+    # ---- Calibration info ----
+    output$calibration_info <- renderUI({
+      msgs <- baro_messages()
+      stn  <- input$detail_station
+      req(msgs, stn)
 
-# =============================================================================
-# 3. Convert Data Metrics — Server
-# =============================================================================
-module_do_convert_server <- function(id) {
-  moduleServer(id, function(input, output, session) {
+      stn_msgs <- msgs[grepl(stn, msgs, fixed = TRUE)]
+      cal_lines <- stn_msgs[grepl("Calibrat|calibrat|R2|r2|overlap", stn_msgs)]
 
-    rv_bound_data     <- session$userData$rv_bound_data
-    rv_converted_data <- session$userData$rv_converted_data
+      if (length(cal_lines) == 0) {
+        df <- selected_station_data()
+        if (!is.null(df) && "baro_site_stn_code" %in% names(df)) {
+          n_baro <- length(unique(na.omit(df$baro_site_stn_code)))
+          if (n_baro <= 1) {
+            return(tags$div(
+              style = "color: #555; font-size: 13px; margin: 10px 0;",
+              icon("info-circle"),
+              " Single baro station match \u2014 no calibration needed."
+            ))
+          }
+        }
+        return(NULL)
+      }
 
-    # Local reactive for step tracking
-    convert_done <- reactiveVal(FALSE)
-
-    # Conditional panel visibility
-    output$show_convert_results <- reactive({ convert_done() })
-    outputOptions(output, "show_convert_results", suspendWhenHidden = FALSE)
-
-    # ------ Data readiness ------
-    output$convert_status <- renderUI({
-      df <- rv_bound_data$do_with_baro
-      if (is.null(df) || nrow(df) == 0) {
-        tags$div(
-          style = "color: #856404; background: #fff3cd; padding: 12px; border-radius: 5px; margin-bottom: 10px;",
-          icon("exclamation-triangle"),
-          " No DO data with barometric pressure available. Complete the Add Nearest Baro step first."
+      tags$div(
+        style = "background-color: #f0f4c3; padding: 12px; border-radius: 5px; margin: 10px 0; font-size: 13px;",
+        tags$strong("Calibration Diagnostics:"),
+        tags$ul(
+          style = "margin: 5px 0 0 0; padding-left: 20px;",
+          lapply(cal_lines, function(line) tags$li(line))
         )
-      } else if (!"airpress_kPa" %in% names(df)) {
-        tags$div(
-          style = "color: #856404; background: #fff3cd; padding: 12px; border-radius: 5px; margin-bottom: 10px;",
-          icon("exclamation-triangle"),
-          " DO data found but missing airpress_kPa column. Run Add Nearest Baro first."
-        )
+      )
+    })
+
+    # ---- Baro assignment review plot (2-panel: DO mg/L + baro kPa) ----
+    output$baro_assign_plot <- plotly::renderPlotly({
+      df <- selected_station_data()
+      req(nrow(df) > 0, "airpress_kPa" %in% names(df))
+
+      baro_colors <- c("#E53935", "#43A047", "#FB8C00", "#8E24AA", "#00ACC1",
+                       "#6D4C41", "#D81B60", "#1E88E5", "#FDD835", "#546E7A")
+
+      # Panel 1: DO mg/L
+      p1 <- plotly::plot_ly() %>%
+        plotly::add_trace(
+          data = df, x = ~timestamp, y = ~do_mgl,
+          type = "scatter", mode = "lines",
+          name = "DO (mg/L)",
+          line = list(color = "#1565c0", width = 1.5)
+        ) %>%
+        plotly::layout(yaxis = list(title = "DO (mg/L)"))
+
+      # Panel 2: Baro pressure, colored by contributing station
+      p2 <- plotly::plot_ly()
+
+      if ("baro_site_stn_code" %in% names(df)) {
+        baro_stns <- unique(na.omit(df$baro_site_stn_code))
+        for (i in seq_along(baro_stns)) {
+          stn_data <- dplyr::filter(df, baro_site_stn_code == baro_stns[i])
+          if (nrow(stn_data) > 0) {
+            p2 <- p2 %>% plotly::add_trace(
+              data = stn_data, x = ~timestamp, y = ~airpress_kPa,
+              type = "scatter", mode = "lines",
+              name = paste0("Baro: ", baro_stns[i]),
+              line = list(color = baro_colors[((i - 1) %% length(baro_colors)) + 1], width = 1)
+            )
+          }
+        }
       } else {
-        n_stns <- length(unique(df$site_station_code))
-        n_recs <- format(nrow(df), big.mark = ",")
-        pct_baro <- round(100 * sum(!is.na(df$airpress_kPa)) / nrow(df), 1)
-        tags$div(
-          style = "color: #155724; background: #d4edda; padding: 12px; border-radius: 5px; margin-bottom: 10px;",
-          icon("check-circle"),
-          sprintf(" Ready: %d station(s), %s records, %.1f%% baro coverage",
-                  n_stns, n_recs, pct_baro)
+        p2 <- p2 %>% plotly::add_trace(
+          data = df, x = ~timestamp, y = ~airpress_kPa,
+          type = "scatter", mode = "lines",
+          name = "Baro Pressure",
+          line = list(color = "#E53935", width = 1)
         )
+      }
+
+      p2 <- p2 %>% plotly::layout(yaxis = list(title = "Baro (kPa)"))
+
+      plotly::subplot(p1, p2, nrows = 2, shareX = TRUE, titleY = TRUE) %>%
+        plotly::layout(
+          hovermode = "x unified",
+          legend = list(orientation = "h", y = -0.08),
+          margin = list(b = 80)
+        )
+    })
+
+    # =======================================================================
+    # Part B: Convert DO to % Saturation — Server Logic
+    # =======================================================================
+
+    # ---- Station readiness ----
+    output$convert_readiness <- renderUI({
+      do_with_baro <- rv_bound_data$do_with_baro
+      do_bound     <- rv_bound_data$do_bound
+
+      # Get all DO stations
+      do_stns <- character(0)
+      if (!is.null(do_bound) && nrow(do_bound) > 0) {
+        do_stns <- unique(do_bound$site_station_code)
+      } else if (!is.null(do_with_baro) && nrow(do_with_baro) > 0) {
+        do_stns <- unique(do_with_baro$site_station_code)
+      }
+
+      if (length(do_stns) == 0) {
+        return(tags$div(
+          style = "color: #856404; background: #fff3cd; padding: 12px; border-radius: 5px; margin-bottom: 10px;",
+          icon("exclamation-triangle"),
+          " No dissolved oxygen stations available."
+        ))
+      }
+
+      baro_stns <- if (!is.null(do_with_baro)) unique(do_with_baro$site_station_code) else character(0)
+
+      status_items <- lapply(do_stns, function(stn) {
+        has_baro <- stn %in% baro_stns
+        has_airpress <- has_baro && !is.null(do_with_baro) && "airpress_kPa" %in% names(do_with_baro)
+        missing <- character(0)
+        if (!has_baro) missing <- c(missing, "no baro data joined")
+        if (has_baro && !has_airpress) missing <- c(missing, "airpress_kPa column missing")
+
+        if (length(missing) == 0) {
+          tags$div(style = "margin-bottom: 5px;",
+            icon("check-circle", style = "color: #2e7d32;"),
+            tags$strong(stn), " \u2014 Ready"
+          )
+        } else {
+          tags$div(style = "margin-bottom: 5px;",
+            icon("exclamation-triangle", style = "color: #f9a825;"),
+            tags$strong(stn), paste0(" \u2014 Missing: ", paste(missing, collapse = ", "))
+          )
+        }
+      })
+
+      tags$div(
+        style = "background-color: #fafafa; padding: 15px; border-radius: 5px; border: 1px solid #e0e0e0; margin-bottom: 15px;",
+        do.call(tagList, status_items)
+      )
+    })
+
+    # ---- Update convert station selector ----
+    observe({
+      df <- baro_result()
+      if (!is.null(df)) {
+        stns <- sort(unique(df$site_station_code))
+        updateSelectizeInput(session, "convert_do_stations", choices = stns,
+                             selected = character(0))
       }
     })
 
-    # ------ Convert to %sat button ------
-    observeEvent(input$convert_btn, {
-      df <- rv_bound_data$do_with_baro
+    # ---- Run conversion ----
+    observeEvent(input$run_convert, {
+      do_with_baro <- rv_bound_data$do_with_baro
 
-      if (is.null(df) || nrow(df) == 0) {
-        showNotification("Add barometric data first (Add Nearest Baro tab).", type = "error", duration = 5)
+      if (is.null(do_with_baro) || nrow(do_with_baro) == 0) {
+        showNotification("No DO + baro data. Run Part A first.", type = "error", duration = 5)
         return()
       }
 
-      if (!"airpress_kPa" %in% names(df)) {
-        showNotification("No airpress_kPa column. Run Add Nearest Baro first.", type = "error", duration = 5)
-        return()
+      # Determine station subset
+      selected_stns <- input$convert_do_stations
+      run_subset <- length(selected_stns) > 0
+      input_data <- if (run_subset) {
+        dplyr::filter(do_with_baro, site_station_code %in% selected_stns)
+      } else {
+        do_with_baro
       }
 
       tryCatch({
-        showNotification("Converting to % saturation...", type = "message",
-          duration = NULL, id = "do_convert_progress")
+        showNotification("Converting DO to % saturation...",
+                         type = "message", duration = NULL, id = "do_convert_progress")
+
+        cat("[convert_do] Input data:", nrow(input_data), "rows,",
+            length(unique(input_data$site_station_code)), "station(s)\n")
 
         result <- waterlogged::convert_do_mgl_percsat(
-          input_data = df,
-          path_to_output_folder = NULL
+          input_data = input_data,
+          path_to_output_folder = NULL  # Shiny mode
         )
 
+        cat("[convert_do] Result:", nrow(result), "rows,", ncol(result), "cols\n")
+
+        # Merge-back for partial runs
+        if (run_subset && !is.null(convert_result())) {
+          existing <- dplyr::filter(convert_result(),
+            !(site_station_code %in% selected_stns))
+          cat("[convert_do] Merge-back: keeping", nrow(existing), "existing rows for other stations\n")
+          result <- dplyr::bind_rows(existing, result) %>%
+            dplyr::arrange(site_station_code, timestamp)
+        }
+
+        convert_result(result)
         rv_converted_data$do_converted <- result
-        convert_done(TRUE)
 
         removeNotification("do_convert_progress")
-        showNotification("DO conversion complete!", type = "message", duration = 3)
+        n_stns <- length(unique(result$site_station_code))
+        n_valid <- sum(!is.na(result$do_percsat))
+        cat("[convert_do] Done.", n_stns, "station(s),", n_valid, "valid %sat values\n")
+        showNotification(
+          sprintf("DO converted for %d station(s). %s valid %%sat values.",
+                  n_stns, format(n_valid, big.mark = ",")),
+          type = "message", duration = 4
+        )
+
       }, error = function(e) {
+        cat("[convert_do][ERROR]", conditionMessage(e), "\n")
         removeNotification("do_convert_progress")
         showNotification(paste("Conversion error:", conditionMessage(e)),
-          type = "error", duration = 8)
+                         type = "error", duration = 8)
       })
     })
 
-    # ------ Conversion summary table ------
-    output$convert_summary <- DT::renderDT({
-      df <- rv_converted_data$do_converted
+    # ---- Conversion summary table ----
+    output$convert_summary_table <- DT::renderDT({
+      df <- convert_result()
       req(df, "do_percsat" %in% names(df))
 
       summary_df <- df %>%
         dplyr::group_by(site_station_code) %>%
         dplyr::summarise(
-          Records = dplyr::n(),
-          `DO Min (mg/L)` = round(min(do_mgl, na.rm = TRUE), 2),
-          `DO Max (mg/L)` = round(max(do_mgl, na.rm = TRUE), 2),
-          `DO Mean (mg/L)` = round(mean(do_mgl, na.rm = TRUE), 2),
-          `%sat Min` = round(min(do_percsat, na.rm = TRUE), 1),
-          `%sat Max` = round(max(do_percsat, na.rm = TRUE), 1),
-          `%sat Mean` = round(mean(do_percsat, na.rm = TRUE), 1),
+          Records       = dplyr::n(),
+          `Valid %Sat`  = sum(!is.na(do_percsat)),
+          `%Sat Min`    = if (all(is.na(do_percsat))) NA_real_ else round(min(do_percsat, na.rm = TRUE), 1),
+          `%Sat Max`    = if (all(is.na(do_percsat))) NA_real_ else round(max(do_percsat, na.rm = TRUE), 1),
+          `%Sat Mean`   = if (all(is.na(do_percsat))) NA_real_ else round(mean(do_percsat, na.rm = TRUE), 1),
+          `DO Min (mg/L)` = if (all(is.na(do_mgl))) NA_real_ else round(min(do_mgl, na.rm = TRUE), 2),
+          `DO Max (mg/L)` = if (all(is.na(do_mgl))) NA_real_ else round(max(do_mgl, na.rm = TRUE), 2),
+          `Date Range`  = paste(
+            format(min(timestamp), "%Y-%m-%d"),
+            "\u2013",
+            format(max(timestamp), "%Y-%m-%d")
+          ),
           .groups = "drop"
-        )
+        ) %>%
+        dplyr::rename(Station = site_station_code)
 
       DT::datatable(summary_df,
+        selection = "single",
         options = list(dom = "t", pageLength = 50, scrollX = TRUE),
         rownames = FALSE
       )
     })
 
-    # ------ Conversion plot ------
-    output$convert_plot <- renderPlotly({
-      df <- rv_converted_data$do_converted
-      req(df, nrow(df) > 0, "do_percsat" %in% names(df))
+    # ---- Convert detail station selector update ----
+    prev_convert_detail_stns <- reactiveVal(character(0))
+    observe({
+      df <- convert_result()
+      req(df)
+      stns <- sort(unique(df$site_station_code))
+      if (!identical(stns, prev_convert_detail_stns())) {
+        prev_convert_detail_stns(stns)
+        current <- isolate(input$convert_detail_station)
+        sel <- if (!is.null(current) && current %in% stns) current else stns[1]
+        updateSelectInput(session, "convert_detail_station", choices = stns, selected = sel)
+      }
+    })
 
-      stations <- unique(df$site_station_code)
+    # Sync detail station from summary table click
+    observeEvent(input$convert_summary_table_rows_selected, {
+      row_idx <- input$convert_summary_table_rows_selected
+      if (length(row_idx) == 1) {
+        df <- convert_result()
+        req(df)
+        stns <- sort(unique(df$site_station_code))
+        if (row_idx <= length(stns)) {
+          updateSelectInput(session, "convert_detail_station", selected = stns[row_idx])
+        }
+      }
+    })
 
-      # DO mg/L panel
-      p1 <- plot_ly()
-      for (stn in stations) {
-        stn_data <- dplyr::filter(df, site_station_code == stn)
-        p1 <- p1 %>% add_trace(
-          data = stn_data, x = ~timestamp, y = ~do_mgl,
-          type = "scattergl", mode = "lines",
-          line = list(width = 1),
-          name = paste(stn, "- DO mg/L"),
-          hovertemplate = paste0(stn, ": %{y:.2f} mg/L<extra></extra>")
+    # ---- Selected converted station data ----
+    selected_convert_data <- reactive({
+      df <- convert_result()
+      stn <- input$convert_detail_station
+      req(df, stn)
+      dplyr::filter(df, site_station_code == stn)
+    })
+
+    # ---- Station detail info ----
+    output$convert_station_info <- renderUI({
+      df <- selected_convert_data()
+      req(nrow(df) > 0, "do_percsat" %in% names(df))
+
+      n_total    <- nrow(df)
+      n_valid    <- sum(!is.na(df$do_percsat))
+      n_baro     <- sum(!is.na(df$airpress_kPa))
+      baro_pct   <- round(100 * n_baro / n_total, 1)
+      date_range <- paste(format(min(df$timestamp), "%Y-%m-%d"),
+                          "to", format(max(df$timestamp), "%Y-%m-%d"))
+
+      if (n_valid == 0) {
+        sat_range <- "no valid values"
+        info_style <- "color: #856404; background: #fff3cd; padding: 12px; border-radius: 5px;"
+        sat_note <- tags$p(style = "margin: 5px 0 0 0; color: #856404;",
+          icon("exclamation-triangle"),
+          " All %sat values are NA. This usually means barometric pressure data did not match ",
+          "the DO timestamps. Use Snap Timestamps in the Import step to align them."
+        )
+      } else {
+        sat_range <- sprintf("%.1f \u2013 %.1f %%",
+                             min(df$do_percsat, na.rm = TRUE),
+                             max(df$do_percsat, na.rm = TRUE))
+        info_style <- "background-color: #f8f9fa; padding: 12px; border-radius: 5px;"
+        sat_note <- NULL
+      }
+
+      tags$div(
+        style = info_style,
+        tags$p(style = "margin: 0;",
+          sprintf("%s records (%s valid) | %%Sat range: %s | Baro coverage: %.1f%% | %s",
+                  format(n_total, big.mark = ","), format(n_valid, big.mark = ","),
+                  sat_range, baro_pct, date_range)
+        ),
+        sat_note
+      )
+    })
+
+    # ---- Conversion review plot (3-panel) ----
+    output$convert_review_plot <- plotly::renderPlotly({
+      df <- selected_convert_data()
+      req(nrow(df) > 0, "do_percsat" %in% names(df))
+
+      baro_colors <- c("#E53935", "#43A047", "#FB8C00", "#8E24AA", "#00ACC1",
+                       "#6D4C41", "#D81B60", "#1E88E5", "#FDD835", "#546E7A")
+
+      # Panel 1: DO mg/L (raw)
+      p1 <- plotly::plot_ly() %>%
+        plotly::add_trace(
+          data = df, x = ~timestamp, y = ~do_mgl,
+          type = "scatter", mode = "lines",
+          name = "DO (mg/L)",
+          line = list(color = "#1565c0", width = 1.5)
+        ) %>%
+        plotly::layout(yaxis = list(title = "DO (mg/L)"))
+
+      # Panel 2: DO % saturation (newly computed)
+      p2 <- plotly::plot_ly() %>%
+        plotly::add_trace(
+          data = df, x = ~timestamp, y = ~do_percsat,
+          type = "scatter", mode = "lines",
+          name = "DO (%sat)",
+          line = list(color = "#2e7d32", width = 1.5)
+        ) %>%
+        plotly::layout(yaxis = list(title = "DO (%sat)"))
+
+      # Panel 3: Baro pressure colored by baro_site_stn_code
+      p3 <- plotly::plot_ly()
+
+      if ("baro_site_stn_code" %in% names(df)) {
+        baro_stns <- unique(na.omit(df$baro_site_stn_code))
+        for (i in seq_along(baro_stns)) {
+          stn_data <- dplyr::filter(df, baro_site_stn_code == baro_stns[i])
+          if (nrow(stn_data) > 0) {
+            p3 <- p3 %>% plotly::add_trace(
+              data = stn_data, x = ~timestamp, y = ~airpress_kPa,
+              type = "scatter", mode = "lines",
+              name = paste0("Baro: ", baro_stns[i]),
+              line = list(color = baro_colors[((i - 1) %% length(baro_colors)) + 1], width = 1)
+            )
+          }
+        }
+      } else {
+        p3 <- p3 %>% plotly::add_trace(
+          data = df, x = ~timestamp, y = ~airpress_kPa,
+          type = "scatter", mode = "lines",
+          name = "Baro Pressure",
+          line = list(color = "#E53935", width = 1)
         )
       }
 
-      # DO %sat panel
-      p2 <- plot_ly()
-      for (stn in stations) {
-        stn_data <- dplyr::filter(df, site_station_code == stn)
-        p2 <- p2 %>% add_trace(
-          data = stn_data, x = ~timestamp, y = ~do_percsat,
-          type = "scattergl", mode = "lines",
-          line = list(width = 1, color = "#2e7d32"),
-          name = paste(stn, "- %sat"),
-          hovertemplate = paste0(stn, ": %{y:.1f} %sat<extra></extra>")
-        )
-      }
+      p3 <- p3 %>% plotly::layout(yaxis = list(title = "Baro (kPa)"))
 
-      # Water temp panel
-      p3 <- plot_ly()
-      for (stn in stations) {
-        stn_data <- dplyr::filter(df, site_station_code == stn)
-        p3 <- p3 %>% add_trace(
-          data = stn_data, x = ~timestamp, y = ~watertemp_C,
-          type = "scattergl", mode = "lines",
-          line = list(width = 1),
-          name = paste(stn, "- Temp"),
-          showlegend = FALSE,
-          hovertemplate = paste0(stn, ": %{y:.1f} \u00b0C<extra></extra>")
-        )
-      }
-
-      subplot(p1, p2, p3, nrows = 3, shareX = TRUE, titleY = TRUE) %>%
-        layout(
-          title = list(text = "DO Conversion Results", font = list(size = 14)),
-          xaxis3 = list(title = "Date"),
-          yaxis = list(title = "DO (mg/L)"),
-          yaxis2 = list(title = "DO (%sat)"),
-          yaxis3 = list(title = "Water Temp (\u00b0C)"),
+      plotly::subplot(p1, p2, p3, nrows = 3, shareX = TRUE, titleY = TRUE) %>%
+        plotly::layout(
           hovermode = "x unified",
-          legend = list(orientation = "h", y = -0.1),
+          legend = list(orientation = "h", y = -0.05),
           margin = list(b = 80)
         )
     })
@@ -985,252 +2313,502 @@ module_do_convert_server <- function(id) {
 }
 
 
-# =============================================================================
-# 4. QC & Export — UI
-# =============================================================================
+# -----------------------------------------------------------------------------
+# 3. QC Dissolved Oxygen
+# -----------------------------------------------------------------------------
 module_do_qc_ui <- function(id) {
   ns <- NS(id)
   tagList(
     shinydashboard::box(
       width = 12,
+
+      # ---- Header + Description ----
       tags$h1("QC Dissolved Oxygen", class = "custom-h1"),
-      tags$h2("Automated quality control, drift correction, and export",
+      tags$h2("Automated quality checks, drift correction, and visual review",
               class = "custom-h2"),
 
       tags$p(
         class = "clean-print",
-        "Run automated QAQC on dissolved oxygen data using ",
-        tags$code("qc_dissox()"), ". This flags sensor errors, negative values, ",
-        "high values, ice, and dry periods. Optionally apply drift correction ",
-        "using field reference data."
+        "Run automated quality checks on converted dissolved oxygen data. The
+        function creates ", tags$code("do_mgl_adj"), ", ",
+        tags$code("do_percsat_adj"), ", and ",
+        tags$code("watertemp_C_do_adj"), " columns, applying corrections for
+        error codes, negative values, and outliers. Flags are added for ice and
+        dry conditions for your review. Use drift correction with field reference
+        data, then manually remove bad periods as needed."
       ),
 
-      # ---- Data readiness ----
-      uiOutput(ns("qc_status")),
+      uiOutput(ns("qaqc_status")),
 
       hr(),
 
-      # ======== Section A: Run QAQC ========
-      tags$h3("Run DO QAQC", class = "custom-h2"),
-      fluidRow(
-        column(
-          width = 4,
+      # ================================================================
+      # Section 1: Run Automated QAQC
+      # ================================================================
+      tags$div(
+        style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+        tags$span(
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          "Run Automated QAQC"
+        )
+      ),
+
+      tags$div(
+        style = "display: flex; flex-wrap: wrap; margin: 0 -15px;",
+        # ---- Left: QAQC explanation (33%) ----
+        tags$div(
+          style = "flex: 0 0 33.333%; max-width: 33.333%; padding: 0 15px; display: flex; flex-direction: column;",
           tags$div(
-            style = "background-color: #e8f5e9; padding: 20px; border-radius: 5px; margin-bottom: 15px;",
-            tags$h4("Automatic QAQC Rules", style = "margin-top: 0;"),
+            style = "background-color: #f0f0f0; padding: 20px; border-radius: 5px; margin-bottom: 15px;",
+            tags$h4("QAQC Rules", style = "margin-top: 0;"),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
-              tags$li(tags$strong("do_error"), " \u2014 sensor error values"),
-              tags$li(tags$strong("do_neg_between"), " \u2014 DO between -1 and 0 mg/L (corrected to 0)"),
-              tags$li(tags$strong("do_neg_lt_minus1"), " \u2014 DO < -1 mg/L (set to NA)"),
-              tags$li(tags$strong("do_high"), " \u2014 DO unreasonably high"),
-              tags$li(tags$strong("temp_flag_ice"), " \u2014 water temp < 0.1\u00b0C"),
-              tags$li(tags$strong("temp_neg_between"), " \u2014 temp -1 to 0\u00b0C (corrected to 0)"),
-              tags$li(tags$strong("temp_neg_leq_minus1"), " \u2014 temp \u2264 -1\u00b0C (set to NA)"),
-              tags$li(tags$strong("flag_do_dry"), " \u2014 dry sensor detection")
-            ),
-            tags$p(style = "font-size: 12px; color: #666; margin-top: 10px;",
-              "No user-tunable parameters \u2014 thresholds are built into the function."
+              tags$li(tags$strong("DO_ERROR"), " \u2014 -888.88 values \u2192 NA"),
+              tags$li(tags$strong("NEGATIVE_DO"), " \u2014 -1 to 0 \u2192 0; < -1 \u2192 NA"),
+              tags$li(tags$strong("OUTLIER_DO"), " \u2014 > 21 mg/L \u2192 NA"),
+              tags$li(tags$strong("NEGATIVE_TEMP"), " \u2014 -1 to 0 \u2192 0; \u2264 -1 \u2192 NA"),
+              tags$li(tags$strong("FLAG_ICE"), " \u2014 temp < 0.3\u00b0C \u2192 flagged"),
+              tags$li(tags$strong("FLAG_DO_DRY"), " \u2014 12-point window (%sat \u2265 100, air-water temp diff \u2264 2\u00b0C) \u2192 flagged")
             )
           ),
           tags$div(
-            style = "background-color: #fff3cd; padding: 15px; border-radius: 5px;",
-            tags$h4("Output Columns", style = "margin-top: 0;"),
-            tags$ul(
-              style = "padding-left: 20px; font-size: 12px; margin-bottom: 0;",
-              tags$li(tags$code("do_mgl_adj"), " \u2014 adjusted DO (mg/L)"),
-              tags$li(tags$code("do_percsat_adj"), " \u2014 adjusted DO (%sat)"),
-              tags$li(tags$code("watertemp_C_do_adj"), " \u2014 adjusted water temp"),
-              tags$li("8 flag columns (see left)")
+            style = "background-color: #f0f0f0; padding: 15px; border-radius: 5px; margin-bottom: 15px;",
+            tags$h4("Flags vs Edits", style = "margin-top: 0;"),
+            tags$p(style = "font-size: 13px;",
+              tags$code("flag_*"), " = suspicious, review needed (data NOT changed)", tags$br(),
+              tags$code("edit_*"), " = data WAS changed (set to NA or corrected)"
             )
+          ),
+          tags$div(
+            style = "background-color: #f0f0f0; padding: 15px; border-radius: 5px; flex: 1;",
+            tags$h4("Follow Along in the R Package (waterlogged)", style = "margin-top: 0;"),
+            tags$code("qc_dissox()"),
+            tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
+                   "Automated QAQC with flag and edit columns"),
+            tags$code("wq_drift_correction()"),
+            tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
+                   "Correct sensor drift using field reference data"),
+            tags$code("adjust_logger_NA()"),
+            tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
+                   "Remove data for ice / dry / disturbance periods")
           )
         ),
 
-        column(
-          width = 8,
+        # ---- Right: Station selector & run button (67%) ----
+        tags$div(
+          style = "flex: 0 0 66.667%; max-width: 66.667%; padding: 0 15px; display: flex; min-width: 0;",
           tags$div(
-            style = "background-color: #e3f2fd; padding: 20px; border-radius: 5px; margin-bottom: 15px;",
-            fluidRow(
-              column(6,
-                selectInput(ns("qc_station"), "Station to QC:",
-                  choices = NULL, width = "100%"
-                )
-              ),
-              column(6,
-                tags$div(
-                  style = "margin-top: 25px;",
-                  actionButton(ns("run_qaqc"), "Run DO QAQC",
-                    class = "btn-success btn-lg", width = "100%",
-                    icon = icon("play")
-                  )
-                )
-              )
+            style = "background-color: #fafafa; padding: 20px; border-radius: 5px; border: 1px solid #e0e0e0; flex: 1; min-width: 0; overflow-x: auto;",
+            tags$div(
+              style = "background-color: #e3f2fd; padding: 10px; border-radius: 5px; border: 2px solid #1565c0; margin-bottom: 15px;",
+              selectInput(ns("station_select"), "Select Station:",
+                choices = NULL, width = "100%")
             ),
-            tags$p(style = "font-size: 12px; color: #666;",
-              "QAQC is run one station at a time using ", tags$code("qc_dissox()"), "."
+            actionButton(ns("run_qaqc"), "Run DO QAQC",
+              class = "btn-primary btn-lg", width = "100%",
+              style = "color: #fff;",
+              icon = icon("play")
+            ),
+
+            # Flag summary (appears after QAQC runs)
+            conditionalPanel(
+              condition = "output.show_results",
+              ns = ns,
+              tags$div(
+                style = "margin-top: 20px; overflow-x: auto;",
+                tags$h4("Flag Summary"),
+                DT::DTOutput(ns("flag_summary"))
+              )
             )
           )
         )
       ),
 
-      hr(),
-
-      # ======== Section B: Results (conditional) ========
+      # ======== Conditional: Results appear after QAQC runs ========
       conditionalPanel(
         condition = "output.show_results",
         ns = ns,
 
-        # ---- Flag Summary ----
-        tags$h3("QAQC Results", class = "custom-h2"),
-        tags$h4("Flag Summary"),
-        DT::DTOutput(ns("flag_summary")),
-
-        # Flag legend
+        # ================================================================
+        # Section 2: Drift Correction
+        # ================================================================
         tags$div(
-          style = "display: flex; gap: 8px; margin: 15px 0; flex-wrap: wrap;",
-          tags$div(style = "padding: 5px 10px; background: #28a745; color: white; border-radius: 4px; font-size: 12px;", "Good"),
-          tags$div(style = "padding: 5px 10px; background: #D32F2F; color: white; border-radius: 4px; font-size: 12px;", "DO Error"),
-          tags$div(style = "padding: 5px 10px; background: #F57C00; color: white; border-radius: 4px; font-size: 12px;", "DO Negative"),
-          tags$div(style = "padding: 5px 10px; background: #FBC02D; color: black; border-radius: 4px; font-size: 12px;", "DO High"),
-          tags$div(style = "padding: 5px 10px; background: #1565C0; color: white; border-radius: 4px; font-size: 12px;", "Ice"),
-          tags$div(style = "padding: 5px 10px; background: #795548; color: white; border-radius: 4px; font-size: 12px;", "Dry Sensor")
-        ),
-
-        hr(),
-
-        # ---- Station Detail ----
-        tags$h3("Station Detail", class = "custom-h2"),
-        tags$div(
-          style = "background-color: #e3f2fd; padding: 15px; border-radius: 5px; margin-bottom: 20px;",
-          fluidRow(
-            column(4,
-              selectInput(ns("station_select"), "Select Station:",
-                choices = NULL, width = "100%")
-            ),
-            column(8, uiOutput(ns("station_info")))
+          style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+          tags$span(
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            "Drift Correction"
           )
         ),
+
+        tags$div(
+          style = "display: flex; flex-wrap: wrap; margin: 0 -15px;",
+          # ---- Left: Explanation (33%) ----
+          tags$div(
+            style = "flex: 0 0 33.333%; max-width: 33.333%; padding: 0 15px; display: flex; flex-direction: column;",
+            tags$div(
+              style = "background-color: #f0f0f0; padding: 20px; border-radius: 5px; margin-bottom: 15px;",
+              tags$h4("Why Drift Correction?", style = "margin-top: 0;"),
+              tags$p(style = "font-size: 13px;",
+                "DO sensors drift over time due to membrane degradation, biofouling, and ",
+                "aging electrolyte. Field reference measurements taken during site visits ",
+                "let you quantify and correct this drift. The correction ramps linearly ",
+                "from zero at the start of each segment to the full correction at the ",
+                "visit endpoint, then restarts at the next segment. No correction is ",
+                "applied after the last visit."
+              ),
+
+              tags$h4("Event Type", style = "margin-top: 12px; margin-bottom: 6px;"),
+              tags$p(style = "font-size: 13px;",
+                "Each reference measurement has an ", tags$code("event_type"),
+                " that controls how the drift segment boundaries are determined:"
+              ),
+              tags$ul(
+                style = "padding-left: 20px; font-size: 13px;",
+                tags$li(
+                  tags$strong("check"),
+                  " \u2014 a comparison measurement only (the sensor was not touched). ",
+                  "The nearest logger reading to the ", tags$code("timestamp"),
+                  " is used as the segment endpoint. The next segment restarts from ",
+                  "that same reading."
+                ),
+                tags$li(
+                  tags$strong("calibration"),
+                  " \u2014 the sensor was recalibrated during the visit. The last logger ",
+                  "reading ", tags$em("before"), " the ", tags$code("calibration_datetime"),
+                  " is the segment endpoint (pre-cal drift target). The next segment ",
+                  "restarts at the first reading ", tags$em("at or after"), " the ",
+                  tags$code("calibration_datetime"),
+                  ", because post-calibration values are trusted."
+                ),
+                tags$li(
+                  tags$strong("ignore"),
+                  " \u2014 this measurement is skipped entirely and not used in drift correction."
+                )
+              ),
+
+              tags$h4("Timestamp vs. Calibration Datetime", style = "margin-top: 12px; margin-bottom: 6px;"),
+              tags$p(style = "font-size: 13px;",
+                "The ", tags$code("timestamp"), " column records when the field reference ",
+                "measurement was taken (e.g., a handheld meter reading). For ",
+                tags$strong("check"), " events, this is the time matched to the nearest ",
+                "logger reading. For ", tags$strong("calibration"), " events, the ",
+                tags$code("calibration_datetime"), " column records the moment the sensor ",
+                "was actually recalibrated \u2014 this is the time used to split pre-cal ",
+                "from post-cal data. Leave ", tags$code("calibration_datetime"),
+                " blank for check and ignore events."
+              ),
+
+              tags$h4("Method", style = "margin-top: 12px; margin-bottom: 6px;"),
+              tags$ul(
+                style = "padding-left: 20px; font-size: 13px;",
+                tags$li(
+                  tags$strong("Ratio"), " (multiplicative, default) \u2014 each logger value is ",
+                  "scaled by a factor that ramps linearly from 1.0 at the segment start to ",
+                  "the reference/logger ratio at the segment end. Best for %sat where drift ",
+                  "is proportional to the reading magnitude. Both ", tags$code("do_percsat_adj"),
+                  " and ", tags$code("do_mgl_adj"), " are corrected using the same ratio."
+                ),
+                tags$li(
+                  tags$strong("Offset"), " (additive) \u2014 each value is shifted by an amount ",
+                  "that ramps from 0 at the segment start to the reference-minus-logger ",
+                  "difference at the segment end. Better when drift is a constant bias ",
+                  "independent of reading magnitude."
+                )
+              ),
+
+              tags$h4("Max Gap (hours)", style = "margin-top: 12px; margin-bottom: 6px;"),
+              tags$p(style = "font-size: 13px;",
+                "The maximum allowable time difference (in hours) between a reference ",
+                "measurement timestamp and the nearest logger reading. If no logger ",
+                "reading falls within this window, the reference event is skipped with ",
+                "a warning. This prevents incorrect corrections when the reference time ",
+                "doesn't align with available logger data (e.g., the logger was out of ",
+                "water or timestamps are in different timezones). Default: 1 hour."
+              )
+            ),
+            tags$div(
+              style = "background-color: #f0f0f0; padding: 15px; border-radius: 5px; flex: 1;",
+              tags$h4("Reference Data Format", style = "margin-top: 0;"),
+              tags$p(style = "font-size: 13px;", "Required CSV columns:"),
+              tags$ul(
+                style = "padding-left: 20px; font-size: 12px;",
+                tags$li(tags$code("metric"), " \u2014 'do' or 'dissolvedoxygen'"),
+                tags$li(tags$code("site_station_code"), " \u2014 station ID"),
+                tags$li(tags$code("timestamp"), " \u2014 measurement time (see formats below)"),
+                tags$li(tags$code("watertemp_C"), " \u2014 reference temperature"),
+                tags$li(tags$code("value"), " \u2014 reference reading (in %sat for DO)"),
+                tags$li(tags$code("unit"), " \u2014 '%', '%sat', 'percsat', 'percent', or 'percent saturation'"),
+                tags$li(tags$code("event_type"), " \u2014 'check', 'calibration', or 'ignore'"),
+                tags$li(tags$code("calibration_datetime"), " \u2014 when sensor was last calibrated (same formats as timestamp; leave blank for check/ignore)")
+              ),
+              tags$p(style = "font-size: 12px; margin-top: 8px; color: #555;",
+                tags$strong("Accepted datetime formats"), " for ",
+                tags$code("timestamp"), " and ", tags$code("calibration_datetime"), ":"
+              ),
+              tags$ul(
+                style = "padding-left: 20px; font-size: 12px; color: #555;",
+                tags$li(tags$code("YYYY-MM-DD HH:MM:SS"), " \u2014 e.g. 2025-07-20 10:45:00"),
+                tags$li(tags$code("YYYY-MM-DD HH:MM"), " \u2014 e.g. 2025-07-20 10:45"),
+                tags$li(tags$code("M/D/YYYY HH:MM:SS"), " \u2014 e.g. 7/20/2025 10:45:00"),
+                tags$li(tags$code("M/D/YYYY HH:MM"), " \u2014 e.g. 7/20/2025 10:45"),
+                tags$li(tags$code("DD-MM-YYYY HH:MM:SS"), " \u2014 e.g. 20-07-2025 10:45:00"),
+                tags$li(tags$code("DD-MM-YYYY HH:MM"), " \u2014 e.g. 20-07-2025 10:45")
+              )
+            )
+          ),
+
+          # ---- Right: Upload & controls (67%) ----
+          tags$div(
+            style = "flex: 0 0 66.667%; max-width: 66.667%; padding: 0 15px; display: flex; min-width: 0;",
+            tags$div(
+              style = "background-color: #fafafa; padding: 20px; border-radius: 5px; border: 1px solid #e0e0e0; flex: 1; min-width: 0; overflow-x: auto;",
+              fileInput(ns("ref_upload"), "Upload Reference Data CSV:",
+                accept = ".csv", width = "100%"),
+              tags$p(style = "font-size: 12px; margin-top: -5px;",
+                tags$a(
+                  href = "sample_field_references.csv",
+                  download = "sample_field_references.csv",
+                  icon("download"),
+                  " Download sample field references template",
+                  style = "color: #1565c0;"
+                )
+              ),
+              uiOutput(ns("ref_upload_status")),
+
+              conditionalPanel(
+                condition = "output.show_ref_data",
+                ns = ns,
+                tags$div(
+                  style = "margin-top: 15px;",
+                  DT::DTOutput(ns("ref_preview")),
+                  tags$div(
+                    style = "margin-top: 15px; display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end;",
+                    tags$div(
+                      style = "flex: 1; min-width: 150px;",
+                      selectInput(ns("drift_method"), "Method:",
+                        choices = c("Ratio" = "ratio", "Offset" = "offset"),
+                        selected = "ratio", width = "100%")
+                    ),
+                    tags$div(
+                      style = "flex: 1; min-width: 150px;",
+                      numericInput(ns("max_ref_gap"), "Max Gap (hours):",
+                        value = 1, min = 0.5, max = 24, step = 0.5, width = "100%")
+                    ),
+                    tags$div(
+                      style = "flex: 1; min-width: 150px;",
+                      selectInput(ns("drift_station"), "Station:",
+                        choices = NULL, width = "100%")
+                    )
+                  ),
+                  actionButton(ns("run_drift"), "Apply Drift Correction",
+                    class = "btn-primary", width = "100%",
+                    icon = icon("chart-line"),
+                    style = "color: #ffffff;"),
+                  uiOutput(ns("drift_result_summary"))
+                )
+              )
+            )
+          )
+        ),
+
+        # ================================================================
+        # Section 3: Manual Adjustments
+        # ================================================================
+        tags$div(
+          style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+          tags$span(
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            "Manual Adjustments"
+          )
+        ),
+
+        tags$p(
+          class = "clean-print",
+          "Use the plot below to review flagged data. Switch to ",
+          tags$strong("Select Range"), " mode and drag across the time series ",
+          "to highlight periods that need removal. Use ", tags$strong("Zoom"),
+          " mode to navigate and inspect the data more closely."
+        ),
+
+        tags$div(
+          style = "background-color: #fafafa; padding: 15px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #e0e0e0;",
+
+          tags$div(
+            style = "display: flex; flex-direction: column; align-items: center; gap: 10px;",
+
+            # Row 1: Mode toggle
+            shinyWidgets::radioGroupButtons(
+              inputId = ns("plot_mode"),
+              label = NULL,
+              choices = c("Zoom" = "zoom", "Select Range" = "select"),
+              selected = "zoom",
+              size = "lg",
+              status = "primary"
+            ),
+
+            # Row 2: Range management + Remove button
+            tags$div(
+              style = "display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center;",
+              actionButton(ns("undo_range"), "Undo",
+                class = "btn-default btn-sm", icon = icon("undo")),
+              actionButton(ns("clear_ranges"), "Clear Ranges",
+                class = "btn-default btn-sm", icon = icon("times")),
+              actionButton(ns("btn_remove"), "Remove Selected",
+                class = "btn-warning btn-sm", icon = icon("eraser"),
+                style = "color: #fff;")
+            ),
+
+            # Row 3: Range status
+            uiOutput(ns("range_status"))
+          ),
+
+          # Adjustment explanation panel
+          tags$div(
+            style = "margin-top: 20px; padding: 15px; background-color: #e3f2fd; border-radius: 5px;",
+            fluidRow(
+              column(4,
+                tags$h5("Ice", style = "margin-top: 0; color: #1565c0;"),
+                tags$p(style = "font-size: 12px;",
+                  "Sensor frozen or encased in ice. Sets DO and optionally ",
+                  "temperature to NA."
+                )
+              ),
+              column(4,
+                tags$h5("Dry", style = "margin-top: 0; color: #1565c0;"),
+                tags$p(style = "font-size: 12px;",
+                  "Sensor out of water. Sets DO values to NA; temperature ",
+                  "may still be valid."
+                )
+              ),
+              column(4,
+                tags$h5("Disturbance", style = "margin-top: 0; color: #1565c0;"),
+                tags$p(style = "font-size: 12px;",
+                  "Logger moved, disturbed, or otherwise unreliable. ",
+                  "Use ", tags$code("keep_temp"), " to retain temperature."
+                )
+              )
+            )
+          )
+        ),
+
+        # ================================================================
+        # Section 4: Visual Review
+        # ================================================================
+        tags$div(
+          style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+          tags$span(
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            "Visual Review"
+          )
+        ),
+
+        tags$div(
+          style = "background-color: #fafafa; padding: 15px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #e0e0e0;",
+          uiOutput(ns("station_info")),
+          tags$div(style = "margin-top: 15px;",
+            plotlyOutput(ns("qaqc_plot"), height = "850px") %>% withSpinner()
+          ),
+          tags$div(style = "margin-top: 15px;",
+            plotlyOutput(ns("flag_plot"), height = "250px") %>% withSpinner()
+          )
+        ),
+
+        # ================================================================
+        # Section 5: Station Summary Statistics
+        # ================================================================
+        tags$div(
+          style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+          tags$span(
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            "Station Summary Statistics"
+          )
+        ),
+
+        uiOutput(ns("summary_station_label")),
 
         fluidRow(
-          column(4,
-            tags$h4("DO Summary (raw vs adjusted)"),
-            verbatimTextOutput(ns("do_summary")),
-            tags$h4("Temperature Summary"),
-            verbatimTextOutput(ns("temp_summary"))
+          column(
+            width = 4,
+            tags$div(
+              style = "background-color: #e3f2fd; padding: 15px; border-radius: 5px; margin-bottom: 15px;",
+              tags$h4("DO mg/L Summary (raw vs adjusted)", style = "margin-top: 0;"),
+              verbatimTextOutput(ns("do_mgl_summary"))
+            )
           ),
-          column(8,
-            plotlyOutput(ns("qaqc_plot"), height = "650px") %>% withSpinner()
+          column(
+            width = 4,
+            tags$div(
+              style = "background-color: #e3f2fd; padding: 15px; border-radius: 5px; margin-bottom: 15px;",
+              tags$h4("DO %sat Summary (raw vs adjusted)", style = "margin-top: 0;"),
+              verbatimTextOutput(ns("do_percsat_summary"))
+            )
+          ),
+          column(
+            width = 4,
+            tags$div(
+              style = "background-color: #e3f2fd; padding: 15px; border-radius: 5px; margin-bottom: 15px;",
+              tags$h4("Temperature Summary (raw vs adjusted)", style = "margin-top: 0;"),
+              verbatimTextOutput(ns("temp_summary"))
+            )
           )
         ),
 
-        hr(),
-
-        # ---- Drift Correction ----
-        tags$h3("Drift Correction (Optional)", class = "custom-h2"),
+        # ================================================================
+        # Section 6: Export Clean Data
+        # ================================================================
         tags$div(
-          style = "border-left: 4px solid #1565c0; padding: 15px 20px; margin-bottom: 20px; background: #f8f9fa; border-radius: 0 5px 5px 0;",
-
-          tags$p(style = "font-size: 13px;",
-            "Use ", tags$code("wq_drift_correction()"), " with field reference ",
-            "data to correct sensor drift in DO readings over time."
-          ),
-
-          fluidRow(
-            column(3,
-              selectInput(ns("drift_station"), "Station:",
-                choices = NULL, width = "100%")
-            ),
-            column(3,
-              selectInput(ns("drift_method"), "Method:",
-                choices = c("Ratio (multiplicative)" = "ratio",
-                            "Offset (additive)" = "offset"),
-                selected = "ratio", width = "100%"
-              )
-            ),
-            column(3,
-              numericInput(ns("drift_max_gap"), "Max Ref Gap (hours):",
-                value = 1, min = 0.5, max = 24, step = 0.5)
-            ),
-            column(3,
-              tags$div(
-                style = "margin-top: 25px;",
-                actionButton(ns("drift_btn"), "Apply Drift Correction",
-                  class = "btn-info", icon = icon("chart-line"))
-              )
-            )
-          ),
-
-          conditionalPanel(
-            condition = "output.show_drift_result",
-            ns = ns,
-            uiOutput(ns("drift_result_info"))
+          style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+          tags$span(
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            "Export Clean Data"
           )
         ),
 
-        hr(),
-
-        # ---- Manual Adjustments ----
-        tags$h3("Manual Adjustments", class = "custom-h2"),
         tags$div(
-          style = "border-left: 4px solid #e65100; padding: 15px 20px; margin-bottom: 20px; background: #f8f9fa; border-radius: 0 5px 5px 0;",
-
-          tags$p(style = "font-size: 13px;",
-            "Use ", tags$code("adjust_logger_NA()"), " to manually set ",
-            "DO adjusted values to NA for bad periods."
-          ),
-
-          fluidRow(
-            column(3,
-              selectInput(ns("adj_station"), "Station:",
-                choices = NULL, width = "100%")
-            ),
-            column(2,
-              selectInput(ns("adj_reason"), "Reason:",
-                choices = c("Ice" = "ice", "Dry" = "dry", "Disturbance" = "disturbance"),
-                width = "100%"
+          style = "display: flex; flex-wrap: wrap; margin: 0 -15px;",
+          # ---- Left: Explanation ----
+          tags$div(
+            style = "flex: 0 0 33.333%; max-width: 33.333%; padding: 0 15px; display: flex;",
+            tags$div(
+              style = "background-color: #e3f2fd; padding: 20px; border-radius: 5px; flex: 1;",
+              tags$h4("Download Results", style = "margin-top: 0;"),
+              tags$p(style = "font-size: 13px;",
+                "Download the QAQC'd dissolved oxygen data as CSV for the ",
+                tags$strong("selected station"), ". The exported file ",
+                "contains raw columns, adjusted columns, and all edit/flag ",
+                "columns. The QAQC log records every automated and manual ",
+                "adjustment applied."
+              ),
+              tags$p(style = "font-size: 13px; color: #666;",
+                "Note: this is the final step in the DO pipeline. Select the ",
+                "station you want to export before downloading."
               )
-            ),
-            column(3,
-              textInput(ns("adj_start"), "Start Timestamp:",
-                placeholder = "YYYY-MM-DD HH:MM:SS")
-            ),
-            column(2,
-              textInput(ns("adj_end"), "End Timestamp:",
-                placeholder = "YYYY-MM-DD HH:MM:SS")
-            ),
-            column(2,
-              textInput(ns("adj_note"), "Note:",
-                placeholder = "Reason")
             )
           ),
-          fluidRow(
-            column(6,
-              checkboxInput(ns("adj_keep_temp"), "Keep water temperature (keep_temp = TRUE)",
-                value = FALSE)
-            ),
-            column(6,
-              actionButton(ns("adj_btn"), "Remove Period",
-                class = "btn-warning", icon = icon("eraser"))
+
+          # ---- Right: Download buttons ----
+          tags$div(
+            style = "flex: 0 0 66.667%; max-width: 66.667%; padding: 0 15px; display: flex;",
+            tags$div(
+              style = "background-color: #fafafa; padding: 20px; border-radius: 5px; border: 1px solid #e0e0e0; flex: 1;",
+              fluidRow(
+                column(4,
+                  downloadButton(ns("download_csv"), "Download Clean CSV",
+                    class = "btn-primary",
+                    style = "width: 100%; color: #ffffff;")
+                ),
+                column(4,
+                  downloadButton(ns("download_log"), "Download QAQC Log",
+                    class = "btn-info",
+                    style = "width: 100%; color: #ffffff;")
+                ),
+                column(4,
+                  downloadButton(ns("download_metadata"), "Download Metadata",
+                    class = "btn-default",
+                    style = "width: 100%;")
+                )
+              )
             )
-          )
-        ),
-
-        hr(),
-
-        # ---- Export ----
-        tags$h3("Export Clean Data", class = "custom-h2"),
-        tags$p(style = "font-size: 13px; color: #666;",
-          "Download the QC'd dissolved oxygen data as CSV. Includes raw ",
-          "columns, adjusted columns, and all flag/edit columns."
-        ),
-        fluidRow(
-          column(4,
-            downloadButton(ns("download_csv"), "Download Clean CSV",
-              class = "btn-primary", style = "width: 100%;")
-          ),
-          column(4,
-            downloadButton(ns("download_log"), "Download QAQC Log",
-              class = "btn-info", style = "width: 100%;")
           )
         )
       )
@@ -1239,161 +2817,103 @@ module_do_qc_ui <- function(id) {
   )
 }
 
-
-# =============================================================================
-# 4. QC & Export — Server
-# =============================================================================
 module_do_qc_server <- function(id) {
   moduleServer(id, function(input, output, session) {
 
-    rv_raw_data       <- session$userData$rv_raw_data
     rv_converted_data <- session$userData$rv_converted_data
     rv_qaqc_data      <- session$userData$rv_qaqc_data
+    rv_raw_data        <- session$userData$rv_raw_data
 
-    # Local reactives
-    do_qc_result <- reactiveVal(NULL)
-    qaqc_log <- reactiveVal(NULL)
-    drift_applied <- reactiveVal(FALSE)
+    # Module-local state
+    do_qc_result    <- reactiveVal(NULL)
+    qaqc_log        <- reactiveVal(NULL)
+    drift_ref_data  <- reactiveVal(NULL)
+
+    # Range selection
+    selected_ranges <- reactiveVal(list())
+    range_history   <- reactiveVal(list())
 
     # Conditional panel visibility
     output$show_results <- reactive({ !is.null(do_qc_result()) })
     outputOptions(output, "show_results", suspendWhenHidden = FALSE)
+    output$show_ref_data <- reactive({ !is.null(drift_ref_data()) })
+    outputOptions(output, "show_ref_data", suspendWhenHidden = FALSE)
 
-    output$show_drift_result <- reactive({ drift_applied() })
-    outputOptions(output, "show_drift_result", suspendWhenHidden = FALSE)
+    # ------ Populate station selectors from converted data ------
+    observe({
+      df <- rv_converted_data$do_converted
+      req(df, nrow(df) > 0)
+      stations <- sort(unique(df$site_station_code))
+      stations <- stations[sapply(stations, function(s) {
+        any(!is.na(df$do_percsat[df$site_station_code == s]))
+      })]
+      updateSelectInput(session, "station_select",
+        choices = stations, selected = stations[1])
+      updateSelectInput(session, "drift_station",
+        choices = stations, selected = stations[1])
+    })
 
-    # ------ Data readiness ------
-    output$qc_status <- renderUI({
+    # ------ Data readiness status ------
+    output$qaqc_status <- renderUI({
       df <- rv_converted_data$do_converted
       if (is.null(df) || nrow(df) == 0) {
         tags$div(
           style = "color: #856404; background: #fff3cd; padding: 12px; border-radius: 5px; margin-bottom: 10px;",
           icon("exclamation-triangle"),
-          " No converted DO data available. Complete the Convert tab first (add baro + convert to %sat)."
+          " No converted DO data available. Complete Part B (Convert DO to %sat) first."
         )
       } else {
-        has_percsat <- "do_percsat" %in% names(df)
         n_stns <- length(unique(df$site_station_code))
         n_recs <- format(nrow(df), big.mark = ",")
-        if (has_percsat) {
-          tags$div(
-            style = "color: #155724; background: #d4edda; padding: 12px; border-radius: 5px; margin-bottom: 10px;",
-            icon("check-circle"),
-            sprintf(" Ready: %d station(s), %s records with DO mg/L + %%sat",
-                    n_stns, n_recs)
-          )
-        } else {
-          tags$div(
-            style = "color: #856404; background: #fff3cd; padding: 12px; border-radius: 5px; margin-bottom: 10px;",
-            icon("exclamation-triangle"),
-            sprintf(" DO data has %s records but no do_percsat column. Run conversion first.", n_recs)
-          )
-        }
-      }
-    })
-
-    # ------ Update station selectors ------
-    observe({
-      df <- rv_converted_data$do_converted
-      if (!is.null(df)) {
-        stations <- unique(df$site_station_code)
-        updateSelectInput(session, "qc_station", choices = stations, selected = stations[1])
+        tags$div(
+          style = "color: #155724; background: #d4edda; padding: 12px; border-radius: 5px; margin-bottom: 10px;",
+          icon("check-circle"),
+          sprintf(" Ready: %d station(s), %s records available for QAQC", n_stns, n_recs)
+        )
       }
     })
 
     # ------ Run QAQC ------
     observeEvent(input$run_qaqc, {
-      df <- rv_converted_data$do_converted
-      station <- input$qc_station
-
-      if (is.null(df) || nrow(df) == 0) {
-        showNotification("No converted DO data. Complete the Convert tab first.",
-          type = "error", duration = 5)
-        return()
-      }
-      if (is.null(station) || station == "") {
-        showNotification("Select a station.", type = "error", duration = 3)
-        return()
-      }
+      station <- input$station_select
+      req(station)
+      converted_data <- rv_converted_data$do_converted
+      req(converted_data)
 
       tryCatch({
-        showNotification("Running DO QAQC...", type = "message",
-          duration = NULL, id = "do_qaqc_progress")
+        showNotification("Running DO QAQC...",
+          type = "message", duration = NULL, id = "do_qaqc_progress")
 
         result <- waterlogged::qc_dissox(
-          input_data = df,
+          input_data     = converted_data,
           select_station = station,
-          log_root = NULL,
-          user = NULL
+          log_root       = NULL,
+          user           = NULL
         )
-
-        # If we already have QC results for other stations, merge
-        existing <- do_qc_result()
-        if (!is.null(existing)) {
-          other_data <- dplyr::filter(existing, site_station_code != station)
-          station_result <- dplyr::filter(result, site_station_code == station)
-          combined <- dplyr::bind_rows(other_data, station_result) %>%
-            dplyr::arrange(site_station_code, timestamp)
-          do_qc_result(combined)
-          rv_qaqc_data$do_qaqc <- combined
-        } else {
-          do_qc_result(result)
-          rv_qaqc_data$do_qaqc <- result
-        }
 
         qaqc_log(attr(result, "qaqc_log"))
 
+        # Merge: replace station in full dataset
+        other_data <- dplyr::filter(converted_data, site_station_code != station)
+        full_data <- dplyr::bind_rows(other_data, result) %>%
+          dplyr::arrange(site_station_code, timestamp)
+
+        do_qc_result(full_data)
+        rv_qaqc_data$do_qaqc <- full_data
+
+        # Reset range state
+        selected_ranges(list())
+        range_history(list())
+
         removeNotification("do_qaqc_progress")
-        showNotification(
-          sprintf("DO QAQC complete for %s!", station),
-          type = "message", duration = 3
-        )
+        showNotification(sprintf("QAQC complete for %s", station),
+          type = "message", duration = 5)
+
       }, error = function(e) {
         removeNotification("do_qaqc_progress")
-        showNotification(paste("QAQC Error:", conditionMessage(e)),
+        showNotification(paste("QAQC error:", conditionMessage(e)),
           type = "error", duration = 8)
       })
-    })
-
-    # ------ Flag summary table ------
-    output$flag_summary <- DT::renderDT({
-      req(do_qc_result())
-      df <- do_qc_result()
-
-      # Build summary with available flag columns
-      flag_cols <- c("do_error", "do_neg_between", "do_neg_lt_minus1", "do_high",
-                     "temp_flag_ice", "temp_neg_between", "temp_neg_leq_minus1",
-                     "flag_do_dry")
-      available_flags <- intersect(flag_cols, names(df))
-
-      summary_df <- df %>%
-        dplyr::group_by(site_station_code) %>%
-        dplyr::summarise(
-          Records = dplyr::n(),
-          `DO Error` = if ("do_error" %in% available_flags) sum(do_error, na.rm = TRUE) else 0L,
-          `DO Neg (-1 to 0)` = if ("do_neg_between" %in% available_flags) sum(do_neg_between, na.rm = TRUE) else 0L,
-          `DO Neg (< -1)` = if ("do_neg_lt_minus1" %in% available_flags) sum(do_neg_lt_minus1, na.rm = TRUE) else 0L,
-          `DO High` = if ("do_high" %in% available_flags) sum(do_high, na.rm = TRUE) else 0L,
-          `Ice` = if ("temp_flag_ice" %in% available_flags) sum(temp_flag_ice, na.rm = TRUE) else 0L,
-          `Dry` = if ("flag_do_dry" %in% available_flags) sum(flag_do_dry, na.rm = TRUE) else 0L,
-          `DO NA (adj)` = if ("do_mgl_adj" %in% names(df)) sum(is.na(do_mgl_adj)) else 0L,
-          .groups = "drop"
-        )
-
-      DT::datatable(summary_df,
-        options = list(dom = "t", pageLength = 50, scrollX = TRUE),
-        rownames = FALSE,
-        selection = "single"
-      )
-    })
-
-    # ------ Update station selectors after QC ------
-    observe({
-      req(do_qc_result())
-      stations <- unique(do_qc_result()$site_station_code)
-      updateSelectInput(session, "station_select", choices = stations, selected = stations[1])
-      updateSelectInput(session, "adj_station", choices = stations, selected = stations[1])
-      updateSelectInput(session, "drift_station", choices = stations, selected = stations[1])
     })
 
     # ------ Selected station data ------
@@ -1407,12 +2927,12 @@ module_do_qc_server <- function(id) {
       data <- selected_data()
       req(nrow(data) > 0)
 
-      flag_cols <- intersect(
-        c("do_error", "do_neg_between", "do_neg_lt_minus1", "do_high",
-          "temp_flag_ice", "flag_do_dry"),
-        names(data)
-      )
+      flag_cols <- c("do_error", "do_neg_between", "do_neg_lt_minus1", "do_high",
+                     "temp_flag_ice", "temp_neg_between", "temp_neg_leq_minus1",
+                     "flag_do_dry")
+      flag_cols <- intersect(flag_cols, names(data))
       n_flags <- sum(sapply(flag_cols, function(col) sum(data[[col]], na.rm = TRUE)))
+
       date_range <- paste(
         format(min(data$timestamp), "%Y-%m-%d"),
         "to",
@@ -1430,294 +2950,778 @@ module_do_qc_server <- function(id) {
       )
     })
 
-    # ------ QAQC Plot ------
+    # ------ Flag summary table ------
+    output$flag_summary <- DT::renderDT({
+      req(do_qc_result())
+      data <- selected_data()
+      req(nrow(data) > 0)
+
+      safe_sum <- function(col) {
+        if (col %in% names(data)) sum(data[[col]], na.rm = TRUE) else 0L
+      }
+
+      summary_df <- data.frame(
+        Station = data$site_station_code[1],
+        Records = nrow(data),
+        do_error = safe_sum("do_error"),
+        do_neg_between = safe_sum("do_neg_between"),
+        do_neg_lt_minus1 = safe_sum("do_neg_lt_minus1"),
+        do_high = safe_sum("do_high"),
+        temp_flag_ice = safe_sum("temp_flag_ice"),
+        temp_neg_between = safe_sum("temp_neg_between"),
+        temp_neg_leq_minus1 = safe_sum("temp_neg_leq_minus1"),
+        flag_do_dry = safe_sum("flag_do_dry"),
+        DO_mgl_NA = sum(is.na(data$do_mgl_adj)),
+        DO_percsat_NA = sum(is.na(data$do_percsat_adj)),
+        stringsAsFactors = FALSE
+      )
+
+      # Add edit columns if they exist
+      edit_cols <- grep("^edit_", names(data), value = TRUE)
+      for (ec in edit_cols) {
+        summary_df[[ec]] <- sum(data[[ec]], na.rm = TRUE)
+      }
+
+      DT::datatable(summary_df,
+        options = list(dom = "t", pageLength = 50, scrollX = TRUE),
+        rownames = FALSE,
+        selection = "none"
+      )
+    })
+
+    # ------ Reference data upload ------
+    observeEvent(input$ref_upload, {
+      req(input$ref_upload)
+      tryCatch({
+        ref <- read.csv(input$ref_upload$datapath, stringsAsFactors = FALSE)
+
+        required_ref_cols <- c("metric", "site_station_code", "timestamp",
+                               "watertemp_C", "value", "unit", "event_type",
+                               "calibration_datetime")
+        missing <- setdiff(required_ref_cols, names(ref))
+        if (length(missing) > 0) {
+          output$ref_upload_status <- renderUI({
+            tags$div(
+              style = "color: #856404; background: #fff3cd; padding: 12px; border-radius: 5px; margin-top: 10px;",
+              icon("exclamation-triangle"),
+              sprintf(" Missing required columns: %s", paste(missing, collapse = ", "))
+            )
+          })
+          drift_ref_data(NULL)
+          return()
+        }
+
+        # Filter to DO rows
+        ref <- ref[grepl("^(do|dissolvedoxygen|dissolved oxygen)$",
+                         trimws(tolower(ref$metric))), ]
+        if (nrow(ref) == 0) {
+          output$ref_upload_status <- renderUI({
+            tags$div(
+              style = "color: #856404; background: #fff3cd; padding: 12px; border-radius: 5px; margin-top: 10px;",
+              icon("exclamation-triangle"),
+              " No DO rows found in reference data. Check the 'metric' column."
+            )
+          })
+          drift_ref_data(NULL)
+          return()
+        }
+
+        # Validate event_type
+        valid_events <- c("check", "calibration", "ignore")
+        bad_events <- setdiff(tolower(trimws(ref$event_type)), valid_events)
+        if (length(bad_events) > 0) {
+          output$ref_upload_status <- renderUI({
+            tags$div(
+              style = "color: #856404; background: #fff3cd; padding: 12px; border-radius: 5px; margin-top: 10px;",
+              icon("exclamation-triangle"),
+              sprintf(" Invalid event_type values: %s. Must be: check, calibration, or ignore.",
+                      paste(bad_events, collapse = ", "))
+            )
+          })
+          drift_ref_data(NULL)
+          return()
+        }
+
+        drift_ref_data(ref)
+        output$ref_upload_status <- renderUI({
+          tags$div(
+            style = "color: #155724; background: #d4edda; padding: 12px; border-radius: 5px; margin-top: 10px;",
+            icon("check-circle"),
+            sprintf(" Reference data loaded: %d DO measurements across %d station(s)",
+                    nrow(ref), length(unique(ref$site_station_code)))
+          )
+        })
+
+      }, error = function(e) {
+        output$ref_upload_status <- renderUI({
+          tags$div(
+            style = "color: #721c24; background: #f8d7da; padding: 12px; border-radius: 5px; margin-top: 10px;",
+            icon("times-circle"),
+            paste(" Error reading CSV:", conditionMessage(e))
+          )
+        })
+        drift_ref_data(NULL)
+      })
+    })
+
+    # ------ Reference data preview ------
+    output$ref_preview <- DT::renderDT({
+      req(drift_ref_data())
+      DT::datatable(drift_ref_data(),
+        options = list(dom = "t", pageLength = 20, scrollX = TRUE),
+        rownames = FALSE,
+        selection = "none"
+      )
+    })
+
+    # ------ Run drift correction ------
+    observeEvent(input$run_drift, {
+      station <- input$drift_station
+      req(station)
+      req(do_qc_result())
+      req(drift_ref_data())
+
+      tryCatch({
+        showNotification("Applying drift correction...",
+          type = "message", duration = NULL, id = "do_drift_progress")
+
+        drift_messages <- character()
+        result <- withCallingHandlers(
+          waterlogged::wq_drift_correction(
+            input_data     = do_qc_result(),
+            ref_data_path  = NULL,
+            select_station = station,
+            metric         = "do",
+            method         = input$drift_method,
+            max_ref_gap_h  = input$max_ref_gap,
+            log_root       = NULL,
+            user           = NULL,
+            ref_data       = drift_ref_data()
+          ),
+          message = function(m) {
+            drift_messages <<- c(drift_messages, conditionMessage(m))
+            invokeRestart("muffleMessage")
+          }
+        )
+
+        drift_log <- attr(result, "qaqc_log")
+
+        # Merge station data back
+        other_data <- dplyr::filter(do_qc_result(), site_station_code != station)
+        full_data <- dplyr::bind_rows(other_data, result) %>%
+          dplyr::arrange(site_station_code, timestamp)
+
+        do_qc_result(full_data)
+        rv_qaqc_data$do_qaqc <- full_data
+
+        # Append drift log (coerce ts columns to avoid type mismatch)
+        if (!is.null(drift_log)) {
+          existing <- qaqc_log()
+          if (!is.null(existing) && nrow(existing) > 0) {
+            existing$ts_start <- as.character(existing$ts_start)
+            existing$ts_end   <- as.character(existing$ts_end)
+          }
+          drift_log$ts_start <- as.character(drift_log$ts_start)
+          drift_log$ts_end   <- as.character(drift_log$ts_end)
+          qaqc_log(dplyr::bind_rows(existing, drift_log))
+        }
+
+        removeNotification("do_drift_progress")
+        showNotification(sprintf("Drift correction applied for %s", station),
+          type = "message", duration = 5)
+
+        # Show summary
+        n_drift <- if ("edit_do_drift" %in% names(result)) {
+          sum(result$edit_do_drift, na.rm = TRUE)
+        } else { 0L }
+
+        output$drift_result_summary <- renderUI({
+          tags$div(
+            style = "color: #155724; background: #d4edda; padding: 12px; border-radius: 5px; margin-top: 15px;",
+            icon("check-circle"),
+            sprintf(" Drift correction complete for %s: %s records corrected.",
+                    station, format(n_drift, big.mark = ",")),
+            if (length(drift_messages) > 0) {
+              tags$div(style = "margin-top: 8px; font-size: 12px; color: #666;",
+                tags$em(paste(drift_messages, collapse = " "))
+              )
+            }
+          )
+        })
+
+      }, error = function(e) {
+        removeNotification("do_drift_progress")
+        showNotification(paste("Drift correction error:", conditionMessage(e)),
+          type = "error", duration = 8)
+      })
+    })
+
+    # ------ QAQC Plot (4-panel time series) ------
+    drag_range_js <- sprintf("
+      function(el, x) {
+        var _resetting = false;
+        var _savedRange = null;
+
+        el.on('plotly_relayout', function(evt) {
+          if (_resetting) return;
+
+          var keys = Object.keys(evt);
+          var isShapeOnly = keys.every(function(k) {
+            return k === 'shapes' || k.indexOf('shapes[') === 0;
+          });
+          if (isShapeOnly) return;
+
+          if (evt['xaxis.autorange'] || evt['yaxis.autorange']) {
+            _savedRange = null;
+            return;
+          }
+
+          var x0 = evt['xaxis.range[0]'];
+          var x1 = evt['xaxis.range[1]'];
+          if (!x0 || !x1) return;
+
+          var mode = Shiny.shinyapp.$inputValues['%s'];
+          if (mode !== 'select') {
+            _savedRange = { x0: x0, x1: x1 };
+            return;
+          }
+
+          Shiny.setInputValue('%s', {
+            x0: String(x0), x1: String(x1), nonce: Math.random()
+          });
+
+          _resetting = true;
+          var restore = _savedRange
+            ? { 'xaxis.range[0]': _savedRange.x0, 'xaxis.range[1]': _savedRange.x1 }
+            : { 'xaxis.autorange': true };
+          Plotly.relayout(el, restore).then(function() { _resetting = false; });
+        });
+
+        el.on('plotly_doubleclick', function() { _savedRange = null; });
+      }
+    ", session$ns("plot_mode"), session$ns("drag_range"))
+
+    # ------ Parsed reference data for plotting (station-filtered) ------
+    plot_ref_data <- reactive({
+      ref <- drift_ref_data()
+      if (is.null(ref)) return(NULL)
+      station <- input$station_select
+      if (is.null(station)) return(NULL)
+
+      stn_ref <- ref[ref$site_station_code == station, ]
+      if (nrow(stn_ref) == 0) return(NULL)
+
+      # Parse timestamps
+      parse_orders <- c("ymd HMS", "ymd HM", "mdy HMS", "mdy HM", "dmy HMS", "dmy HM")
+      stn_ref$ts_parsed <- lubridate::parse_date_time(
+        stn_ref$timestamp, orders = parse_orders, quiet = TRUE)
+      stn_ref <- stn_ref[!is.na(stn_ref$ts_parsed), ]
+      if (nrow(stn_ref) == 0) return(NULL)
+
+      stn_ref
+    })
+
     output$qaqc_plot <- renderPlotly({
       data <- selected_data()
       req(nrow(data) > 0)
       station <- input$station_select
 
-      # DO panel (raw vs adjusted)
+      # Reference data for overlay (may be NULL)
+      ref <- plot_ref_data()
+
+      # Panel 1: DO mg/L
       p1 <- plot_ly(data, x = ~timestamp, y = ~do_mgl,
               type = "scattergl", mode = "lines",
-              line = list(color = "#90CAF9", width = 1),
-              name = "Raw DO (mg/L)",
-              hovertemplate = "Raw: %{y:.2f} mg/L<extra></extra>")
-
-      if ("do_mgl_adj" %in% names(data)) {
-        p1 <- p1 %>% add_trace(y = ~do_mgl_adj,
+              line = list(color = "rgba(21,101,192,0.4)", width = 1),
+              name = "Raw DO mg/L",
+              hovertemplate = "Raw: %{y:.2f} mg/L<extra></extra>") %>%
+        add_trace(y = ~do_mgl_adj,
               type = "scattergl", mode = "lines",
-              line = list(color = "#1565C0", width = 1),
-              name = "Adj DO (mg/L)",
+              line = list(color = "#1565c0", width = 1),
+              name = "Adj DO mg/L",
               hovertemplate = "Adj: %{y:.2f} mg/L<extra></extra>")
-      }
 
-      # Add flag markers to DO panel
-      if ("do_error" %in% names(data)) {
-        err <- data[which(data$do_error), ]
-        if (nrow(err) > 0) {
-          p1 <- p1 %>% add_trace(data = err, x = ~timestamp, y = ~do_mgl,
-            type = "scattergl", mode = "markers",
-            marker = list(color = "#D32F2F", size = 5, symbol = "circle"),
-            name = "DO Error",
-            hovertemplate = "ERROR: %{y:.2f} mg/L<extra></extra>")
-        }
-      }
-      if ("do_high" %in% names(data)) {
-        hi <- data[which(data$do_high), ]
-        if (nrow(hi) > 0) {
-          p1 <- p1 %>% add_trace(data = hi, x = ~timestamp, y = ~do_mgl,
-            type = "scattergl", mode = "markers",
-            marker = list(color = "#FBC02D", size = 5, symbol = "circle"),
-            name = "DO High",
-            hovertemplate = "HIGH: %{y:.2f} mg/L<extra></extra>")
-        }
-      }
-      if ("flag_do_dry" %in% names(data)) {
-        dry <- data[which(data$flag_do_dry), ]
-        if (nrow(dry) > 0) {
-          p1 <- p1 %>% add_trace(data = dry, x = ~timestamp, y = ~do_mgl,
-            type = "scattergl", mode = "markers",
-            marker = list(color = "#795548", size = 5, symbol = "diamond"),
-            name = "Dry Sensor",
-            hovertemplate = "DRY: %{y:.2f} mg/L<extra></extra>")
+      # Panel 2: DO %sat
+      p2 <- plot_ly(data, x = ~timestamp, y = ~do_percsat,
+              type = "scattergl", mode = "lines",
+              line = list(color = "rgba(46,125,50,0.4)", width = 1),
+              name = "Raw DO %sat",
+              hovertemplate = "Raw: %{y:.1f} %%sat<extra></extra>") %>%
+        add_trace(y = ~do_percsat_adj,
+              type = "scattergl", mode = "lines",
+              line = list(color = "#2e7d32", width = 1),
+              name = "Adj DO %sat",
+              hovertemplate = "Adj: %{y:.1f} %%sat<extra></extra>")
+
+      # Overlay %sat reference points on Panel 2
+      if (!is.null(ref)) {
+        percsat_units <- c("%", "percent", "percent saturation", "%sat", "percsat")
+        ref_percsat <- ref[tolower(trimws(ref$unit)) %in% percsat_units, ]
+        if (nrow(ref_percsat) > 0) {
+          p2 <- p2 %>% add_trace(
+            data = ref_percsat, x = ~ts_parsed, y = ~value,
+            type = "scatter", mode = "markers",
+            inherit = FALSE,
+            marker = list(color = "#d32f2f", size = 10, symbol = "diamond",
+                         line = list(color = "#ffffff", width = 1.5)),
+            name = "Field Ref (%sat)",
+            text = ~paste0(event_type, ": ", value, " %sat\n", timestamp),
+            hovertemplate = "%{text}<extra></extra>"
+          )
         }
       }
 
-      # %sat panel
-      p2 <- plot_ly()
-      if ("do_percsat" %in% names(data)) {
-        p2 <- plot_ly(data, x = ~timestamp, y = ~do_percsat,
-                type = "scattergl", mode = "lines",
-                line = list(color = "#A5D6A7", width = 1),
-                name = "Raw %sat",
-                hovertemplate = "Raw: %{y:.1f} %%sat<extra></extra>")
-        if ("do_percsat_adj" %in% names(data)) {
-          p2 <- p2 %>% add_trace(y = ~do_percsat_adj,
-                type = "scattergl", mode = "lines",
-                line = list(color = "#2e7d32", width = 1),
-                name = "Adj %sat",
-                hovertemplate = "Adj: %{y:.1f} %%sat<extra></extra>")
-        }
-      }
-
-      # Temperature panel
+      # Panel 3: Water Temperature
       p3 <- plot_ly(data, x = ~timestamp, y = ~watertemp_C,
               type = "scattergl", mode = "lines",
-              line = list(color = "#FFCC80", width = 1),
+              line = list(color = "rgba(97,155,138,0.4)", width = 1),
               name = "Raw Water Temp",
-              hovertemplate = "Raw: %{y:.1f} \u00b0C<extra></extra>")
-
-      if ("watertemp_C_do_adj" %in% names(data)) {
-        p3 <- p3 %>% add_trace(y = ~watertemp_C_do_adj,
+              hovertemplate = "Raw: %{y:.1f} \u00b0C<extra></extra>") %>%
+        add_trace(y = ~watertemp_C_do_adj,
               type = "scattergl", mode = "lines",
-              line = list(color = "#E65100", width = 1),
+              line = list(color = "#619b8a", width = 1),
               name = "Adj Water Temp",
               hovertemplate = "Adj: %{y:.1f} \u00b0C<extra></extra>")
+
+      # Overlay temperature reference points on Panel 3
+      if (!is.null(ref) && nrow(ref) > 0) {
+        p3 <- p3 %>% add_trace(
+          data = ref, x = ~ts_parsed, y = ~watertemp_C,
+          type = "scatter", mode = "markers",
+          inherit = FALSE,
+          marker = list(color = "#d32f2f", size = 10, symbol = "diamond",
+                       line = list(color = "#ffffff", width = 1.5)),
+          name = "Field Ref (temp)",
+          text = ~paste0(event_type, ": ", watertemp_C, "\u00b0C\n", timestamp),
+          hovertemplate = "%{text}<extra></extra>"
+        )
       }
 
-      if ("temp_flag_ice" %in% names(data)) {
-        ice <- data[which(data$temp_flag_ice), ]
-        if (nrow(ice) > 0) {
-          p3 <- p3 %>% add_trace(data = ice, x = ~timestamp, y = ~watertemp_C,
-            type = "scattergl", mode = "markers",
-            marker = list(color = "#1565C0", size = 5, symbol = "circle"),
-            name = "Ice",
-            hovertemplate = "ICE: %{y:.1f} \u00b0C<extra></extra>")
+      # Panel 4: Air Temperature
+      p4 <- plot_ly(data, x = ~timestamp, y = ~airtemp_C,
+              type = "scattergl", mode = "lines",
+              line = list(color = "#FDB840", width = 1),
+              name = "Air Temp",
+              hovertemplate = "Air: %{y:.1f} \u00b0C<extra></extra>")
+
+      subplot(p1, p2, p3, p4, nrows = 4, shareX = TRUE, titleY = TRUE) %>%
+        layout(
+          title = list(text = paste("DO QAQC \u2014", station), font = list(size = 14)),
+          xaxis = list(title = ""),
+          xaxis2 = list(title = ""),
+          xaxis3 = list(title = ""),
+          xaxis4 = list(title = "Date"),
+          yaxis  = list(title = "DO (mg/L)", fixedrange = TRUE),
+          yaxis2 = list(title = "DO (%sat)", fixedrange = TRUE),
+          yaxis3 = list(title = "Water Temp (\u00b0C)", fixedrange = TRUE),
+          yaxis4 = list(title = "Air Temp (\u00b0C)", fixedrange = TRUE),
+          hovermode = "x unified",
+          legend = list(orientation = "h", y = -0.08),
+          margin = list(b = 80)
+        ) %>%
+        htmlwidgets::onRender(drag_range_js) %>%
+        htmlwidgets::onRender(sprintf("
+          function(el, x) {
+            var flagId = '%s';
+            var modeId = '%s';
+            if (!window._doSyncGuard) window._doSyncGuard = false;
+            el.on('plotly_relayout', function(evt) {
+              if (window._doSyncGuard) return;
+              var mode = Shiny.shinyapp.$inputValues[modeId];
+              if (mode === 'select') return;
+              var keys = Object.keys(evt);
+              var isShapeOnly = keys.every(function(k) {
+                return k === 'shapes' || k.indexOf('shapes[') === 0;
+              });
+              if (isShapeOnly) return;
+              var flagEl = document.getElementById(flagId);
+              if (!flagEl || !flagEl.layout) return;
+              window._doSyncGuard = true;
+              if (evt['xaxis.autorange']) {
+                Plotly.relayout(flagEl, {'xaxis.autorange': true}).then(function() { window._doSyncGuard = false; });
+              } else {
+                var x0 = evt['xaxis.range[0]'];
+                var x1 = evt['xaxis.range[1]'];
+                if (x0 && x1) {
+                  Plotly.relayout(flagEl, {'xaxis.range[0]': x0, 'xaxis.range[1]': x1}).then(function() { window._doSyncGuard = false; });
+                } else { window._doSyncGuard = false; }
+              }
+            });
+            el.on('plotly_doubleclick', function() {
+              var flagEl = document.getElementById(flagId);
+              if (flagEl) {
+                window._doSyncGuard = true;
+                Plotly.relayout(flagEl, {'xaxis.autorange': true}).then(function() { window._doSyncGuard = false; });
+              }
+            });
+          }
+        ", session$ns("flag_plot"), session$ns("plot_mode")))
+    })
+
+    # ------ Flag review plot ------
+    output$flag_plot <- renderPlotly({
+      data <- selected_data()
+      req(nrow(data) > 0)
+
+      flag_cols <- c("do_error", "do_neg_between", "do_neg_lt_minus1", "do_high",
+                     "temp_flag_ice", "temp_neg_between", "temp_neg_leq_minus1",
+                     "flag_do_dry")
+      edit_cols <- grep("^edit_", names(data), value = TRUE)
+      all_flag_cols <- intersect(c(flag_cols, edit_cols), names(data))
+
+      symbols <- c("circle", "triangle-up", "square", "cross", "x",
+                   "diamond", "star-triangle-up", "hexagram")
+
+      p <- plot_ly()
+      for (i in seq_along(all_flag_cols)) {
+        col <- all_flag_cols[i]
+        flagged <- data[which(data[[col]] == TRUE), ]
+        if (nrow(flagged) > 0) {
+          p <- p %>% add_trace(
+            data = flagged, x = ~timestamp,
+            y = col, type = "scatter", mode = "markers",
+            marker = list(color = "#000000", size = 6,
+                         symbol = symbols[((i - 1) %% length(symbols)) + 1]),
+            name = col
+          )
         }
       }
 
-      subplot(p1, p2, p3, nrows = 3, shareX = TRUE, titleY = TRUE) %>%
-        layout(
-          title = list(text = paste("DO QAQC -", station), font = list(size = 14)),
-          xaxis3 = list(title = "Date"),
-          yaxis = list(title = "DO (mg/L)"),
-          yaxis2 = list(title = "DO (%sat)"),
-          yaxis3 = list(title = "Water Temp (\u00b0C)"),
-          hovermode = "x unified",
-          legend = list(orientation = "h", y = -0.1),
-          margin = list(b = 80)
+      p %>% layout(
+        title = list(text = "QA/QC Flags", font = list(size = 13)),
+        xaxis = list(title = "Date"),
+        yaxis = list(title = "", categoryorder = "trace"),
+        legend = list(orientation = "h", y = -0.3),
+        margin = list(b = 80, l = 150)
+      ) %>%
+        htmlwidgets::onRender(sprintf("
+          function(el, x) {
+            var mainId = '%s';
+            if (!window._doSyncGuard) window._doSyncGuard = false;
+            el.on('plotly_relayout', function(evt) {
+              if (window._doSyncGuard) return;
+              var keys = Object.keys(evt);
+              var isShapeOnly = keys.every(function(k) {
+                return k === 'shapes' || k.indexOf('shapes[') === 0;
+              });
+              if (isShapeOnly) return;
+              var mainEl = document.getElementById(mainId);
+              if (!mainEl || !mainEl.layout) return;
+              window._doSyncGuard = true;
+              if (evt['xaxis.autorange']) {
+                Plotly.relayout(mainEl, {'xaxis.autorange': true}).then(function() { window._doSyncGuard = false; });
+              } else {
+                var x0 = evt['xaxis.range[0]'];
+                var x1 = evt['xaxis.range[1]'];
+                if (x0 && x1) {
+                  Plotly.relayout(mainEl, {'xaxis.range[0]': x0, 'xaxis.range[1]': x1}).then(function() { window._doSyncGuard = false; });
+                } else { window._doSyncGuard = false; }
+              }
+            });
+            el.on('plotly_doubleclick', function() {
+              var mainEl = document.getElementById(mainId);
+              if (mainEl) {
+                window._doSyncGuard = true;
+                Plotly.relayout(mainEl, {'xaxis.autorange': true}).then(function() { window._doSyncGuard = false; });
+              }
+            });
+          }
+        ", session$ns("qaqc_plot")))
+    })
+
+    # ------ Multi-range selection via drag ------
+    merge_ranges <- function(ranges) {
+      if (length(ranges) <= 1) return(ranges)
+      sorted <- ranges[order(sapply(ranges, `[[`, 1))]
+      merged <- list(sorted[[1]])
+      for (i in seq(2, length(sorted))) {
+        last <- merged[[length(merged)]]
+        curr <- sorted[[i]]
+        if (curr[1] <= last[2]) {
+          merged[[length(merged)]] <- c(min(last[1], curr[1]), max(last[2], curr[2]))
+        } else {
+          merged <- c(merged, list(curr))
+        }
+      }
+      merged
+    }
+
+    observeEvent(input$drag_range, {
+      info <- input$drag_range
+      req(info$x0, info$x1)
+
+      t0 <- as.character(info$x0)
+      t1 <- as.character(info$x1)
+      if (t0 > t1) { tmp <- t0; t0 <- t1; t1 <- tmp }
+
+      range_history(c(range_history(), list(selected_ranges())))
+      new_ranges <- merge_ranges(c(selected_ranges(), list(c(t0, t1))))
+      selected_ranges(new_ranges)
+    })
+
+    observe({
+      ranges <- selected_ranges()
+      if (length(ranges) > 0) {
+        plot_id <- session$ns("qaqc_plot")
+        shapes_json <- jsonlite::toJSON(
+          lapply(ranges, function(r) {
+            list(type = "rect", xref = "x", yref = "paper",
+                 x0 = r[1], x1 = r[2], y0 = 0, y1 = 1,
+                 fillcolor = "rgba(255, 165, 0, 0.20)",
+                 line = list(color = "rgba(255, 140, 0, 0.8)", width = 1))
+          }),
+          auto_unbox = TRUE
         )
+        shinyjs::runjs(sprintf(
+          "var el = document.getElementById('%s');
+           if (el && el.layout) { el.layout.shapes = %s; Plotly.redraw(el); }",
+          plot_id, shapes_json
+        ))
+      }
+    })
+
+    observeEvent(input$station_select, {
+      selected_ranges(list())
+      range_history(list())
+    })
+
+    observeEvent(input$undo_range, {
+      hist <- range_history()
+      if (length(hist) > 0) {
+        selected_ranges(hist[[length(hist)]])
+        range_history(hist[-length(hist)])
+      }
+    })
+
+    observeEvent(input$clear_ranges, {
+      range_history(c(range_history(), list(selected_ranges())))
+      selected_ranges(list())
+      df <- do_qc_result()
+      if (!is.null(df)) {
+        attr(df, ".redraw") <- Sys.time()
+        do_qc_result(df)
+      }
+    })
+
+    output$range_status <- renderUI({
+      n <- length(selected_ranges())
+      if (input$plot_mode == "select") {
+        if (n == 0) {
+          tags$span(style = "font-size: 13px; color: #666;",
+                    "Drag across the plot to select a period")
+        } else {
+          tags$span(style = "font-size: 13px; color: #e65100; font-weight: bold;",
+                    sprintf("%d range%s selected", n, if (n > 1) "s" else ""))
+        }
+      }
+    })
+
+    # ------ Helpers: timestamp parsing, snapping, merge ------
+    parse_plotly_ts <- function(ts_char) {
+      ts <- lubridate::ymd_hms(ts_char, quiet = TRUE)
+      if (!is.na(ts)) return(ts)
+      ts <- lubridate::ymd_hm(ts_char, quiet = TRUE)
+      if (!is.na(ts)) return(ts)
+      ts <- lubridate::ymd(ts_char, quiet = TRUE)
+      if (!is.na(ts)) return(ts)
+      stripped <- sub("\\.\\d+$", "", ts_char)
+      ts <- lubridate::ymd_hms(stripped, quiet = TRUE)
+      if (!is.na(ts)) return(ts)
+      ts <- tryCatch(as.POSIXct(ts_char), error = function(e) NA)
+      ts
+    }
+
+    snap_to_data <- function(ts_char, timestamps) {
+      ts <- parse_plotly_ts(ts_char)
+      if (is.na(ts)) return(ts_char)
+      idx <- which.min(abs(as.numeric(difftime(timestamps, ts, units = "secs"))))
+      format(timestamps[idx], "%Y-%m-%d %H:%M:%S")
+    }
+
+    snap_ranges <- function(ranges, station_timestamps) {
+      lapply(ranges, function(r) {
+        c(snap_to_data(r[1], station_timestamps),
+          snap_to_data(r[2], station_timestamps))
+      })
+    }
+
+    merge_station_back <- function(full_data, station_data, station) {
+      other_data <- dplyr::filter(full_data, site_station_code != station)
+      dplyr::bind_rows(other_data, station_data) %>%
+        dplyr::arrange(site_station_code, timestamp)
+    }
+
+    apply_adjustment_result <- function(station_data, station) {
+      updated <- merge_station_back(do_qc_result(), station_data, station)
+      selected_ranges(list())
+      range_history(list())
+      do_qc_result(updated)
+      rv_qaqc_data$do_qaqc <- updated
+
+      adj_log <- attr(station_data, "qaqc_log")
+      if (!is.null(adj_log)) {
+        # Coerce ts_start/ts_end to character before binding — qc_dissox()
+        # uses NA_character_ in its no-flag fallback while adjust_logger_NA()
+        # returns POSIXct from make_qaqc_log_row().
+        existing <- qaqc_log()
+        if (!is.null(existing) && nrow(existing) > 0) {
+          existing$ts_start <- as.character(existing$ts_start)
+          existing$ts_end   <- as.character(existing$ts_end)
+        }
+        adj_log$ts_start <- as.character(adj_log$ts_start)
+        adj_log$ts_end   <- as.character(adj_log$ts_end)
+        qaqc_log(dplyr::bind_rows(existing, adj_log))
+      }
+    }
+
+    # ------ Remove Selected Periods (adjust_logger_NA) ------
+    observeEvent(input$btn_remove, {
+      ranges <- selected_ranges()
+      if (length(ranges) == 0) {
+        showNotification("Select at least one range on the plot first.",
+          type = "warning", duration = 4)
+        return()
+      }
+
+      n <- length(ranges)
+      showModal(modalDialog(
+        title = sprintf("Remove %d Selected Period%s", n, if (n > 1) "s" else ""),
+        tags$p(sprintf("Station: %s", input$station_select)),
+        tags$ul(
+          lapply(ranges, function(r) {
+            tags$li(paste(r[1], "to", r[2]))
+          })
+        ),
+        selectInput(session$ns("modal_reason"), "Reason:",
+          choices = c("ice", "dry", "disturbance"),
+          selected = "disturbance"),
+        checkboxInput(session$ns("modal_keep_temp"),
+          "Keep water temperature (keep_temp = TRUE)", value = FALSE),
+        textInput(session$ns("modal_note"), "Note (required):", value = ""),
+        footer = tagList(
+          modalButton("Cancel"),
+          actionButton(session$ns("modal_remove_confirm"), "Confirm Removal",
+            class = "btn-warning", icon = icon("eraser"),
+            style = "color: #ffffff;")
+        ),
+        easyClose = TRUE
+      ))
+    })
+
+    observeEvent(input$modal_remove_confirm, {
+      ranges <- selected_ranges()
+      req(length(ranges) > 0)
+      note <- input$modal_note
+      if (is.null(note) || nchar(trimws(note)) == 0) {
+        showNotification("Enter a note describing the reason for removal.",
+          type = "error", duration = 3)
+        return()
+      }
+
+      removeModal()
+      station <- input$station_select
+      req(station)
+
+      tryCatch({
+        station_data <- dplyr::filter(do_qc_result(), site_station_code == station)
+        snapped <- snap_ranges(ranges, station_data$timestamp)
+
+        for (r in snapped) {
+          station_data <- waterlogged::adjust_logger_NA(
+            input_data       = station_data,
+            select_station   = station,
+            metric           = "dissolvedoxygen",
+            reason_to_adjust = input$modal_reason,
+            timestamp_start  = r[1],
+            timestamp_end    = r[2],
+            keep_temp        = input$modal_keep_temp,
+            manual_note      = paste0(note, " (", r[1], " to ", r[2], ")"),
+            log_root         = NULL
+          )
+        }
+
+        apply_adjustment_result(station_data, station)
+        showNotification(
+          sprintf("Removed %d period%s for %s", length(ranges),
+                  if (length(ranges) > 1) "s" else "", station),
+          type = "message", duration = 5)
+
+      }, error = function(e) {
+        showNotification(paste("Removal error:", conditionMessage(e)),
+          type = "error", duration = 8)
+      })
     })
 
     # ------ Summary stats ------
-    output$do_summary <- renderPrint({
+    output$summary_station_label <- renderUI({
+      stn <- input$station_select
+      req(stn)
       data <- selected_data()
       req(nrow(data) > 0)
+      date_range <- paste(format(min(data$timestamp), "%Y-%m-%d"),
+                          "to", format(max(data$timestamp), "%Y-%m-%d"))
+      tags$div(
+        style = "background-color: #e3f2fd; padding: 12px; border-radius: 5px; border: 2px solid #1565c0; margin-bottom: 15px;",
+        tags$p(style = "margin: 0; font-size: 14px;",
+          "Showing summary statistics for station: ",
+          tags$strong(stn, style = "color: #1565c0;"),
+          tags$span(style = "color: #555; margin-left: 10px;",
+            sprintf("(%s records, %s)", format(nrow(data), big.mark = ","), date_range)
+          )
+        )
+      )
+    })
+
+    output$do_mgl_summary <- renderPrint({
+      data <- selected_data()
+      req(nrow(data) > 0)
+      n_dup <- sum(duplicated(data$timestamp))
+      cat("Records:", nrow(data), " | Duplicate timestamps:", n_dup, "\n\n")
       cat("--- Raw DO (mg/L) ---\n")
-      print(summary(data$do_mgl))
+      print(round(summary(data$do_mgl), 3))
+      cat("\n--- Adjusted DO (mg/L) ---\n")
       if ("do_mgl_adj" %in% names(data)) {
-        cat("\n--- Adjusted DO (mg/L) ---\n")
-        print(summary(data$do_mgl_adj))
+        print(round(summary(data$do_mgl_adj), 3))
+      } else {
+        cat("(column not yet created)\n")
       }
-      if ("do_percsat" %in% names(data)) {
-        cat("\n--- Raw %sat ---\n")
-        print(summary(data$do_percsat))
-      }
+    })
+
+    output$do_percsat_summary <- renderPrint({
+      data <- selected_data()
+      req(nrow(data) > 0)
+      cat("--- Raw DO (%sat) ---\n")
+      print(round(summary(data$do_percsat), 1))
+      cat("\n--- Adjusted DO (%sat) ---\n")
       if ("do_percsat_adj" %in% names(data)) {
-        cat("\n--- Adjusted %sat ---\n")
-        print(summary(data$do_percsat_adj))
+        print(round(summary(data$do_percsat_adj), 1))
+      } else {
+        cat("(column not yet created)\n")
       }
     })
 
     output$temp_summary <- renderPrint({
       data <- selected_data()
       req(nrow(data) > 0)
-      cat("--- Raw Water Temp ---\n")
-      print(summary(data$watertemp_C))
+      cat("--- Raw Water Temperature (\u00b0C) ---\n")
+      print(round(summary(data$watertemp_C), 1))
+      cat("\n--- Adjusted Water Temperature (\u00b0C) ---\n")
       if ("watertemp_C_do_adj" %in% names(data)) {
-        cat("\n--- Adjusted Water Temp ---\n")
-        print(summary(data$watertemp_C_do_adj))
-      }
-    })
-
-    # ------ Drift Correction ------
-    observeEvent(input$drift_btn, {
-      qc_data <- do_qc_result()
-      ref_data <- rv_raw_data$field_references
-      station <- input$drift_station
-
-      if (is.null(qc_data)) {
-        showNotification("Run QAQC first.", type = "error", duration = 3)
-        return()
-      }
-      if (is.null(ref_data) || nrow(ref_data) == 0) {
-        showNotification("No field reference data available.", type = "error", duration = 5)
-        return()
-      }
-      if (is.null(station) || station == "") {
-        showNotification("Select a station.", type = "error", duration = 3)
-        return()
-      }
-
-      # Filter ref data for DO at this station
-      do_refs <- ref_data[ref_data$metric == "do" & ref_data$site_station_code == station, ]
-      if (nrow(do_refs) == 0) {
-        showNotification(
-          sprintf("No DO field references found for %s.", station),
-          type = "warning", duration = 5)
-        return()
-      }
-
-      tryCatch({
-        showNotification("Applying drift correction...", type = "message",
-          duration = NULL, id = "do_drift_progress")
-
-        result <- waterlogged::wq_drift_correction(
-          input_data = qc_data,
-          select_station = station,
-          metric = "DO",
-          method = input$drift_method,
-          max_ref_gap_h = input$drift_max_gap,
-          log_root = NULL,
-          ref_data = do_refs
-        )
-
-        # Merge back
-        other_data <- dplyr::filter(qc_data, site_station_code != station)
-        station_result <- dplyr::filter(result, site_station_code == station)
-        combined <- dplyr::bind_rows(other_data, station_result) %>%
-          dplyr::arrange(site_station_code, timestamp)
-
-        do_qc_result(combined)
-        rv_qaqc_data$do_qaqc <- combined
-        drift_applied(TRUE)
-
-        removeNotification("do_drift_progress")
-        showNotification(
-          sprintf("Drift correction applied to %s.", station),
-          type = "message", duration = 3
-        )
-      }, error = function(e) {
-        removeNotification("do_drift_progress")
-        showNotification(paste("Drift error:", conditionMessage(e)),
-          type = "error", duration = 8)
-      })
-    })
-
-    # ------ Drift result info ------
-    output$drift_result_info <- renderUI({
-      req(drift_applied())
-      df <- do_qc_result()
-      req(df)
-
-      n_corrected <- if ("edit_do_drift" %in% names(df)) {
-        sum(df$edit_do_drift, na.rm = TRUE)
+        print(round(summary(data$watertemp_C_do_adj), 1))
       } else {
-        0
+        cat("(column not yet created)\n")
       }
-
-      tags$div(
-        style = "color: #155724; background: #d4edda; padding: 10px; border-radius: 5px; margin-top: 10px;",
-        icon("check-circle"),
-        sprintf(" Drift correction applied. %s records adjusted.",
-                format(n_corrected, big.mark = ","))
-      )
-    })
-
-    # ------ Manual adjustment ------
-    observeEvent(input$adj_btn, {
-      qc_data <- do_qc_result()
-      req(qc_data)
-
-      station <- input$adj_station
-      reason <- input$adj_reason
-      ts_start <- input$adj_start
-      ts_end <- input$adj_end
-      note <- input$adj_note
-
-      if (is.null(station) || station == "") {
-        showNotification("Select a station.", type = "error", duration = 3)
-        return()
-      }
-      if (nchar(ts_start) == 0 || nchar(ts_end) == 0) {
-        showNotification("Enter start and end timestamps.", type = "error", duration = 3)
-        return()
-      }
-      if (nchar(note) == 0) {
-        showNotification("Enter a note describing the adjustment.", type = "error", duration = 3)
-        return()
-      }
-
-      tryCatch({
-        station_data <- dplyr::filter(qc_data, site_station_code == station)
-        other_data <- dplyr::filter(qc_data, site_station_code != station)
-
-        adjusted <- waterlogged::adjust_logger_NA(
-          input_data = station_data,
-          select_station = station,
-          metric = "DO",
-          reason_to_adjust = reason,
-          timestamp_start = ts_start,
-          timestamp_end = ts_end,
-          keep_temp = input$adj_keep_temp,
-          manual_note = note,
-          log_root = NULL
-        )
-
-        updated <- dplyr::bind_rows(other_data, adjusted) %>%
-          dplyr::arrange(site_station_code, timestamp)
-
-        do_qc_result(updated)
-        rv_qaqc_data$do_qaqc <- updated
-
-        showNotification(
-          sprintf("Removed %s to %s for %s (%s)", ts_start, ts_end, station, reason),
-          type = "message", duration = 5
-        )
-      }, error = function(e) {
-        showNotification(paste("Adjustment error:", conditionMessage(e)),
-          type = "error", duration = 8)
-      })
     })
 
     # ------ Download: Clean CSV ------
     output$download_csv <- downloadHandler(
       filename = function() {
-        paste0("do_qaqc_", format(Sys.Date(), "%Y%m%d"), ".csv")
+        station <- input$station_select
+        paste0("do_qaqc_", station, "_", format(Sys.Date(), "%Y%m%d"), ".csv")
       },
       content = function(file) {
-        df <- do_qc_result()
-        req(df)
+        data <- selected_data()
+        req(nrow(data) > 0)
 
         export_cols <- c(
           "site_station_code", "timestamp",
@@ -1726,10 +3730,10 @@ module_do_qc_server <- function(id) {
           "watertemp_C", "watertemp_C_do_adj",
           "airpress_kPa", "airtemp_C"
         )
-        flag_cols <- grep("^(edit_|flag_|do_error|do_neg|do_high|temp_flag|temp_neg)", names(df), value = TRUE)
-        export_cols <- intersect(c(export_cols, flag_cols), names(df))
+        flag_cols <- grep("^(edit_|flag_|do_error|do_neg|do_high|temp_flag|temp_neg)", names(data), value = TRUE)
+        export_cols <- intersect(c(export_cols, flag_cols), names(data))
 
-        export_df <- df[, export_cols]
+        export_df <- data[, export_cols]
         export_df$timestamp <- format(export_df$timestamp, "%Y-%m-%d %H:%M:%S")
         write.csv(export_df, file, row.names = FALSE)
       }
@@ -1738,11 +3742,20 @@ module_do_qc_server <- function(id) {
     # ------ Download: QAQC Log ------
     output$download_log <- downloadHandler(
       filename = function() {
-        paste0("do_qaqc_log_", format(Sys.Date(), "%Y%m%d"), ".csv")
+        station <- input$station_select
+        paste0("do_qaqc_log_", station, "_", format(Sys.Date(), "%Y%m%d"), ".csv")
       },
       content = function(file) {
         log <- qaqc_log()
         if (!is.null(log) && nrow(log) > 0) {
+          station <- input$station_select
+          if ("station" %in% names(log) && !is.null(station)) {
+            station_log <- log[log$station == station, ]
+            if (nrow(station_log) > 0) {
+              write.csv(station_log, file, row.names = FALSE)
+              return()
+            }
+          }
           write.csv(log, file, row.names = FALSE)
         } else {
           write.csv(
@@ -1754,6 +3767,23 @@ module_do_qc_server <- function(id) {
             ),
             file, row.names = FALSE
           )
+        }
+      }
+    )
+
+    # ------ Download: Metadata ------
+    output$download_metadata <- downloadHandler(
+      filename = function() {
+        paste0("do_metadata_", format(Sys.Date(), "%Y%m%d"), ".csv")
+      },
+      content = function(file) {
+        meta <- rv_raw_data$metadata
+        if (!is.null(meta) && nrow(meta) > 0) {
+          do_meta <- meta[grepl("^(do|dissolvedoxygen|dissolved oxygen)$",
+                                tolower(trimws(meta$metric))), ]
+          write.csv(do_meta, file, row.names = FALSE)
+        } else {
+          write.csv(data.frame(), file, row.names = FALSE)
         }
       }
     )

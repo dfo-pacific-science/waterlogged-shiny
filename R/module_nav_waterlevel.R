@@ -6,7 +6,7 @@
 #   1. Import Data           — bind_hobo_files() + snap timestamps
 #   2. Convert Data Metrics  — add_nearest_baro() + convert_waterlevel_kPa_m()
 #   3. QA Water Level        — qc_waterlevel() + visual review
-#   4. Manual Adjustments    — datum, zero, spike, offset corrections
+#   (Manual adjustments are integrated into QA Water Level)
 # =============================================================================
 
 
@@ -317,7 +317,7 @@ module_wl_upload_ui <- function(id) {
             ),
             tags$div(
               style = "background-color: #e8e8e8; padding: 10px; border-radius: 4px; margin-top: 10px;",
-              tags$h5("Follow Along", style = "margin-top: 0; margin-bottom: 5px;"),
+              tags$h5("Follow Along in the R package", style = "margin-top: 0; margin-bottom: 5px;"),
               tags$code("barometric_qaqc_all()"),
               tags$p(style = "font-size: 12px; color: #666; margin-top: 5px; margin-bottom: 0;",
                      "Run automated QAQC on baro data (produces the required columns)")
@@ -345,7 +345,7 @@ module_wl_upload_ui <- function(id) {
               placeholder = "Choose processed baro CSV...",
               width = "100%"
             ),
-            actionButton(ns("load_baro_btn"), "Load Barometric Data",
+            actionButton(ns("load_baro_btn"), "Load Barometric Data (wait until above section says Upload Complete before pressing this button)",
               class = "btn-primary",
               icon = icon("cloud-download-alt"),
               width = "100%",
@@ -482,7 +482,7 @@ module_wl_upload_ui <- function(id) {
           " Ready to proceed? Continue to ",
           tags$a(
             href = "#",
-            onclick = "$(\"a[href='#shiny-tab-t_wl_convert']\").tab('show'); return false;",
+            onclick = "$(\"a[href='#shiny-tab-t_wl_convert']\").tab('show'); window.scrollTo(0,0); return false;",
             style = "color: #1565c0; font-weight: bold;",
             "Convert Data Metrics"
           ),
@@ -583,27 +583,59 @@ module_wl_upload_server <- function(id) {
 
       req(nrow(sites) > 0)
 
-      # Color by metric
-      pal <- colorFactor(
-        palette = c("waterlevel" = "#1565C0", "barometric" = "#FF8F00"),
-        domain = c("waterlevel", "barometric")
-      )
+      # Split by metric for toggleable overlay groups
+      wl_sites   <- sites[sites$metric == "waterlevel", ]
+      baro_sites <- sites[sites$metric == "barometric", ]
 
-      leaflet(sites) %>%
+      map <- leaflet(sites) %>%
         addProviderTiles("Esri.WorldImagery", group = "Satellite") %>%
-        addProviderTiles("Esri.WorldTopoMap", group = "Topo") %>%
-        addCircleMarkers(
+        addProviderTiles("Esri.WorldTopoMap", group = "Topo")
+
+      if (nrow(wl_sites) > 0) {
+        map <- map %>% addCircleMarkers(
+          data = wl_sites,
           lng = ~longitude, lat = ~latitude,
           radius = 7, weight = 2,
-          color = "#fff", fillColor = ~pal(metric), fillOpacity = 0.9,
+          color = "#fff", fillColor = "#1565C0", fillOpacity = 0.9,
           label = ~site_station_code,
           popup = ~paste0(
             "<strong>", site_station_code, "</strong><br>",
             "Metric: ", metric, "<br>",
             "Lat: ", round(latitude, 4), "<br>",
             "Lon: ", round(longitude, 4)
+          ),
+          group = "Water Level",
+          clusterOptions = markerClusterOptions(
+            maxClusterRadius = 20,
+            spiderfyOnMaxZoom = TRUE,
+            disableClusteringAtZoom = 14
           )
-        ) %>%
+        )
+      }
+
+      if (nrow(baro_sites) > 0) {
+        map <- map %>% addCircleMarkers(
+          data = baro_sites,
+          lng = ~longitude, lat = ~latitude,
+          radius = 7, weight = 2,
+          color = "#fff", fillColor = "#FF8F00", fillOpacity = 0.9,
+          label = ~site_station_code,
+          popup = ~paste0(
+            "<strong>", site_station_code, "</strong><br>",
+            "Metric: ", metric, "<br>",
+            "Lat: ", round(latitude, 4), "<br>",
+            "Lon: ", round(longitude, 4)
+          ),
+          group = "Barometric",
+          clusterOptions = markerClusterOptions(
+            maxClusterRadius = 20,
+            spiderfyOnMaxZoom = TRUE,
+            disableClusteringAtZoom = 14
+          )
+        )
+      }
+
+      map %>%
         addLegend(
           position = "bottomright",
           colors = c("#1565C0", "#FF8F00"),
@@ -612,7 +644,8 @@ module_wl_upload_server <- function(id) {
         ) %>%
         addLayersControl(
           baseGroups = c("Satellite", "Topo"),
-          options = layersControlOptions(collapsed = TRUE)
+          overlayGroups = c("Water Level", "Barometric"),
+          options = layersControlOptions(collapsed = FALSE)
         )
     })
 
@@ -1605,7 +1638,23 @@ module_wl_convert_ui <- function(id) {
         ),
 
         uiOutput(ns("ref_comparison_station_label")),
-        DT::DTOutput(ns("convert_ref_comparison_table"))
+        DT::DTOutput(ns("convert_ref_comparison_table")),
+
+        # ---- Next step link ----
+        tags$div(
+          style = "margin-top: 25px; padding: 15px; background-color: #e8f5e9; border-radius: 5px; text-align: center;",
+          tags$p(style = "margin: 0; font-size: 14px;",
+            icon("arrow-right"),
+            " Ready to proceed? Continue to ",
+            tags$a(
+              href = "#",
+              onclick = "$(\"a[href='#shiny-tab-t_wl_qaqc']\").tab('show'); window.scrollTo(0,0); return false;",
+              style = "color: #2e7d32; font-weight: bold;",
+              "QA Water Level"
+            ),
+            " to run automated quality checks and review flagged data."
+          )
+        )
       )
     ),
     .wireframe_footer()
@@ -2724,7 +2773,7 @@ module_wl_qaqc_ui <- function(id) {
   tagList(
     shinydashboard::box(
       width = 12,
-      tags$h1("QA Water Level", class = "custom-h1"),
+      tags$h1("QC Water Level", class = "custom-h1"),
       tags$h2("Automated quality checks and visual review", class = "custom-h2"),
 
       tags$p(
@@ -2733,17 +2782,34 @@ module_wl_qaqc_ui <- function(id) {
         function creates ", tags$code("waterlevel_m_adj"), " and ",
         tags$code("watertemp_C_adj"), " columns, applying corrections for
         negative values and ice. Flags are added for dry, ice, and disturbance
-        conditions for your review."
+        conditions for your review. Use the manual adjustment tools to remove
+        bad periods, correct zero shifts, flatten spikes, or fix cable offsets."
       ),
+
+      # ---- Data readiness status ----
+      uiOutput(ns("qaqc_status")),
 
       hr(),
 
-      fluidRow(
-        column(
-          width = 4,
+      # ================================================================
+      # Section 1: Run Automated QAQC
+      # ================================================================
+      tags$div(
+        style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+        tags$span(
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          "Run Automated QAQC"
+        )
+      ),
+
+      tags$div(
+        style = "display: flex; flex-wrap: wrap; margin: 0 -15px;",
+        # ---- Left: QAQC explanation (33%) ----
+        tags$div(
+          style = "flex: 0 0 33.333%; max-width: 33.333%; padding: 0 15px; display: flex; flex-direction: column;",
           tags$div(
-            style = "background-color: #e8f5e9; padding: 20px; border-radius: 5px; margin-bottom: 15px;",
-            tags$h4("Automatic QAQC Rules", style = "margin-top: 0;"),
+            style = "background-color: #f0f0f0; padding: 20px; border-radius: 5px; margin-bottom: 15px;",
+            tags$h4("QAQC Rules", style = "margin-top: 0;"),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
               tags$li(tags$strong("NEGATIVE_WL"), " \u2014 negative water level set to 0"),
@@ -2755,7 +2821,7 @@ module_wl_qaqc_ui <- function(id) {
             )
           ),
           tags$div(
-            style = "background-color: #fff3cd; padding: 15px; border-radius: 5px; margin-bottom: 15px;",
+            style = "background-color: #f0f0f0; padding: 15px; border-radius: 5px; margin-bottom: 15px;",
             tags$h4("Flags vs Edits", style = "margin-top: 0;"),
             tags$p(style = "font-size: 13px;",
               tags$code("flag_*"), " = suspicious, review needed (data NOT changed)", tags$br(),
@@ -2763,58 +2829,282 @@ module_wl_qaqc_ui <- function(id) {
             )
           ),
           tags$div(
-            style = "background-color: #f8f9fa; padding: 15px; border-radius: 5px;",
-            tags$h4("Functions Used", style = "margin-top: 0;"),
+            style = "background-color: #f0f0f0; padding: 15px; border-radius: 5px; flex: 1;",
+            tags$h4("Follow Along in the R Package (waterlogged)", style = "margin-top: 0;"),
             tags$code("qc_waterlevel()"),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
                    "Automated QAQC with flag and edit columns"),
-            tags$code("plot_qaqc_timeseries()"),
+            tags$code("adjust_logger_NA()"),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
-                   "Multi-panel interactive review plot")
+                   "Remove data for ice / dry / disturbance periods"),
+            tags$code("adjust_WL_zero()"),
+            tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
+                   "Shift water level by constant offset"),
+            tags$code("adjust_waterlevel_spike()"),
+            tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
+                   "Linear interpolation across spike period"),
+            tags$code("adjust_WL_offset()"),
+            tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
+                   "Correct cable offset from timestamp onward")
           )
         ),
 
-        column(
-          width = 8,
+        # ---- Right: Station selector & run button (67%) ----
+        tags$div(
+          style = "flex: 0 0 66.667%; max-width: 66.667%; padding: 0 15px; display: flex; min-width: 0;",
           tags$div(
-            style = "display: flex; gap: 15px; margin-bottom: 15px;",
+            style = "background-color: #fafafa; padding: 20px; border-radius: 5px; border: 1px solid #e0e0e0; flex: 1; min-width: 0; overflow-x: auto;",
             tags$div(
-              style = "flex: 1; border: 1px solid #ddd; padding: 12px; border-radius: 5px; background: #f9f9f9;",
-              tags$label("Select Station"),
-              tags$div(style = "border: 1px solid #ccc; padding: 6px; background: white; border-radius: 4px; margin-top: 5px;",
-                       "[Station Dropdown]")
+              style = "background-color: #e8f5e9; padding: 10px; border-radius: 5px; border: 2px solid #2e7d32; margin-bottom: 15px;",
+              selectInput(ns("station_select"), "Select Station:",
+                choices = NULL, width = "100%")
+            ),
+            actionButton(ns("run_qaqc"), "Run Water Level QAQC",
+              class = "btn-success btn-lg", width = "100%",
+              icon = icon("play"),
+              style = "color: #ffffff;"
+            ),
+
+            # Flag summary (appears after QAQC runs)
+            conditionalPanel(
+              condition = "output.show_results",
+              ns = ns,
+              tags$div(
+                style = "margin-top: 20px; overflow-x: auto;",
+                tags$h4("Flag Summary"),
+                DT::DTOutput(ns("flag_summary"))
+              )
+            )
+          )
+        )
+      ),
+
+      # ======== Conditional: Results appear after QAQC runs ========
+      conditionalPanel(
+        condition = "output.show_results",
+        ns = ns,
+
+        # ================================================================
+        # Section 3: Manual Adjustments
+        # ================================================================
+        tags$div(
+          style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+          tags$span(
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            "Manual Adjustments"
+          )
+        ),
+
+        tags$p(
+          class = "clean-print",
+          "Use the plot below to review flagged data. Switch to ",
+          tags$strong("Select Range"), " mode and drag across the time series ",
+          "to highlight periods that need correction. Use ", tags$strong("Zoom"),
+          " mode to navigate and inspect the data more closely. Once you have ",
+          "selected one or more ranges, click an action button to apply the ",
+          "appropriate correction \u2014 remove bad data, shift the zero reference, ",
+          "flatten a spike, or fix a cable offset."
+        ),
+
+        tags$div(
+          style = "background-color: #fafafa; padding: 15px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #e0e0e0;",
+
+          # Controls — centered, stacked vertically
+          tags$div(
+            style = "display: flex; flex-direction: column; align-items: center; gap: 10px;",
+
+            # Row 1: Mode toggle
+            shinyWidgets::radioGroupButtons(
+              inputId = ns("plot_mode"),
+              label = NULL,
+              choices = c("Zoom" = "zoom", "Select Range" = "select"),
+              selected = "zoom",
+              size = "lg",
+              status = "success"
+            ),
+
+            # Row 2: Range management + 4 action buttons
+            tags$div(
+              style = "display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center;",
+              actionButton(ns("undo_range"), "Undo",
+                class = "btn-default btn-sm", icon = icon("undo")),
+              actionButton(ns("clear_ranges"), "Clear Ranges",
+                class = "btn-default btn-sm", icon = icon("times")),
+              actionButton(ns("btn_remove"), "Remove Selected",
+                class = "btn-warning btn-sm", icon = icon("eraser"),
+                style = "color: #fff;"),
+              actionButton(ns("btn_zero"), "Adjust WL Zero",
+                class = "btn-info btn-sm", icon = icon("arrows-alt-v"),
+                style = "color: #fff;"),
+              actionButton(ns("btn_spike"), "Flatten Spike",
+                class = "btn-danger btn-sm", icon = icon("chart-line"),
+                style = "color: #fff;"),
+              actionButton(ns("btn_offset"), "Cable Offset",
+                class = "btn-dark btn-sm", icon = icon("exchange-alt"),
+                style = "color: #000;")
+            ),
+
+            # Row 3: Range status
+            uiOutput(ns("range_status"))
+          ),
+
+          # Adjustment explanation panel
+          tags$div(
+            style = "margin-top: 20px; padding: 15px; background-color: #e8f5e9; border-radius: 5px;",
+            fluidRow(
+              column(3,
+                tags$h5("Remove Selected", style = "margin-top: 0; color: #856404;"),
+                tags$p(style = "font-size: 12px;",
+                  "Set adjusted values to NA in selected ranges. ",
+                  "Choose reason: ice, dry, or disturbance. ",
+                  tags$code("adjust_logger_NA()")
+                )
+              ),
+              column(3,
+                tags$h5("Adjust WL Zero", style = "margin-top: 0; color: #0c5460;"),
+                tags$p(style = "font-size: 12px;",
+                  "Shift water level by a constant offset (metres). ",
+                  "Apply to selected range or entire series. ",
+                  tags$code("adjust_WL_zero()")
+                )
+              ),
+              column(3,
+                tags$h5("Flatten Spike", style = "margin-top: 0; color: #721c24;"),
+                tags$p(style = "font-size: 12px;",
+                  "Replace spike with linear interpolation between ",
+                  "start and end of one selected range. ",
+                  tags$code("adjust_waterlevel_spike()")
+                )
+              ),
+              column(3,
+                tags$h5("Cable Offset", style = "margin-top: 0; color: #1b1e21;"),
+                tags$p(style = "font-size: 12px;",
+                  "Correct step change from cable break. Uses one ",
+                  "range: start=pre-break, end=post-break reference. ",
+                  tags$code("adjust_WL_offset()")
+                )
+              )
+            )
+          )
+        ),
+
+        # ================================================================
+        # Section 4: Visual Review
+        # ================================================================
+        tags$div(
+          style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+          tags$span(
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            "Visual Review"
+          )
+        ),
+
+        tags$div(
+          style = "background-color: #fafafa; padding: 15px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #e0e0e0;",
+
+          # Station info header
+          uiOutput(ns("station_info")),
+
+          # Time series plot (4 panels)
+          tags$div(style = "margin-top: 15px;",
+            plotlyOutput(ns("qaqc_plot"), height = "850px") %>% withSpinner()
+          ),
+
+          # Flag review plot (separate)
+          tags$div(style = "margin-top: 15px;",
+            plotlyOutput(ns("flag_plot"), height = "250px") %>% withSpinner()
+          )
+        ),
+
+        # ================================================================
+        # Section 5: Station Summary Statistics
+        # ================================================================
+        tags$div(
+          style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+          tags$span(
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            "Station Summary Statistics"
+          )
+        ),
+
+        uiOutput(ns("summary_station_label")),
+
+        fluidRow(
+          column(
+            width = 6,
+            tags$div(
+              style = "background-color: #e8f5e9; padding: 15px; border-radius: 5px; margin-bottom: 15px;",
+              tags$h4("Water Level Summary (raw vs adjusted)", style = "margin-top: 0;"),
+              verbatimTextOutput(ns("wl_summary"))
+            )
+          ),
+          column(
+            width = 6,
+            tags$div(
+              style = "background-color: #e8f5e9; padding: 15px; border-radius: 5px; margin-bottom: 15px;",
+              tags$h4("Temperature Summary (raw vs adjusted)", style = "margin-top: 0;"),
+              verbatimTextOutput(ns("temp_summary"))
+            )
+          )
+        ),
+
+        # ================================================================
+        # Section 6: Export Clean Data
+        # ================================================================
+        tags$div(
+          style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+          tags$span(
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            "Export Clean Data"
+          )
+        ),
+
+        tags$div(
+          style = "display: flex; flex-wrap: wrap; margin: 0 -15px;",
+          # ---- Left: Explanation ----
+          tags$div(
+            style = "flex: 0 0 33.333%; max-width: 33.333%; padding: 0 15px; display: flex;",
+            tags$div(
+              style = "background-color: #e8f5e9; padding: 20px; border-radius: 5px; flex: 1;",
+              tags$h4("Download Results", style = "margin-top: 0;"),
+              tags$p(style = "font-size: 13px;",
+                "Download the QAQC'd water level data as CSV for the ",
+                tags$strong("selected station"), ". The exported file ",
+                "contains raw columns, adjusted columns, and all edit/flag ",
+                "columns. The QAQC log records every automated and manual ",
+                "adjustment applied."
+              ),
+              tags$p(style = "font-size: 13px; color: #666;",
+                "Note: unlike barometric export, water level data is exported ",
+                "per station. Select the station you want to export before ",
+                "downloading."
+              )
             )
           ),
 
+          # ---- Right: Download buttons ----
           tags$div(
-            style = "display: inline-block; padding: 10px 25px; background: #28a745; color: white; border-radius: 5px; cursor: pointer; margin-bottom: 20px;",
-            "Run Water Level QAQC"
-          ),
-
-          # Flag summary
-          tags$div(
-            style = "border: 2px dashed #ccc; padding: 25px; text-align: center; border-radius: 5px; margin-bottom: 15px;",
-            tags$p(tags$strong("Flag Summary"), style = "color: #888;"),
-            tags$p("Count of each flag/edit type", style = "color: #aaa; font-size: 13px;")
-          ),
-
-          # QAQC plot
-          tags$div(
-            style = "border: 2px dashed #ccc; padding: 80px; text-align: center; border-radius: 5px;",
-            tags$p(tags$strong("QAQC Review Plot"), style = "color: #888;"),
-            tags$p("Multi-panel plot: water level (raw vs adj), water temp, baro, with flag markers",
-                   style = "color: #aaa; font-size: 13px;"),
-            tags$p("Use range slider to zoom \u2014 hover for values", style = "color: #bbb; font-size: 12px;")
-          ),
-
-          # Flag legend
-          tags$div(
-            style = "display: flex; gap: 8px; margin-top: 15px; flex-wrap: wrap;",
-            tags$div(style = "padding: 6px 12px; background: #28a745; color: white; border-radius: 4px; font-size: 12px;", "Good Data"),
-            tags$div(style = "padding: 6px 12px; background: #17a2b8; color: white; border-radius: 4px; font-size: 12px;", "FLAG_ICE"),
-            tags$div(style = "padding: 6px 12px; background: #ffc107; color: black; border-radius: 4px; font-size: 12px;", "FLAG_DRY"),
-            tags$div(style = "padding: 6px 12px; background: #343a40; color: white; border-radius: 4px; font-size: 12px;", "FLAG_DISTURBANCE"),
-            tags$div(style = "padding: 6px 12px; background: #dc3545; color: white; border-radius: 4px; font-size: 12px;", "Removed")
+            style = "flex: 0 0 66.667%; max-width: 66.667%; padding: 0 15px; display: flex;",
+            tags$div(
+              style = "background-color: #fafafa; padding: 20px; border-radius: 5px; border: 1px solid #e0e0e0; flex: 1;",
+              fluidRow(
+                column(4,
+                  downloadButton(ns("download_csv"), "Download Clean CSV",
+                    class = "btn-primary",
+                    style = "width: 100%; color: #ffffff;")
+                ),
+                column(4,
+                  downloadButton(ns("download_log"), "Download QAQC Log",
+                    class = "btn-info",
+                    style = "width: 100%; color: #ffffff;")
+                ),
+                column(4,
+                  downloadButton(ns("download_metadata"), "Download Metadata",
+                    class = "btn-default",
+                    style = "width: 100%;")
+                )
+              )
+            )
           )
         )
       )
@@ -2825,236 +3115,972 @@ module_wl_qaqc_ui <- function(id) {
 
 module_wl_qaqc_server <- function(id) {
   moduleServer(id, function(input, output, session) {
-  })
-}
 
+    rv_converted_data <- session$userData$rv_converted_data
+    rv_qaqc_data      <- session$userData$rv_qaqc_data
+    rv_raw_data        <- session$userData$rv_raw_data
 
-# -----------------------------------------------------------------------------
-# 4. Manual Adjustments
-# -----------------------------------------------------------------------------
-module_wl_adjust_ui <- function(id) {
-  ns <- NS(id)
-  tagList(
-    shinydashboard::box(
-      width = 12,
-      tags$h1("Manual Adjustments", class = "custom-h1"),
-      tags$h2("Correct specific issues identified during visual review",
-              class = "custom-h2"),
+    # Module-local state
+    wl_qc_result    <- reactiveVal(NULL)   # full dataset (all stations)
+    qaqc_log        <- reactiveVal(NULL)   # accumulated QAQC log
 
-      tags$p(
-        class = "clean-print",
-        "After reviewing the QAQC plot, use these tools to correct specific
-        problems. Each correction modifies ", tags$code("waterlevel_m_adj"),
-        " and logs the action. Identify timestamps from the interactive plot,
-        then apply the appropriate correction below."
-      ),
+    # Range selection
+    selected_ranges <- reactiveVal(list())
+    range_history   <- reactiveVal(list())
 
-      hr(),
+    # Conditional panel visibility
+    output$show_results <- reactive({ !is.null(wl_qc_result()) })
+    outputOptions(output, "show_results", suspendWhenHidden = FALSE)
 
-      # ---- Set Datum ----
-      tags$div(
-        style = "border-left: 4px solid #1565c0; padding: 15px 20px; margin-bottom: 20px; background: #f8f9fa; border-radius: 0 5px 5px 0;",
-        fluidRow(
-          column(
-            width = 4,
-            tags$h3("Set Water Level Datum", style = "margin-top: 0; color: #1565c0;"),
-            tags$p(style = "font-size: 13px;",
-              "Convert relative stage to absolute elevation using surveyed
-              benchmark data (level runs). Adds a ", tags$code("wl_elev_m"),
-              " column."
-            ),
-            tags$div(
-              style = "margin-top: 10px;",
-              tags$code("wl_set_datum()"),
-              tags$p(style = "font-size: 11px; color: #888; margin-top: 3px;",
-                     "Anchors water level to geodetic datum")
-            )
-          ),
-          column(
-            width = 8,
-            tags$div(
-              style = "display: flex; gap: 15px; margin-bottom: 10px;",
-              tags$div(
-                style = "flex: 1; border: 1px solid #ddd; padding: 10px; border-radius: 4px; background: white;",
-                tags$label("Select Station"), "[Dropdown]"
-              ),
-              tags$div(
-                style = "flex: 2;",
-                tags$div(
-                  style = "border: 2px dashed #ccc; padding: 15px; text-align: center; border-radius: 4px;",
-                  tags$p("Upload benchmarks / level runs CSV", style = "color: #999; font-size: 13px; margin: 0;")
-                )
-              )
-            ),
-            tags$div(
-              style = "display: inline-block; padding: 8px 20px; background: #1565c0; color: white; border-radius: 4px; cursor: pointer;",
-              "Set Datum"
-            )
-          )
+    # ------ Populate station selector from converted data ------
+    observe({
+      df <- rv_converted_data$waterlevel_converted
+      req(df, nrow(df) > 0)
+      stations <- sort(unique(df$site_station_code))
+      # Only stations with at least some non-NA waterlevel_m
+      stations <- stations[sapply(stations, function(s) {
+        any(!is.na(df$waterlevel_m[df$site_station_code == s]))
+      })]
+      updateSelectInput(session, "station_select",
+        choices = stations, selected = stations[1])
+    })
+
+    # ------ Data readiness status ------
+    output$qaqc_status <- renderUI({
+      df <- rv_converted_data$waterlevel_converted
+      if (is.null(df) || nrow(df) == 0) {
+        tags$div(
+          style = "color: #856404; background: #fff3cd; padding: 12px; border-radius: 5px; margin-bottom: 10px;",
+          icon("exclamation-triangle"),
+          " No converted water level data available. Complete Part B (Convert Pressure to Water Depth) first."
         )
-      ),
-
-      # ---- Adjust Zero ----
-      tags$div(
-        style = "border-left: 4px solid #6a1b9a; padding: 15px 20px; margin-bottom: 20px; background: #f8f9fa; border-radius: 0 5px 5px 0;",
-        fluidRow(
-          column(
-            width = 4,
-            tags$h3("Adjust Water Level Zero", style = "margin-top: 0; color: #6a1b9a;"),
-            tags$p(style = "font-size: 13px;",
-              "Reset the water level zero-point reference. Use when the
-              baseline has shifted due to site changes, or to re-anchor
-              the series to a new reference measurement."
-            ),
-            tags$div(
-              style = "margin-top: 10px;",
-              tags$code("adjust_logger_NA()"),
-              tags$p(style = "font-size: 11px; color: #888; margin-top: 3px;",
-                     "Remove data for ice / dry / disturbance periods")
-            )
-          ),
-          column(
-            width = 8,
-            tags$div(
-              style = "display: flex; gap: 15px; margin-bottom: 10px; flex-wrap: wrap;",
-              tags$div(
-                style = "flex: 1; min-width: 150px; border: 1px solid #ddd; padding: 10px; border-radius: 4px; background: white;",
-                tags$label("Select Station"), "[Dropdown]"
-              ),
-              tags$div(
-                style = "flex: 1; min-width: 150px; border: 1px solid #ddd; padding: 10px; border-radius: 4px; background: white;",
-                tags$label("Reason"), "[ice / dry / disturbance]"
-              ),
-              tags$div(
-                style = "flex: 1; min-width: 150px; border: 1px solid #ddd; padding: 10px; border-radius: 4px; background: white;",
-                tags$label("Start Timestamp"), "[datetime picker]"
-              ),
-              tags$div(
-                style = "flex: 1; min-width: 150px; border: 1px solid #ddd; padding: 10px; border-radius: 4px; background: white;",
-                tags$label("End Timestamp"), "[datetime picker]"
-              )
-            ),
-            tags$div(
-              style = "display: inline-block; padding: 8px 20px; background: #6a1b9a; color: white; border-radius: 4px; cursor: pointer;",
-              "Remove Data"
-            )
-          )
+      } else {
+        n_stns <- length(unique(df$site_station_code))
+        n_recs <- format(nrow(df), big.mark = ",")
+        tags$div(
+          style = "color: #155724; background: #d4edda; padding: 12px; border-radius: 5px; margin-bottom: 10px;",
+          icon("check-circle"),
+          sprintf(" Ready: %d station(s), %s records available for QAQC", n_stns, n_recs)
         )
-      ),
+      }
+    })
 
-      # ---- Adjust Spike ----
-      tags$div(
-        style = "border-left: 4px solid #e65100; padding: 15px 20px; margin-bottom: 20px; background: #f8f9fa; border-radius: 0 5px 5px 0;",
-        fluidRow(
-          column(
-            width = 4,
-            tags$h3("Adjust Water Level Spike", style = "margin-top: 0; color: #e65100;"),
-            tags$p(style = "font-size: 13px;",
-              "Flatten ice spikes or sensor artifacts by replacing values
-              within a time window with a straight line between the start
-              and end points."
-            ),
-            tags$div(
-              style = "margin-top: 10px;",
-              tags$code("adjust_waterlevel_spike()"),
-              tags$p(style = "font-size: 11px; color: #888; margin-top: 3px;",
-                     "Linear interpolation across spike period")
-            )
-          ),
-          column(
-            width = 8,
-            tags$div(
-              style = "display: flex; gap: 15px; margin-bottom: 10px; flex-wrap: wrap;",
-              tags$div(
-                style = "flex: 1; min-width: 150px; border: 1px solid #ddd; padding: 10px; border-radius: 4px; background: white;",
-                tags$label("Select Station"), "[Dropdown]"
-              ),
-              tags$div(
-                style = "flex: 1; min-width: 150px; border: 1px solid #ddd; padding: 10px; border-radius: 4px; background: white;",
-                tags$label("Reason"), "[ice / disturbance]"
-              ),
-              tags$div(
-                style = "flex: 1; min-width: 150px; border: 1px solid #ddd; padding: 10px; border-radius: 4px; background: white;",
-                tags$label("Spike Start"), "[datetime picker]"
-              ),
-              tags$div(
-                style = "flex: 1; min-width: 150px; border: 1px solid #ddd; padding: 10px; border-radius: 4px; background: white;",
-                tags$label("Spike End"), "[datetime picker]"
-              )
-            ),
-            tags$div(
-              style = "display: inline-block; padding: 8px 20px; background: #e65100; color: white; border-radius: 4px; cursor: pointer;",
-              "Flatten Spike"
-            )
-          )
+    # ------ Run QAQC ------
+    observeEvent(input$run_qaqc, {
+      station <- input$station_select
+      req(station)
+      converted_data <- rv_converted_data$waterlevel_converted
+      req(converted_data)
+
+      tryCatch({
+        showNotification("Running Water Level QAQC...",
+          type = "message", duration = NULL, id = "wl_qaqc_progress")
+
+        result <- waterlogged::qc_waterlevel(
+          input_data     = converted_data,
+          select_station = station,
+          log_root       = NULL,
+          user           = NULL
         )
-      ),
 
-      # ---- Adjust Offset ----
-      tags$div(
-        style = "border-left: 4px solid #00695c; padding: 15px 20px; margin-bottom: 20px; background: #f8f9fa; border-radius: 0 5px 5px 0;",
-        fluidRow(
-          column(
-            width = 4,
-            tags$h3("Adjust Water Level Offset", style = "margin-top: 0; color: #00695c;"),
-            tags$p(style = "font-size: 13px;",
-              "Correct a sudden step change caused by logger displacement
-              (cable break, flood, animal activity). Computes the offset from
-              the difference between two reference timestamps and shifts all
-              subsequent data."
-            ),
-            tags$div(
-              style = "margin-top: 10px;",
-              tags$code("adjust_WL_offset()"),
-              tags$p(style = "font-size: 11px; color: #888; margin-top: 3px;",
-                     "Constant offset applied from timestamp_end onward")
-            )
-          ),
-          column(
-            width = 8,
-            tags$div(
-              style = "display: flex; gap: 15px; margin-bottom: 10px; flex-wrap: wrap;",
-              tags$div(
-                style = "flex: 1; min-width: 150px; border: 1px solid #ddd; padding: 10px; border-radius: 4px; background: white;",
-                tags$label("Select Station"), "[Dropdown]"
-              ),
-              tags$div(
-                style = "flex: 1; min-width: 150px; border: 1px solid #ddd; padding: 10px; border-radius: 4px; background: white;",
-                tags$label("Pre-shift Timestamp"), "[datetime picker]"
-              ),
-              tags$div(
-                style = "flex: 1; min-width: 150px; border: 1px solid #ddd; padding: 10px; border-radius: 4px; background: white;",
-                tags$label("Post-shift Timestamp"), "[datetime picker]"
-              ),
-              tags$div(
-                style = "flex: 2; min-width: 200px; border: 1px solid #ddd; padding: 10px; border-radius: 4px; background: white;",
-                tags$label("Note (required)"), "[text input]"
-              )
-            ),
-            tags$div(
-              style = "display: inline-block; padding: 8px 20px; background: #00695c; color: white; border-radius: 4px; cursor: pointer;",
-              "Apply Offset"
-            )
-          )
-        )
-      ),
+        qaqc_log(attr(result, "qaqc_log"))
 
-      # Re-plot reminder
+        # Merge: replace station in full dataset
+        other_data <- dplyr::filter(converted_data, site_station_code != station)
+        full_data <- dplyr::bind_rows(other_data, result) %>%
+          dplyr::arrange(site_station_code, timestamp)
+
+        wl_qc_result(full_data)
+        rv_qaqc_data$qc_waterlevel <- full_data
+
+        # Reset range state
+        selected_ranges(list())
+        range_history(list())
+
+        removeNotification("wl_qaqc_progress")
+        showNotification(sprintf("QAQC complete for %s", station),
+          type = "message", duration = 5)
+
+      }, error = function(e) {
+        removeNotification("wl_qaqc_progress")
+        showNotification(paste("QAQC error:", conditionMessage(e)),
+          type = "error", duration = 8)
+      })
+    })
+
+    # ------ Selected station data ------
+    selected_data <- reactive({
+      req(input$station_select, wl_qc_result())
+      dplyr::filter(wl_qc_result(), site_station_code == input$station_select)
+    })
+
+    # ------ Station info ------
+    output$station_info <- renderUI({
+      data <- selected_data()
+      req(nrow(data) > 0)
+
+      flag_cols <- c("flag_disturbance", "flag_ice", "neg_lt_minus1",
+                     "neg_between", "flag_wl_dry")
+      flag_cols <- intersect(flag_cols, names(data))
+      n_flags <- sum(sapply(flag_cols, function(col) sum(data[[col]], na.rm = TRUE)))
+
+      date_range <- paste(
+        format(min(data$timestamp), "%Y-%m-%d"),
+        "to",
+        format(max(data$timestamp), "%Y-%m-%d")
+      )
+
       tags$div(
-        style = "background-color: #d4edda; padding: 15px; border-radius: 5px; margin-top: 10px;",
-        tags$p(style = "margin: 0;",
-          tags$strong("Tip:"),
-          " After each adjustment, re-plot the data to verify the correction.
-          Use ", tags$code("plot_qaqc_timeseries()"), " to compare raw vs
-          adjusted values."
+        style = "padding-top: 8px;",
+        tags$p(style = "margin: 0; font-size: 14px;",
+          tags$strong("Station: "), input$station_select, " | ",
+          tags$strong("Records: "), format(nrow(data), big.mark = ","), " | ",
+          tags$strong("Flags: "), format(n_flags, big.mark = ","), " | ",
+          tags$strong("Range: "), date_range
         )
       )
-    ),
-    .wireframe_footer()
-  )
-}
+    })
 
-module_wl_adjust_server <- function(id) {
-  moduleServer(id, function(input, output, session) {
+    # ------ Flag summary table ------
+    output$flag_summary <- DT::renderDT({
+      req(wl_qc_result())
+      data <- selected_data()
+      req(nrow(data) > 0)
+
+      # Build summary with guards for columns that may not exist
+      safe_sum <- function(col) {
+        if (col %in% names(data)) sum(data[[col]], na.rm = TRUE) else 0L
+      }
+
+      summary_df <- data.frame(
+        Station = data$site_station_code[1],
+        Records = nrow(data),
+        flag_disturbance = safe_sum("flag_disturbance"),
+        flag_ice = safe_sum("flag_ice"),
+        neg_lt_minus1 = safe_sum("neg_lt_minus1"),
+        neg_between = safe_sum("neg_between"),
+        flag_wl_dry = safe_sum("flag_wl_dry"),
+        WL_NA = sum(is.na(data$waterlevel_m_adj)),
+        stringsAsFactors = FALSE
+      )
+
+      # Add edit columns if they exist
+      edit_cols <- grep("^edit_", names(data), value = TRUE)
+      for (ec in edit_cols) {
+        summary_df[[ec]] <- sum(data[[ec]], na.rm = TRUE)
+      }
+
+      DT::datatable(summary_df,
+        options = list(dom = "t", pageLength = 50, scrollX = TRUE),
+        rownames = FALSE,
+        selection = "none"
+      )
+    })
+
+    # ------ QAQC Plot (3-panel time series) ------
+    # JS callback: intercepts drag in Select Range mode
+    drag_range_js <- sprintf("
+      function(el, x) {
+        var _resetting = false;
+        var _savedRange = null;
+
+        el.on('plotly_relayout', function(evt) {
+          if (_resetting) return;
+
+          var keys = Object.keys(evt);
+          var isShapeOnly = keys.every(function(k) {
+            return k === 'shapes' || k.indexOf('shapes[') === 0;
+          });
+          if (isShapeOnly) return;
+
+          if (evt['xaxis.autorange'] || evt['yaxis.autorange']) {
+            _savedRange = null;
+            return;
+          }
+
+          var x0 = evt['xaxis.range[0]'];
+          var x1 = evt['xaxis.range[1]'];
+          if (!x0 || !x1) return;
+
+          var mode = Shiny.shinyapp.$inputValues['%s'];
+          if (mode !== 'select') {
+            _savedRange = { x0: x0, x1: x1 };
+            return;
+          }
+
+          Shiny.setInputValue('%s', {
+            x0: String(x0), x1: String(x1), nonce: Math.random()
+          });
+
+          _resetting = true;
+          var restore = _savedRange
+            ? { 'xaxis.range[0]': _savedRange.x0, 'xaxis.range[1]': _savedRange.x1 }
+            : { 'xaxis.autorange': true };
+          Plotly.relayout(el, restore).then(function() { _resetting = false; });
+        });
+
+        el.on('plotly_doubleclick', function() { _savedRange = null; });
+      }
+    ", session$ns("plot_mode"), session$ns("drag_range"))
+
+    output$qaqc_plot <- renderPlotly({
+      data <- selected_data()
+      req(nrow(data) > 0)
+      station <- input$station_select
+
+      # Panel 1: Water Level
+      p1 <- plot_ly(data, x = ~timestamp, y = ~waterlevel_m,
+              type = "scattergl", mode = "lines",
+              line = list(color = "rgba(35,61,77,0.4)", width = 1),
+              name = "Raw WL",
+              hovertemplate = "Raw: %{y:.3f} m<extra></extra>") %>%
+        add_trace(y = ~waterlevel_m_adj,
+              type = "scattergl", mode = "lines",
+              line = list(color = "#233d4d", width = 1),
+              name = "Adjusted WL",
+              hovertemplate = "Adj: %{y:.3f} m<extra></extra>")
+
+      # Panel 2: Pressure
+      p2 <- plot_ly(data, x = ~timestamp, y = ~waterpress_kPa,
+              type = "scattergl", mode = "lines",
+              line = list(color = "#915e3d", width = 1),
+              name = "Water Pressure",
+              hovertemplate = "Water: %{y:.2f} kPa<extra></extra>") %>%
+        add_trace(y = ~airpress_kPa,
+              type = "scattergl", mode = "lines",
+              line = list(color = "rgba(145,94,61,0.4)", width = 1),
+              name = "Air Pressure",
+              hovertemplate = "Air: %{y:.2f} kPa<extra></extra>")
+
+      # Panel 3: Water Temperature
+      p3 <- plot_ly(data, x = ~timestamp, y = ~watertemp_C,
+              type = "scattergl", mode = "lines",
+              line = list(color = "rgba(97,155,138,0.4)", width = 1),
+              name = "Raw Water Temp",
+              hovertemplate = "Raw: %{y:.1f} \u00b0C<extra></extra>") %>%
+        add_trace(y = ~watertemp_C_adj,
+              type = "scattergl", mode = "lines",
+              line = list(color = "#619b8a", width = 1),
+              name = "Adj Water Temp",
+              hovertemplate = "Adj: %{y:.1f} \u00b0C<extra></extra>")
+
+      # Panel 4: Air Temperature
+      p4 <- plot_ly(data, x = ~timestamp, y = ~airtemp_C,
+              type = "scattergl", mode = "lines",
+              line = list(color = "#FDB840", width = 1),
+              name = "Air Temp",
+              hovertemplate = "Air: %{y:.1f} \u00b0C<extra></extra>")
+
+      subplot(p1, p2, p3, p4, nrows = 4, shareX = TRUE, titleY = TRUE) %>%
+        layout(
+          title = list(text = paste("Water Level QAQC -", station), font = list(size = 14)),
+          xaxis = list(title = ""),
+          xaxis2 = list(title = ""),
+          xaxis3 = list(title = ""),
+          xaxis4 = list(title = "Date"),
+          yaxis  = list(title = "Water Level (m)", fixedrange = TRUE),
+          yaxis2 = list(title = "Pressure (kPa)", fixedrange = TRUE),
+          yaxis3 = list(title = "Water Temp (\u00b0C)", fixedrange = TRUE),
+          yaxis4 = list(title = "Air Temp (\u00b0C)", fixedrange = TRUE),
+          hovermode = "x unified",
+          legend = list(orientation = "h", y = -0.08),
+          margin = list(b = 80)
+        ) %>%
+        htmlwidgets::onRender(drag_range_js) %>%
+        htmlwidgets::onRender(sprintf("
+          function(el, x) {
+            var flagId = '%s';
+            var modeId = '%s';
+            // Shared sync guard (global per module) prevents cross-widget loops
+            if (!window._wlSyncGuard) window._wlSyncGuard = false;
+            el.on('plotly_relayout', function(evt) {
+              if (window._wlSyncGuard) return;
+              // Skip when in select mode — drag_range_js handles restore
+              var mode = Shiny.shinyapp.$inputValues[modeId];
+              if (mode === 'select') return;
+              var keys = Object.keys(evt);
+              var isShapeOnly = keys.every(function(k) {
+                return k === 'shapes' || k.indexOf('shapes[') === 0;
+              });
+              if (isShapeOnly) return;
+              var flagEl = document.getElementById(flagId);
+              if (!flagEl || !flagEl.layout) return;
+              window._wlSyncGuard = true;
+              if (evt['xaxis.autorange']) {
+                Plotly.relayout(flagEl, {'xaxis.autorange': true}).then(function() { window._wlSyncGuard = false; });
+              } else {
+                var x0 = evt['xaxis.range[0]'];
+                var x1 = evt['xaxis.range[1]'];
+                if (x0 && x1) {
+                  Plotly.relayout(flagEl, {'xaxis.range[0]': x0, 'xaxis.range[1]': x1}).then(function() { window._wlSyncGuard = false; });
+                } else { window._wlSyncGuard = false; }
+              }
+            });
+            el.on('plotly_doubleclick', function() {
+              var flagEl = document.getElementById(flagId);
+              if (flagEl) {
+                window._wlSyncGuard = true;
+                Plotly.relayout(flagEl, {'xaxis.autorange': true}).then(function() { window._wlSyncGuard = false; });
+              }
+            });
+          }
+        ", session$ns("flag_plot"), session$ns("plot_mode")))
+    })
+
+    # ------ Flag review plot (separate) ------
+    output$flag_plot <- renderPlotly({
+      data <- selected_data()
+      req(nrow(data) > 0)
+
+      # Collect all flag/edit columns that exist and have TRUE values
+      flag_cols <- c("flag_disturbance", "flag_ice", "neg_lt_minus1",
+                     "neg_between", "flag_wl_dry")
+      edit_cols <- grep("^edit_", names(data), value = TRUE)
+      all_flag_cols <- intersect(c(flag_cols, edit_cols), names(data))
+
+      # Plotly symbols cycling
+      symbols <- c("circle", "triangle-up", "square", "cross", "x",
+                   "diamond", "star-triangle-up", "hexagram")
+
+      p <- plot_ly()
+      for (i in seq_along(all_flag_cols)) {
+        col <- all_flag_cols[i]
+        flagged <- data[which(data[[col]] == TRUE), ]
+        if (nrow(flagged) > 0) {
+          p <- p %>% add_trace(
+            data = flagged, x = ~timestamp,
+            y = col, type = "scatter", mode = "markers",
+            marker = list(color = "#000000", size = 6,
+                         symbol = symbols[((i - 1) %% length(symbols)) + 1]),
+            name = col
+          )
+        }
+      }
+
+      p %>% layout(
+        title = list(text = "QA/QC Flags", font = list(size = 13)),
+        xaxis = list(title = "Date"),
+        yaxis = list(title = "", categoryorder = "trace"),
+        legend = list(orientation = "h", y = -0.3),
+        margin = list(b = 80, l = 150)
+      ) %>%
+        htmlwidgets::onRender(sprintf("
+          function(el, x) {
+            var mainId = '%s';
+            if (!window._wlSyncGuard) window._wlSyncGuard = false;
+            el.on('plotly_relayout', function(evt) {
+              if (window._wlSyncGuard) return;
+              var keys = Object.keys(evt);
+              var isShapeOnly = keys.every(function(k) {
+                return k === 'shapes' || k.indexOf('shapes[') === 0;
+              });
+              if (isShapeOnly) return;
+              var mainEl = document.getElementById(mainId);
+              if (!mainEl || !mainEl.layout) return;
+              window._wlSyncGuard = true;
+              if (evt['xaxis.autorange']) {
+                Plotly.relayout(mainEl, {'xaxis.autorange': true}).then(function() { window._wlSyncGuard = false; });
+              } else {
+                var x0 = evt['xaxis.range[0]'];
+                var x1 = evt['xaxis.range[1]'];
+                if (x0 && x1) {
+                  Plotly.relayout(mainEl, {'xaxis.range[0]': x0, 'xaxis.range[1]': x1}).then(function() { window._wlSyncGuard = false; });
+                } else { window._wlSyncGuard = false; }
+              }
+            });
+            el.on('plotly_doubleclick', function() {
+              var mainEl = document.getElementById(mainId);
+              if (mainEl) {
+                window._wlSyncGuard = true;
+                Plotly.relayout(mainEl, {'xaxis.autorange': true}).then(function() { window._wlSyncGuard = false; });
+              }
+            });
+          }
+        ", session$ns("qaqc_plot")))
+    })
+
+    # ------ Multi-range selection via drag ------
+    # Helper: merge overlapping ranges (sorted by start)
+    merge_ranges <- function(ranges) {
+      if (length(ranges) <= 1) return(ranges)
+      sorted <- ranges[order(sapply(ranges, `[[`, 1))]
+      merged <- list(sorted[[1]])
+      for (i in seq(2, length(sorted))) {
+        last <- merged[[length(merged)]]
+        curr <- sorted[[i]]
+        if (curr[1] <= last[2]) {
+          merged[[length(merged)]] <- c(min(last[1], curr[1]), max(last[2], curr[2]))
+        } else {
+          merged <- c(merged, list(curr))
+        }
+      }
+      merged
+    }
+
+    # Receive drag range from JS onRender callback
+    observeEvent(input$drag_range, {
+      info <- input$drag_range
+      req(info$x0, info$x1)
+
+      t0 <- as.character(info$x0)
+      t1 <- as.character(info$x1)
+      if (t0 > t1) { tmp <- t0; t0 <- t1; t1 <- tmp }
+
+      range_history(c(range_history(), list(selected_ranges())))
+      new_ranges <- merge_ranges(c(selected_ranges(), list(c(t0, t1))))
+      selected_ranges(new_ranges)
+    })
+
+    # Draw selection rectangles when ranges are added
+    observe({
+      ranges <- selected_ranges()
+      if (length(ranges) > 0) {
+        plot_id <- session$ns("qaqc_plot")
+        shapes_json <- jsonlite::toJSON(
+          lapply(ranges, function(r) {
+            list(type = "rect", xref = "x", yref = "paper",
+                 x0 = r[1], x1 = r[2], y0 = 0, y1 = 1,
+                 fillcolor = "rgba(255, 165, 0, 0.20)",
+                 line = list(color = "rgba(255, 140, 0, 0.8)", width = 1))
+          }),
+          auto_unbox = TRUE
+        )
+        shinyjs::runjs(sprintf(
+          "var el = document.getElementById('%s');
+           if (el && el.layout) { el.layout.shapes = %s; Plotly.redraw(el); }",
+          plot_id, shapes_json
+        ))
+      }
+    })
+
+    # Reset ranges on station change
+    observeEvent(input$station_select, {
+      selected_ranges(list())
+      range_history(list())
+    })
+
+    # Undo last range addition
+    observeEvent(input$undo_range, {
+      hist <- range_history()
+      if (length(hist) > 0) {
+        selected_ranges(hist[[length(hist)]])
+        range_history(hist[-length(hist)])
+      }
+    })
+
+    # Clear all ranges — force plot re-render to remove JS-drawn shapes
+    observeEvent(input$clear_ranges, {
+      range_history(c(range_history(), list(selected_ranges())))
+      selected_ranges(list())
+      df <- wl_qc_result()
+      if (!is.null(df)) {
+        attr(df, ".redraw") <- Sys.time()
+        wl_qc_result(df)
+      }
+    })
+
+    # Status text showing selected range count
+    output$range_status <- renderUI({
+      n <- length(selected_ranges())
+      if (input$plot_mode == "select") {
+        if (n == 0) {
+          tags$span(style = "font-size: 13px; color: #666;",
+                    "Drag across the plot to select a period")
+        } else {
+          tags$span(style = "font-size: 13px; color: #e65100; font-weight: bold;",
+                    sprintf("%d range%s selected", n, if (n > 1) "s" else ""))
+        }
+      }
+    })
+
+    # ------ Helper: snap a character timestamp to nearest actual data timestamp ------
+    # Plotly sends timestamps in various formats (with/without fractional seconds,
+    # date-only at edges, or epoch ms). Try multiple parsers to handle all cases.
+    parse_plotly_ts <- function(ts_char) {
+      # Try common formats in order
+      ts <- lubridate::ymd_hms(ts_char, quiet = TRUE)
+      if (!is.na(ts)) return(ts)
+      ts <- lubridate::ymd_hm(ts_char, quiet = TRUE)
+      if (!is.na(ts)) return(ts)
+      ts <- lubridate::ymd(ts_char, quiet = TRUE)
+      if (!is.na(ts)) return(ts)
+      # Plotly sometimes sends "YYYY-MM-DD HH:MM:SS.ffffff" — strip fractional part
+      stripped <- sub("\\.\\d+$", "", ts_char)
+      ts <- lubridate::ymd_hms(stripped, quiet = TRUE)
+      if (!is.na(ts)) return(ts)
+      # Last resort: try base R
+      ts <- tryCatch(as.POSIXct(ts_char), error = function(e) NA)
+      ts
+    }
+
+    snap_to_data <- function(ts_char, timestamps) {
+      ts <- parse_plotly_ts(ts_char)
+      if (is.na(ts)) return(ts_char)
+      idx <- which.min(abs(as.numeric(difftime(timestamps, ts, units = "secs"))))
+      format(timestamps[idx], "%Y-%m-%d %H:%M:%S")
+    }
+
+    # Snap both ends of each range to actual timestamps in station data
+    snap_ranges <- function(ranges, station_timestamps) {
+      lapply(ranges, function(r) {
+        c(snap_to_data(r[1], station_timestamps),
+          snap_to_data(r[2], station_timestamps))
+      })
+    }
+
+    # ------ Helper: merge station data back into full dataset ------
+    merge_station_back <- function(full_data, station_data, station) {
+      other_data <- dplyr::filter(full_data, site_station_code != station)
+      dplyr::bind_rows(other_data, station_data) %>%
+        dplyr::arrange(site_station_code, timestamp)
+    }
+
+    # Helper: post-adjustment update (shared by all 4 adjustment buttons)
+    apply_adjustment_result <- function(station_data, station) {
+      updated <- merge_station_back(wl_qc_result(), station_data, station)
+      selected_ranges(list())
+      range_history(list())
+      wl_qc_result(updated)
+      rv_qaqc_data$qc_waterlevel <- updated
+
+      # Append adjustment log to accumulated qaqc_log
+      adj_log <- attr(station_data, "qaqc_log")
+      if (!is.null(adj_log)) {
+        qaqc_log(dplyr::bind_rows(qaqc_log(), adj_log))
+      }
+    }
+
+    # ------ Button 1: Remove Selected Periods (adjust_logger_NA) ------
+    observeEvent(input$btn_remove, {
+      ranges <- selected_ranges()
+      if (length(ranges) == 0) {
+        showNotification("Select at least one range on the plot first.",
+          type = "warning", duration = 4)
+        return()
+      }
+
+      n <- length(ranges)
+      showModal(modalDialog(
+        title = sprintf("Remove %d Selected Period%s", n, if (n > 1) "s" else ""),
+        tags$p(sprintf("Station: %s", input$station_select)),
+        tags$ul(
+          lapply(ranges, function(r) {
+            tags$li(paste(r[1], "to", r[2]))
+          })
+        ),
+        selectInput(session$ns("modal_reason"), "Reason:",
+          choices = c("ice", "dry", "disturbance"),
+          selected = "disturbance"),
+        checkboxInput(session$ns("modal_keep_temp"),
+          "Keep water temperature (keep_temp = TRUE)", value = FALSE),
+        textInput(session$ns("modal_note"), "Note (required):", value = ""),
+        footer = tagList(
+          modalButton("Cancel"),
+          actionButton(session$ns("modal_remove_confirm"), "Confirm Removal",
+            class = "btn-warning", icon = icon("eraser"),
+            style = "color: #ffffff;")
+        ),
+        easyClose = TRUE
+      ))
+    })
+
+    observeEvent(input$modal_remove_confirm, {
+      ranges <- selected_ranges()
+      req(length(ranges) > 0)
+      note <- input$modal_note
+      if (is.null(note) || nchar(trimws(note)) == 0) {
+        showNotification("Enter a note describing the reason for removal.",
+          type = "error", duration = 3)
+        return()
+      }
+
+      removeModal()
+      station <- input$station_select
+      req(station)
+
+      tryCatch({
+        station_data <- dplyr::filter(wl_qc_result(), site_station_code == station)
+
+        # Snap range endpoints to nearest actual timestamps in data
+        snapped <- snap_ranges(ranges, station_data$timestamp)
+
+        for (r in snapped) {
+          station_data <- waterlogged::adjust_logger_NA(
+            input_data       = station_data,
+            select_station   = station,
+            metric           = "waterlevel",
+            reason_to_adjust = input$modal_reason,
+            timestamp_start  = r[1],
+            timestamp_end    = r[2],
+            keep_temp        = input$modal_keep_temp,
+            manual_note      = paste0(note, " (", r[1], " to ", r[2], ")"),
+            log_root         = NULL
+          )
+        }
+
+        apply_adjustment_result(station_data, station)
+        showNotification(
+          sprintf("Removed %d period%s for %s", length(ranges),
+                  if (length(ranges) > 1) "s" else "", station),
+          type = "message", duration = 5)
+
+      }, error = function(e) {
+        showNotification(paste("Removal error:", conditionMessage(e)),
+          type = "error", duration = 8)
+      })
+    })
+
+    # ------ Button 2: Adjust WL Zero (adjust_WL_zero) ------
+    observeEvent(input$btn_zero, {
+      ranges <- selected_ranges()
+
+      range_text <- if (length(ranges) == 0) {
+        tags$p(tags$em("No range selected \u2014 offset will be applied to entire series."))
+      } else {
+        tags$ul(lapply(ranges, function(r) tags$li(paste(r[1], "to", r[2]))))
+      }
+
+      showModal(modalDialog(
+        title = "Adjust Water Level Zero",
+        tags$p(sprintf("Station: %s", input$station_select)),
+        tags$h5("Selected Ranges:"),
+        range_text,
+        numericInput(session$ns("modal_zero_value"), "Offset value (metres):",
+          value = 0, step = 0.01),
+        textInput(session$ns("modal_zero_note"), "Note (required):", value = ""),
+        footer = tagList(
+          modalButton("Cancel"),
+          actionButton(session$ns("modal_zero_confirm"), "Apply Zero Adjustment",
+            class = "btn-info", icon = icon("arrows-alt-v"),
+            style = "color: #ffffff;")
+        ),
+        easyClose = TRUE
+      ))
+    })
+
+    observeEvent(input$modal_zero_confirm, {
+      note <- input$modal_zero_note
+      if (is.null(note) || nchar(trimws(note)) == 0) {
+        showNotification("Enter a note describing the zero adjustment.",
+          type = "error", duration = 3)
+        return()
+      }
+
+      removeModal()
+      station <- input$station_select
+      req(station)
+      change_val <- input$modal_zero_value
+      ranges <- selected_ranges()
+
+      tryCatch({
+        station_data <- dplyr::filter(wl_qc_result(), site_station_code == station)
+
+        if (length(ranges) > 0) {
+          # Snap range endpoints to nearest actual timestamps in data
+          snapped <- snap_ranges(ranges, station_data$timestamp)
+
+          # Apply to each selected range
+          for (r in snapped) {
+            station_data <- waterlogged::adjust_WL_zero(
+              input_data      = station_data,
+              select_station  = station,
+              change_value    = change_val,
+              timestamp_start = r[1],
+              timestamp_end   = r[2],
+              manual_note     = paste0(note, " (", r[1], " to ", r[2], ")"),
+              log_root        = NULL
+            )
+          }
+        } else {
+          # Apply to entire series
+          station_data <- waterlogged::adjust_WL_zero(
+            input_data      = station_data,
+            select_station  = station,
+            change_value    = change_val,
+            timestamp_start = NULL,
+            timestamp_end   = NULL,
+            manual_note     = note,
+            log_root        = NULL
+          )
+        }
+
+        apply_adjustment_result(station_data, station)
+        showNotification(
+          sprintf("Zero adjustment applied for %s (%.3f m)", station, change_val),
+          type = "message", duration = 5)
+
+      }, error = function(e) {
+        showNotification(paste("Zero adjustment error:", conditionMessage(e)),
+          type = "error", duration = 8)
+      })
+    })
+
+    # ------ Button 3: Flatten Spike (adjust_waterlevel_spike) ------
+    observeEvent(input$btn_spike, {
+      ranges <- selected_ranges()
+      if (length(ranges) != 1) {
+        showNotification("Select exactly 1 range for spike flattening.",
+          type = "warning", duration = 4)
+        return()
+      }
+
+      showModal(modalDialog(
+        title = "Flatten Water Level Spike",
+        tags$p(sprintf("Station: %s", input$station_select)),
+        tags$p(sprintf("Range: %s to %s", ranges[[1]][1], ranges[[1]][2])),
+        tags$p(style = "font-size: 13px; color: #666;",
+          "Values within this range will be replaced with linear interpolation ",
+          "between the raw water level at the start and end timestamps."
+        ),
+        selectInput(session$ns("modal_spike_reason"), "Reason:",
+          choices = c("ice", "disturbance"),
+          selected = "ice"),
+        textInput(session$ns("modal_spike_note"), "Note (required):", value = ""),
+        footer = tagList(
+          modalButton("Cancel"),
+          actionButton(session$ns("modal_spike_confirm"), "Flatten Spike",
+            class = "btn-danger", icon = icon("chart-line"),
+            style = "color: #ffffff;")
+        ),
+        easyClose = TRUE
+      ))
+    })
+
+    observeEvent(input$modal_spike_confirm, {
+      note <- input$modal_spike_note
+      if (is.null(note) || nchar(trimws(note)) == 0) {
+        showNotification("Enter a note describing the spike.",
+          type = "error", duration = 3)
+        return()
+      }
+
+      removeModal()
+      station <- input$station_select
+      req(station)
+      ranges <- selected_ranges()
+      req(length(ranges) == 1)
+
+      tryCatch({
+        station_data <- dplyr::filter(wl_qc_result(), site_station_code == station)
+
+        # Snap range endpoints to nearest actual timestamps in data
+        snapped <- snap_ranges(ranges, station_data$timestamp)
+
+        station_data <- waterlogged::adjust_waterlevel_spike(
+          input_data       = station_data,
+          select_station   = station,
+          timestamp_start  = snapped[[1]][1],
+          timestamp_end    = snapped[[1]][2],
+          reason_to_adjust = input$modal_spike_reason,
+          manual_note      = note,
+          log_root         = NULL
+        )
+
+        apply_adjustment_result(station_data, station)
+        showNotification(
+          sprintf("Spike flattened for %s", station),
+          type = "message", duration = 5)
+
+      }, error = function(e) {
+        showNotification(paste("Spike flatten error:", conditionMessage(e)),
+          type = "error", duration = 8)
+      })
+    })
+
+    # ------ Button 4: Cable Offset (adjust_WL_offset) ------
+    observeEvent(input$btn_offset, {
+      ranges <- selected_ranges()
+      if (length(ranges) != 1) {
+        showNotification("Select exactly 1 range for cable offset correction.",
+          type = "warning", duration = 4)
+        return()
+      }
+
+      showModal(modalDialog(
+        title = "Cable Offset Correction",
+        tags$p(sprintf("Station: %s", input$station_select)),
+        tags$p(tags$strong("Pre-break reference: "), ranges[[1]][1]),
+        tags$p(tags$strong("Post-break reference: "), ranges[[1]][2]),
+        tags$p(style = "font-size: 13px; color: #666;",
+          "Offset is computed from the raw water level difference at these two ",
+          "timestamps and applied from the post-break timestamp onward."
+        ),
+        textInput(session$ns("modal_offset_note"), "Note (required):", value = ""),
+        footer = tagList(
+          modalButton("Cancel"),
+          actionButton(session$ns("modal_offset_confirm"), "Apply Offset",
+            class = "btn-dark", icon = icon("exchange-alt"),
+            style = "color: #ffffff;")
+        ),
+        easyClose = TRUE
+      ))
+    })
+
+    observeEvent(input$modal_offset_confirm, {
+      note <- input$modal_offset_note
+      if (is.null(note) || nchar(trimws(note)) == 0) {
+        showNotification("Enter a note describing the offset correction.",
+          type = "error", duration = 3)
+        return()
+      }
+
+      removeModal()
+      station <- input$station_select
+      req(station)
+      ranges <- selected_ranges()
+      req(length(ranges) == 1)
+
+      tryCatch({
+        station_data <- dplyr::filter(wl_qc_result(), site_station_code == station)
+
+        # Snap range endpoints to nearest actual timestamps in data
+        snapped <- snap_ranges(ranges, station_data$timestamp)
+
+        station_data <- waterlogged::adjust_WL_offset(
+          input_data      = station_data,
+          select_station  = station,
+          timestamp_start = snapped[[1]][1],
+          timestamp_end   = snapped[[1]][2],
+          manual_note     = note,
+          log_root        = NULL
+        )
+
+        apply_adjustment_result(station_data, station)
+        showNotification(
+          sprintf("Cable offset applied for %s", station),
+          type = "message", duration = 5)
+
+      }, error = function(e) {
+        showNotification(paste("Offset error:", conditionMessage(e)),
+          type = "error", duration = 8)
+      })
+    })
+
+    # ------ Summary stats ------
+    output$summary_station_label <- renderUI({
+      stn <- input$station_select
+      req(stn)
+      data <- selected_data()
+      req(nrow(data) > 0)
+      date_range <- paste(format(min(data$timestamp), "%Y-%m-%d"),
+                          "to", format(max(data$timestamp), "%Y-%m-%d"))
+      tags$div(
+        style = "background-color: #e8f5e9; padding: 12px; border-radius: 5px; border: 2px solid #2e7d32; margin-bottom: 15px;",
+        tags$p(style = "margin: 0; font-size: 14px;",
+          "Showing summary statistics for station: ",
+          tags$strong(stn, style = "color: #2e7d32;"),
+          tags$span(style = "color: #555; margin-left: 10px;",
+            sprintf("(%s records, %s)", format(nrow(data), big.mark = ","), date_range)
+          )
+        )
+      )
+    })
+
+    output$wl_summary <- renderPrint({
+      data <- selected_data()
+      req(nrow(data) > 0)
+      n_dup <- sum(duplicated(data$timestamp))
+      cat("Records:", nrow(data), " | Duplicate timestamps:", n_dup, "\n\n")
+      cat("--- Raw Water Level (m) ---\n")
+      print(round(summary(data$waterlevel_m), 3))
+      cat("\n--- Adjusted Water Level (m) ---\n")
+      if ("waterlevel_m_adj" %in% names(data)) {
+        print(round(summary(data$waterlevel_m_adj), 3))
+      } else {
+        cat("(column not yet created)\n")
+      }
+    })
+
+    output$temp_summary <- renderPrint({
+      data <- selected_data()
+      req(nrow(data) > 0)
+      cat("--- Raw Water Temperature (\u00b0C) ---\n")
+      print(round(summary(data$watertemp_C), 1))
+      cat("\n--- Adjusted Water Temperature (\u00b0C) ---\n")
+      if ("watertemp_C_adj" %in% names(data)) {
+        print(round(summary(data$watertemp_C_adj), 1))
+      } else {
+        cat("(column not yet created)\n")
+      }
+    })
+
+    # ------ Download: Clean CSV ------
+    output$download_csv <- downloadHandler(
+      filename = function() {
+        station <- input$station_select
+        paste0("wl_qaqc_", station, "_", format(Sys.Date(), "%Y%m%d"), ".csv")
+      },
+      content = function(file) {
+        data <- selected_data()
+        req(nrow(data) > 0)
+
+        export_cols <- c(
+          "site_station_code", "timestamp",
+          "waterlevel_m", "waterlevel_m_adj",
+          "watertemp_C", "watertemp_C_adj",
+          "waterpress_kPa", "airpress_kPa", "airtemp_C"
+        )
+        flag_cols <- grep("^(edit_|flag_|neg_)", names(data), value = TRUE)
+        export_cols <- intersect(c(export_cols, flag_cols), names(data))
+
+        export_df <- data[, export_cols]
+        export_df$timestamp <- format(export_df$timestamp, "%Y-%m-%d %H:%M:%S")
+        write.csv(export_df, file, row.names = FALSE)
+      }
+    )
+
+    # ------ Download: QAQC Log ------
+    output$download_log <- downloadHandler(
+      filename = function() {
+        station <- input$station_select
+        paste0("wl_qaqc_log_", station, "_", format(Sys.Date(), "%Y%m%d"), ".csv")
+      },
+      content = function(file) {
+        log <- qaqc_log()
+        if (!is.null(log) && nrow(log) > 0) {
+          # Filter to selected station if station column exists
+          station <- input$station_select
+          if ("station" %in% names(log) && !is.null(station)) {
+            station_log <- log[log$station == station, ]
+            if (nrow(station_log) > 0) {
+              write.csv(station_log, file, row.names = FALSE)
+              return()
+            }
+          }
+          write.csv(log, file, row.names = FALSE)
+        } else {
+          write.csv(
+            data.frame(
+              station = character(), metric = character(),
+              field = character(), action = character(),
+              n_affected = integer(), note = character(),
+              stringsAsFactors = FALSE
+            ),
+            file, row.names = FALSE
+          )
+        }
+      }
+    )
+
+    # ------ Download: Station Metadata ------
+    output$download_metadata <- downloadHandler(
+      filename = function() {
+        paste0("wl_station_metadata_", format(Sys.Date(), "%Y%m%d"), ".csv")
+      },
+      content = function(file) {
+        meta <- rv_raw_data$metadata
+        if (!is.null(meta) && nrow(meta) > 0) {
+          wl_meta <- meta[meta$metric %in% c("waterlevel", "water level", "WL"), ]
+          write.csv(wl_meta, file, row.names = FALSE)
+        } else {
+          write.csv(data.frame(), file, row.names = FALSE)
+        }
+      }
+    )
+
   })
 }
+
+
+## module_wl_adjust_ui / module_wl_adjust_server removed —
+## Manual adjustment functionality is now part of module_wl_qaqc.

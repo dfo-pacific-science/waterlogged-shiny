@@ -8,7 +8,7 @@ module_welcome_ui <- function(id) {
         width = 12,
 
         tags$div(
-          style = "margin: 0 auto; padding: 20px 15px;",
+          style = "margin: 0 auto; padding: 20px 15px; max-width: 1000px;",
 
           # Hero section
           tags$div(

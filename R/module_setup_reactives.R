@@ -59,6 +59,7 @@ module_setup_reactives <- function(session = NA) {
     baro_qaqc = NULL,
     qc_waterlevel = NULL,
     do_qaqc = NULL,
+    qc_conductivity = NULL,
     qaqc_flags = NULL
   )
   session$userData$rv_qaqc_data <- rv_qaqc_data
@@ -66,7 +67,8 @@ module_setup_reactives <- function(session = NA) {
   # Clean data storage (Step 4 outputs)
   rv_clean_data <- reactiveValues(
     waterlevel_clean = NULL,
-    do_clean = NULL
+    do_clean = NULL,
+    conductivity_clean = NULL
   )
   session$userData$rv_clean_data <- rv_clean_data
 

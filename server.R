@@ -11,12 +11,12 @@ server <- function(input, output, session) {
   # Welcome
   module_welcome_server("welcome")
 
-  # Temperature
-  module_temp_upload_server("temp_upload")
-  module_temp_snap_server("temp_snap")
-  module_temp_baro_server("temp_baro")
-  module_temp_qc_air_server("temp_qc_air")
-  module_temp_qc_water_server("temp_qc_water")
+  # Temperature (hidden: pipeline not yet complete)
+  # module_temp_upload_server("temp_upload")
+  # module_temp_snap_server("temp_snap")
+  # module_temp_baro_server("temp_baro")
+  # module_temp_qc_air_server("temp_qc_air")
+  # module_temp_qc_water_server("temp_qc_water")
 
   # Barometric Pressure
   module_baro_upload_server("baro_upload")

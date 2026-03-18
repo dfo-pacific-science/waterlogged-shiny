@@ -117,12 +117,12 @@ ui <- dashboardPage(
     tabItems(
       tabItem("t_welcome", module_welcome_ui("welcome")),
 
-      # ---- Temperature ----
-      tabItem("t_temp_upload",   module_temp_upload_ui("temp_upload")),
-      tabItem("t_temp_snap",     module_temp_snap_ui("temp_snap")),
-      tabItem("t_temp_baro",     module_temp_baro_ui("temp_baro")),
-      tabItem("t_temp_qc_air",   module_temp_qc_air_ui("temp_qc_air")),
-      tabItem("t_temp_qc_water", module_temp_qc_water_ui("temp_qc_water")),
+      # ---- Temperature (hidden: pipeline not yet complete) ----
+      # tabItem("t_temp_upload",   module_temp_upload_ui("temp_upload")),
+      # tabItem("t_temp_snap",     module_temp_snap_ui("temp_snap")),
+      # tabItem("t_temp_baro",     module_temp_baro_ui("temp_baro")),
+      # tabItem("t_temp_qc_air",   module_temp_qc_air_ui("temp_qc_air")),
+      # tabItem("t_temp_qc_water", module_temp_qc_water_ui("temp_qc_water")),
 
       # ---- Barometric Pressure ----
       tabItem("t_baro_upload", module_baro_upload_ui("baro_upload")),

@@ -12,15 +12,16 @@ page_sidebar_tab_ui <- function(id) {
       menuItem("Welcome", tabName = "t_welcome", icon = icon("home")),
 
       # ---- Temperature (TidbiT / air / water temp channels) ----
-      menuItem(
-        "Temperature",
-        icon = icon("thermometer-half"),
-        menuSubItem("Import Data",          tabName = "t_temp_upload"),
-        menuSubItem("Snap Timestamps",      tabName = "t_temp_snap"),
-        menuSubItem("Add Nearest Baro",     tabName = "t_temp_baro"),
-        menuSubItem("QC Air Temperature",   tabName = "t_temp_qc_air"),
-        menuSubItem("QC Water Temperature", tabName = "t_temp_qc_water")
-      ),
+      # Hidden: Temperature pipeline not yet complete
+      # menuItem(
+      #   "Temperature",
+      #   icon = icon("thermometer-half"),
+      #   menuSubItem("Import Data",          tabName = "t_temp_upload"),
+      #   menuSubItem("Snap Timestamps",      tabName = "t_temp_snap"),
+      #   menuSubItem("Add Nearest Baro",     tabName = "t_temp_baro"),
+      #   menuSubItem("QC Air Temperature",   tabName = "t_temp_qc_air"),
+      #   menuSubItem("QC Water Temperature", tabName = "t_temp_qc_water")
+      # ),
 
       # ---- Barometric Pressure ----
       menuItem(

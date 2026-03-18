@@ -2327,22 +2327,6 @@ module_cond_qc_ui <- function(id) {
         condition = "output.show_results",
         ns = ns,
 
-        # ---- QAQC review plot ----
-        tags$div(
-          style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
-          tags$span(
-            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
-            "QAQC Review Plot"
-          )
-        ),
-        tags$div(
-          style = "margin-top: 15px;",
-          shinycssloaders::withSpinner(
-            plotly::plotlyOutput(ns("qaqc_plot"), height = "600px"),
-            type = getOption("spinner.type", 8)
-          )
-        ),
-
         # ================================================================
         # Section 2: Drift Correction
         # ================================================================
@@ -2363,29 +2347,81 @@ module_cond_qc_ui <- function(id) {
               style = "background-color: #f0f0f0; padding: 20px; border-radius: 5px; margin-bottom: 15px;",
               tags$h4("Why Drift Correction?", style = "margin-top: 0;"),
               tags$p(style = "font-size: 13px;",
-                "Conductivity sensors can drift due to biofouling and electrode ",
-                "degradation. Field reference measurements let you correct this drift."
+                "Conductivity sensors can drift due to biofouling, electrode degradation, ",
+                "and mineral deposits on the sensor. Field reference measurements taken ",
+                "during site visits let you quantify and correct this drift. The correction ",
+                "ramps linearly from zero at the start of each segment to the full ",
+                "correction at the visit endpoint, then restarts at the next segment. ",
+                "No correction is applied after the last visit."
               ),
 
               tags$h4("Event Type", style = "margin-top: 12px; margin-bottom: 6px;"),
+              tags$p(style = "font-size: 13px;",
+                "Each reference measurement has an ", tags$code("event_type"),
+                " that controls how the drift segment boundaries are determined:"
+              ),
               tags$ul(
                 style = "padding-left: 20px; font-size: 13px;",
-                tags$li(tags$strong("check"), " \u2014 comparison measurement only (no sensor reset)"),
-                tags$li(tags$strong("calibration"), " \u2014 sensor was recalibrated; post-cal readings are trusted"),
-                tags$li(tags$strong("ignore"), " \u2014 skip this measurement")
+                tags$li(
+                  tags$strong("check"),
+                  " \u2014 a comparison measurement only (the sensor was not touched). ",
+                  "The nearest logger reading to the ", tags$code("timestamp"),
+                  " is used as the segment endpoint. The next segment restarts from ",
+                  "that same reading."
+                ),
+                tags$li(
+                  tags$strong("calibration"),
+                  " \u2014 the sensor was recalibrated during the visit. The last logger ",
+                  "reading ", tags$em("before"), " the ", tags$code("calibration_datetime"),
+                  " is the segment endpoint (pre-cal drift target). The next segment ",
+                  "restarts at the first reading ", tags$em("at or after"), " the ",
+                  tags$code("calibration_datetime"),
+                  ", because post-calibration values are trusted."
+                ),
+                tags$li(
+                  tags$strong("ignore"),
+                  " \u2014 this measurement is skipped entirely and not used in drift correction."
+                )
+              ),
+
+              tags$h4("Timestamp vs. Calibration Datetime", style = "margin-top: 12px; margin-bottom: 6px;"),
+              tags$p(style = "font-size: 13px;",
+                "The ", tags$code("timestamp"), " column records when the field reference ",
+                "measurement was taken (e.g., a handheld meter reading). For ",
+                tags$strong("check"), " events, this is the time matched to the nearest ",
+                "logger reading. For ", tags$strong("calibration"), " events, the ",
+                tags$code("calibration_datetime"), " column records the moment the sensor ",
+                "was actually recalibrated \u2014 this is the time used to split pre-cal ",
+                "from post-cal data. Leave ", tags$code("calibration_datetime"),
+                " blank for check and ignore events."
               ),
 
               tags$h4("Method", style = "margin-top: 12px; margin-bottom: 6px;"),
               tags$ul(
                 style = "padding-left: 20px; font-size: 13px;",
-                tags$li(tags$strong("Ratio"), " (multiplicative) \u2014 scales values by interpolated ratio"),
-                tags$li(tags$strong("Offset"), " (additive) \u2014 shifts values by interpolated difference")
+                tags$li(
+                  tags$strong("Ratio"), " (multiplicative, default) \u2014 each logger value is ",
+                  "scaled by a factor that ramps linearly from 1.0 at the segment start to ",
+                  "the reference/logger ratio at the segment end. Best when drift is ",
+                  "proportional to reading magnitude. ", tags$code("conduct_uScm_adj"),
+                  " is corrected."
+                ),
+                tags$li(
+                  tags$strong("Offset"), " (additive) \u2014 each value is shifted by an amount ",
+                  "that ramps from 0 at the segment start to the reference-minus-logger ",
+                  "difference at the segment end. Better when drift is a constant bias ",
+                  "independent of reading magnitude."
+                )
               ),
 
               tags$h4("Max Gap (hours)", style = "margin-top: 12px; margin-bottom: 6px;"),
               tags$p(style = "font-size: 13px;",
-                "Maximum time difference between a reference timestamp and the nearest ",
-                "logger reading. Events exceeding this are skipped. Default: 1 hour."
+                "The maximum allowable time difference (in hours) between a reference ",
+                "measurement timestamp and the nearest logger reading. If no logger ",
+                "reading falls within this window, the reference event is skipped with ",
+                "a warning. This prevents incorrect corrections when the reference time ",
+                "doesn't align with available logger data (e.g., the logger was out of ",
+                "water or timestamps are in different timezones). Default: 1 hour."
               )
             ),
             tags$div(
@@ -2396,12 +2432,25 @@ module_cond_qc_ui <- function(id) {
                 style = "padding-left: 20px; font-size: 12px;",
                 tags$li(tags$code("metric"), " \u2014 'conductivity' or 'cond'"),
                 tags$li(tags$code("site_station_code"), " \u2014 station ID"),
-                tags$li(tags$code("timestamp"), " \u2014 measurement time"),
+                tags$li(tags$code("timestamp"), " \u2014 measurement time (see formats below)"),
                 tags$li(tags$code("watertemp_C"), " \u2014 reference temperature"),
                 tags$li(tags$code("value"), " \u2014 reference reading (\u00b5S/cm)"),
-                tags$li(tags$code("unit"), " \u2014 'uS/cm' or 'uScm'"),
+                tags$li(tags$code("unit"), " \u2014 'uS/cm', 'uScm', or '\u00b5S/cm'"),
                 tags$li(tags$code("event_type"), " \u2014 'check', 'calibration', or 'ignore'"),
-                tags$li(tags$code("calibration_datetime"), " \u2014 when sensor was recalibrated (blank for check/ignore)")
+                tags$li(tags$code("calibration_datetime"), " \u2014 when sensor was recalibrated (same formats as timestamp; leave blank for check/ignore)")
+              ),
+              tags$p(style = "font-size: 12px; margin-top: 8px; color: #555;",
+                tags$strong("Accepted datetime formats"), " for ",
+                tags$code("timestamp"), " and ", tags$code("calibration_datetime"), ":"
+              ),
+              tags$ul(
+                style = "padding-left: 20px; font-size: 12px; color: #555;",
+                tags$li(tags$code("YYYY-MM-DD HH:MM:SS"), " \u2014 e.g. 2025-07-20 10:45:00"),
+                tags$li(tags$code("YYYY-MM-DD HH:MM"), " \u2014 e.g. 2025-07-20 10:45"),
+                tags$li(tags$code("M/D/YYYY HH:MM:SS"), " \u2014 e.g. 7/20/2025 10:45:00"),
+                tags$li(tags$code("M/D/YYYY HH:MM"), " \u2014 e.g. 7/20/2025 10:45"),
+                tags$li(tags$code("DD-MM-YYYY HH:MM:SS"), " \u2014 e.g. 20-07-2025 10:45:00"),
+                tags$li(tags$code("DD-MM-YYYY HH:MM"), " \u2014 e.g. 20-07-2025 10:45")
               )
             )
           ),
@@ -2470,15 +2519,194 @@ module_cond_qc_ui <- function(id) {
             "Manual Adjustments"
           )
         ),
+
+        tags$p(
+          class = "clean-print",
+          "Use the plot below to review flagged data. Switch to ",
+          tags$strong("Select Range"), " mode and drag across the time series ",
+          "to highlight periods that need removal. Use ", tags$strong("Zoom"),
+          " mode to navigate and inspect the data more closely."
+        ),
+
         tags$div(
-          style = "background-color: #f0f0f0; padding: 20px; border-radius: 5px;",
-          tags$p(style = "font-size: 13px;",
-            "Use ", tags$code("adjust_logger_NA()"), " to manually set adjusted ",
-            "values to NA for periods affected by ice, dry conditions, or disturbance. ",
-            "Select a time range from the QAQC plot above and specify a reason."
+          style = "background-color: #fafafa; padding: 15px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #e0e0e0;",
+
+          tags$div(
+            style = "display: flex; flex-direction: column; align-items: center; gap: 10px;",
+
+            # Row 1: Mode toggle
+            shinyWidgets::radioGroupButtons(
+              inputId = ns("plot_mode"),
+              label = NULL,
+              choices = c("Zoom" = "zoom", "Select Range" = "select"),
+              selected = "zoom",
+              size = "lg",
+              status = "primary"
+            ),
+
+            # Row 2: Range management + Remove button
+            tags$div(
+              style = "display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center;",
+              actionButton(ns("undo_range"), "Undo",
+                class = "btn-default btn-sm", icon = icon("undo")),
+              actionButton(ns("clear_ranges"), "Clear Ranges",
+                class = "btn-default btn-sm", icon = icon("times")),
+              actionButton(ns("btn_remove"), "Remove Selected",
+                class = "btn-warning btn-sm", icon = icon("eraser"),
+                style = "color: #fff;")
+            ),
+
+            # Row 3: Range status
+            uiOutput(ns("range_status"))
           ),
-          tags$p(style = "font-size: 13px; color: #666; font-style: italic;",
-            "Manual adjustment controls will be available here in a future update."
+
+          # Adjustment explanation panel
+          tags$div(
+            style = "margin-top: 20px; padding: 15px; background-color: #e8f5e9; border-radius: 5px;",
+            fluidRow(
+              column(4,
+                tags$h5("Ice", style = "margin-top: 0; color: #2e7d32;"),
+                tags$p(style = "font-size: 12px;",
+                  "Sensor frozen or encased in ice. Sets conductivity and optionally ",
+                  "temperature to NA."
+                )
+              ),
+              column(4,
+                tags$h5("Dry", style = "margin-top: 0; color: #2e7d32;"),
+                tags$p(style = "font-size: 12px;",
+                  "Sensor out of water. Sets conductivity values to NA; temperature ",
+                  "may still be valid."
+                )
+              ),
+              column(4,
+                tags$h5("Disturbance", style = "margin-top: 0; color: #2e7d32;"),
+                tags$p(style = "font-size: 12px;",
+                  "Logger moved, disturbed, or otherwise unreliable. ",
+                  "Use ", tags$code("keep_temp"), " to retain temperature."
+                )
+              )
+            )
+          )
+        ),
+
+        # ================================================================
+        # Section 4: Visual Review
+        # ================================================================
+        tags$div(
+          style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+          tags$span(
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            "Visual Review"
+          )
+        ),
+
+        tags$div(
+          style = "background-color: #fafafa; padding: 15px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #e0e0e0;",
+          uiOutput(ns("station_info")),
+          tags$div(style = "margin-top: 15px;",
+            plotlyOutput(ns("qaqc_plot"), height = "850px") %>% withSpinner()
+          ),
+          tags$div(style = "margin-top: 15px;",
+            plotlyOutput(ns("flag_plot"), height = "250px") %>% withSpinner()
+          )
+        ),
+
+        # ================================================================
+        # Section 5: Station Summary Statistics
+        # ================================================================
+        tags$div(
+          style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+          tags$span(
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            "Station Summary Statistics"
+          )
+        ),
+
+        uiOutput(ns("summary_station_label")),
+
+        fluidRow(
+          column(
+            width = 4,
+            tags$div(
+              style = "background-color: #e8f5e9; padding: 15px; border-radius: 5px; margin-bottom: 15px;",
+              tags$h4("Conductivity (\u00b5S/cm) Summary", style = "margin-top: 0;"),
+              verbatimTextOutput(ns("cond_summary"))
+            )
+          ),
+          column(
+            width = 4,
+            tags$div(
+              style = "background-color: #e8f5e9; padding: 15px; border-radius: 5px; margin-bottom: 15px;",
+              tags$h4("SPC (\u00b5S/cm @ 25\u00b0C) Summary", style = "margin-top: 0;"),
+              verbatimTextOutput(ns("spc_summary"))
+            )
+          ),
+          column(
+            width = 4,
+            tags$div(
+              style = "background-color: #e8f5e9; padding: 15px; border-radius: 5px; margin-bottom: 15px;",
+              tags$h4("Temperature Summary", style = "margin-top: 0;"),
+              verbatimTextOutput(ns("temp_summary"))
+            )
+          )
+        ),
+
+        # ================================================================
+        # Section 6: Export Clean Data
+        # ================================================================
+        tags$div(
+          style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+          tags$span(
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            "Export Clean Data"
+          )
+        ),
+
+        tags$div(
+          style = "display: flex; flex-wrap: wrap; margin: 0 -15px;",
+          # ---- Left: Explanation ----
+          tags$div(
+            style = "flex: 0 0 33.333%; max-width: 33.333%; padding: 0 15px; display: flex;",
+            tags$div(
+              style = "background-color: #e8f5e9; padding: 20px; border-radius: 5px; flex: 1;",
+              tags$h4("Download Results", style = "margin-top: 0;"),
+              tags$p(style = "font-size: 13px;",
+                "Download the QAQC'd conductivity data as CSV for the ",
+                tags$strong("selected station"), ". The exported file ",
+                "contains raw columns, adjusted columns, and all edit/flag ",
+                "columns. The QAQC log records every automated and manual ",
+                "adjustment applied."
+              ),
+              tags$p(style = "font-size: 13px; color: #666;",
+                "Note: this is the final step in the conductivity pipeline. Select the ",
+                "station you want to export before downloading."
+              )
+            )
+          ),
+
+          # ---- Right: Download buttons ----
+          tags$div(
+            style = "flex: 0 0 66.667%; max-width: 66.667%; padding: 0 15px; display: flex;",
+            tags$div(
+              style = "background-color: #fafafa; padding: 20px; border-radius: 5px; border: 1px solid #e0e0e0; flex: 1;",
+              fluidRow(
+                column(4,
+                  downloadButton(ns("download_csv"), "Download Clean CSV",
+                    class = "btn-primary",
+                    style = "width: 100%; color: #ffffff; background-color: #2e7d32; border-color: #2e7d32;")
+                ),
+                column(4,
+                  downloadButton(ns("download_log"), "Download QAQC Log",
+                    class = "btn-info",
+                    style = "width: 100%; color: #ffffff;")
+                ),
+                column(4,
+                  downloadButton(ns("download_metadata"), "Download Metadata",
+                    class = "btn-default",
+                    style = "width: 100%;")
+                )
+              )
+            )
           )
         )
       )
@@ -2490,13 +2718,17 @@ module_cond_qc_ui <- function(id) {
 module_cond_qc_server <- function(id) {
   moduleServer(id, function(input, output, session) {
 
-    rv_raw_data  <- session$userData$rv_raw_data
-    rv_bound_data <- session$userData$rv_bound_data
+    rv_raw_data       <- session$userData$rv_raw_data
+    rv_bound_data     <- session$userData$rv_bound_data
+    rv_converted_data <- session$userData$rv_converted_data
+    rv_qaqc_data      <- session$userData$rv_qaqc_data
 
     # ---- Local reactive state ----
-    cond_qc_result <- reactiveVal(NULL)
-    qaqc_log       <- reactiveVal(NULL)
-    drift_ref_data <- reactiveVal(NULL)
+    cond_qc_result  <- reactiveVal(NULL)
+    qaqc_log        <- reactiveVal(NULL)
+    drift_ref_data  <- reactiveVal(NULL)
+    selected_ranges <- reactiveVal(list())
+    range_history   <- reactiveVal(list())
 
     # ---- Visibility toggles ----
     output$show_results  <- reactive({ !is.null(cond_qc_result()) })
@@ -2504,57 +2736,69 @@ module_cond_qc_server <- function(id) {
     output$show_ref_data <- reactive({ !is.null(drift_ref_data()) })
     outputOptions(output, "show_ref_data", suspendWhenHidden = FALSE)
 
-    # ---- Data status ----
+    # ---- Input data reactive (CRITICAL FIX: picks most-processed version) ----
+    cond_input_data <- reactive({
+      d <- rv_converted_data$conductivity_converted
+      if (!is.null(d) && nrow(d) > 0) return(d)
+      d <- rv_bound_data$conductivity_with_baro
+      if (!is.null(d) && nrow(d) > 0) return(d)
+      d <- rv_bound_data$conductivity_bound
+      if (!is.null(d) && nrow(d) > 0) return(d)
+      NULL
+    })
+
+    # ---- Populate station selectors (FIX: use data frame, not list names) ----
+    observe({
+      df <- cond_input_data()
+      req(df, nrow(df) > 0)
+      stations <- sort(unique(df$site_station_code))
+      stations <- stations[sapply(stations, function(s) {
+        any(!is.na(df$conduct_uScm[df$site_station_code == s]))
+      })]
+      updateSelectInput(session, "station_select",
+        choices = stations, selected = stations[1])
+      updateSelectInput(session, "drift_station",
+        choices = stations, selected = stations[1])
+    })
+
+    # ---- Data readiness status (FIX: use cond_input_data) ----
     output$qaqc_status <- renderUI({
-      cond <- rv_raw_data$conductivity_data
-      has_data <- !is.null(cond) && length(cond) > 0
-      if (has_data) {
-        stations <- names(cond)
+      df <- cond_input_data()
+      if (is.null(df) || nrow(df) == 0) {
         tags$div(
-          style = "background-color: #e8f5e9; padding: 12px; border-radius: 5px; border: 1px solid #a5d6a7;",
-          icon("check-circle", style = "color: #2e7d32;"),
-          sprintf(" Conductivity data loaded: %d station(s) \u2014 %s",
-                  length(stations), paste(stations, collapse = ", "))
+          style = "color: #856404; background: #fff3cd; padding: 12px; border-radius: 5px; margin-bottom: 10px;",
+          icon("exclamation-triangle"),
+          " No conductivity data available. Complete Import and Convert steps first."
         )
       } else {
+        n_stns <- length(unique(df$site_station_code))
+        n_recs <- format(nrow(df), big.mark = ",")
+        has_spc <- "spc_uScm_adj" %in% names(df)
+        has_baro <- "airtemp_C" %in% names(df)
+        status_parts <- sprintf(" Ready: %d station(s), %s records available for QAQC", n_stns, n_recs)
+        if (has_spc) status_parts <- paste0(status_parts, " | SPC computed")
+        if (has_baro) status_parts <- paste0(status_parts, " | Air temp available (improved dry detection)")
         tags$div(
-          style = "background-color: #fff3cd; padding: 12px; border-radius: 5px; border: 1px solid #ffc107;",
-          icon("exclamation-triangle", style = "color: #856404;"),
-          " No conductivity data loaded. Go to Import Data first."
+          style = "color: #155724; background: #d4edda; padding: 12px; border-radius: 5px; margin-bottom: 10px;",
+          icon("check-circle"),
+          status_parts
         )
       }
     })
 
-    # ---- Populate station selector ----
-    observe({
-      cond <- rv_raw_data$conductivity_data
-      if (!is.null(cond) && length(cond) > 0) {
-        updateSelectInput(session, "station_select",
-          choices = names(cond), selected = names(cond)[1])
-      }
-    })
-
-    # ---- Run QAQC ----
+    # ---- Run QAQC (FIX: use cond_input_data + merge pattern) ----
     observeEvent(input$run_qaqc, {
       station <- input$station_select
       req(station)
-
-      cond <- rv_raw_data$conductivity_data
-      req(cond, cond[[station]])
+      input_df <- cond_input_data()
+      req(input_df)
 
       tryCatch({
         showNotification("Running conductivity QAQC...",
           type = "message", duration = NULL, id = "cond_qc_progress")
 
-        # Combine all stations into single DF for qc_conductivity
-        cond_df <- dplyr::bind_rows(cond, .id = "site_station_code")
-        if (!"site_station_code" %in% names(cond_df) ||
-            all(is.na(cond_df$site_station_code))) {
-          cond_df$site_station_code <- station
-        }
-
         result <- waterlogged::qc_conductivity(
-          input_data                    = cond_df,
+          input_data                    = input_df,
           select_station                = station,
           temp_low_limit_C              = input$temp_low,
           temp_high_limit_C             = input$temp_high,
@@ -2563,9 +2807,18 @@ module_cond_qc_server <- function(id) {
           air_water_diff_threshold_C    = input$air_water_diff
         )
 
-        log_rows <- attr(result, "qaqc_log")
-        cond_qc_result(result)
-        qaqc_log(log_rows)
+        qaqc_log(attr(result, "qaqc_log"))
+
+        # Merge: replace station rows in full dataset
+        other_data <- dplyr::filter(input_df, site_station_code != station)
+        full_data <- dplyr::bind_rows(other_data, result) %>%
+          dplyr::arrange(site_station_code, timestamp)
+
+        cond_qc_result(full_data)
+        rv_qaqc_data$qc_conductivity <- full_data
+
+        selected_ranges(list())
+        range_history(list())
 
         removeNotification("cond_qc_progress")
         showNotification(
@@ -2579,93 +2832,159 @@ module_cond_qc_server <- function(id) {
       })
     })
 
+    # ---- Selected station data ----
+    selected_data <- reactive({
+      req(input$station_select, cond_qc_result())
+      dplyr::filter(cond_qc_result(), site_station_code == input$station_select)
+    })
+
+    # ---- Station info header ----
+    output$station_info <- renderUI({
+      data <- selected_data()
+      req(nrow(data) > 0)
+
+      flag_cols <- c("flag_co_spike", "flag_co_temp_ice", "flag_co_temp_low",
+                     "flag_co_temp_high", "flag_co_temp_neg_near", "flag_co_dry")
+      flag_cols <- intersect(flag_cols, names(data))
+      n_flags <- sum(sapply(flag_cols, function(col) sum(data[[col]], na.rm = TRUE)))
+
+      date_range <- paste(
+        format(min(data$timestamp), "%Y-%m-%d"),
+        "to",
+        format(max(data$timestamp), "%Y-%m-%d")
+      )
+
+      tags$div(
+        style = "padding-top: 8px;",
+        tags$p(style = "margin: 0; font-size: 14px;",
+          tags$strong("Station: "), input$station_select, " | ",
+          tags$strong("Records: "), format(nrow(data), big.mark = ","), " | ",
+          tags$strong("Flags: "), format(n_flags, big.mark = ","), " | ",
+          tags$strong("Range: "), date_range
+        )
+      )
+    })
+
     # ---- Flag summary table ----
     output$flag_summary <- DT::renderDT({
       req(cond_qc_result())
-      result <- cond_qc_result()
-      flag_cols <- grep("^flag_|^edit_", names(result), value = TRUE)
-      if (length(flag_cols) == 0) return(NULL)
+      data <- selected_data()
+      req(nrow(data) > 0)
 
-      counts <- sapply(flag_cols, function(col) sum(result[[col]], na.rm = TRUE))
+      safe_sum <- function(col) {
+        if (col %in% names(data)) sum(data[[col]], na.rm = TRUE) else 0L
+      }
+
       summary_df <- data.frame(
-        Flag = names(counts),
-        Count = unname(counts),
+        Station = data$site_station_code[1],
+        Records = nrow(data),
+        flag_co_spike = safe_sum("flag_co_spike"),
+        flag_co_temp_ice = safe_sum("flag_co_temp_ice"),
+        flag_co_temp_low = safe_sum("flag_co_temp_low"),
+        flag_co_temp_high = safe_sum("flag_co_temp_high"),
+        flag_co_temp_neg_near = safe_sum("flag_co_temp_neg_near"),
+        flag_co_dry = safe_sum("flag_co_dry"),
+        Cond_NA = sum(is.na(data$conduct_uScm_adj)),
+        Temp_NA = sum(is.na(data$watertemp_C_adj)),
         stringsAsFactors = FALSE
       )
-      summary_df <- summary_df[order(-summary_df$Count), ]
 
-      DT::datatable(summary_df, rownames = FALSE,
-        options = list(pageLength = 20, dom = "t"),
-        class = "compact stripe")
-    })
+      # Add edit columns if they exist
+      edit_cols <- grep("^edit_", names(data), value = TRUE)
+      for (ec in edit_cols) {
+        summary_df[[ec]] <- sum(data[[ec]], na.rm = TRUE)
+      }
 
-    # ---- QAQC review plot ----
-    output$qaqc_plot <- plotly::renderPlotly({
-      req(cond_qc_result())
-      result <- cond_qc_result()
-      station <- input$station_select
-
-      waterlogged::plot_qaqc_timeseries(
-        cond_data = result,
-        select_station = station
+      DT::datatable(summary_df,
+        options = list(dom = "t", pageLength = 50, scrollX = TRUE),
+        rownames = FALSE,
+        selection = "none"
       )
     })
 
-    # ---- Drift: populate station selector ----
-    observe({
-      if (!is.null(cond_qc_result())) {
-        stations <- unique(cond_qc_result()$site_station_code)
-        updateSelectInput(session, "drift_station",
-          choices = stations, selected = stations[1])
-      }
-    })
-
-    # ---- Drift: upload reference data ----
+    # ---- Reference data upload (ENHANCED validation) ----
     observeEvent(input$ref_upload, {
       req(input$ref_upload)
       tryCatch({
         ref <- read.csv(input$ref_upload$datapath, stringsAsFactors = FALSE)
-        required <- c("metric", "site_station_code", "timestamp",
-                       "watertemp_C", "value", "unit", "event_type",
-                       "calibration_datetime")
-        missing <- setdiff(required, names(ref))
+
+        required_ref_cols <- c("metric", "site_station_code", "timestamp",
+                               "watertemp_C", "value", "unit", "event_type",
+                               "calibration_datetime")
+        missing <- setdiff(required_ref_cols, names(ref))
         if (length(missing) > 0) {
           output$ref_upload_status <- renderUI({
             tags$div(
-              style = "color: #c62828; margin-top: 8px;",
-              icon("times-circle"),
-              sprintf(" Missing columns: %s", paste(missing, collapse = ", "))
+              style = "color: #856404; background: #fff3cd; padding: 12px; border-radius: 5px; margin-top: 10px;",
+              icon("exclamation-triangle"),
+              sprintf(" Missing required columns: %s", paste(missing, collapse = ", "))
             )
           })
           drift_ref_data(NULL)
           return()
         }
+
+        # Filter to conductivity rows
+        ref <- ref[grepl("^(conductivity|cond|ec)$",
+                         trimws(tolower(ref$metric))), ]
+        if (nrow(ref) == 0) {
+          output$ref_upload_status <- renderUI({
+            tags$div(
+              style = "color: #856404; background: #fff3cd; padding: 12px; border-radius: 5px; margin-top: 10px;",
+              icon("exclamation-triangle"),
+              " No conductivity rows found in reference data. Check the 'metric' column."
+            )
+          })
+          drift_ref_data(NULL)
+          return()
+        }
+
+        # Validate event_type
+        valid_events <- c("check", "calibration", "ignore")
+        bad_events <- setdiff(tolower(trimws(ref$event_type)), valid_events)
+        if (length(bad_events) > 0) {
+          output$ref_upload_status <- renderUI({
+            tags$div(
+              style = "color: #856404; background: #fff3cd; padding: 12px; border-radius: 5px; margin-top: 10px;",
+              icon("exclamation-triangle"),
+              sprintf(" Invalid event_type values: %s. Must be: check, calibration, or ignore.",
+                      paste(bad_events, collapse = ", "))
+            )
+          })
+          drift_ref_data(NULL)
+          return()
+        }
+
         drift_ref_data(ref)
         output$ref_upload_status <- renderUI({
           tags$div(
-            style = "color: #2e7d32; margin-top: 8px;",
+            style = "color: #155724; background: #d4edda; padding: 12px; border-radius: 5px; margin-top: 10px;",
             icon("check-circle"),
-            sprintf(" Reference data loaded: %d rows", nrow(ref))
+            sprintf(" Reference data loaded: %d conductivity measurements across %d station(s)",
+                    nrow(ref), length(unique(ref$site_station_code)))
           )
         })
+
       }, error = function(e) {
         output$ref_upload_status <- renderUI({
           tags$div(
-            style = "color: #c62828; margin-top: 8px;",
+            style = "color: #721c24; background: #f8d7da; padding: 12px; border-radius: 5px; margin-top: 10px;",
             icon("times-circle"),
-            paste(" Error reading file:", conditionMessage(e))
+            paste(" Error reading CSV:", conditionMessage(e))
           )
         })
         drift_ref_data(NULL)
       })
     })
 
-    # ---- Drift: preview table ----
+    # ---- Reference data preview ----
     output$ref_preview <- DT::renderDT({
       req(drift_ref_data())
       DT::datatable(drift_ref_data(),
-        rownames = FALSE, options = list(pageLength = 10, dom = "tp"),
-        class = "compact stripe")
+        options = list(dom = "t", pageLength = 20, scrollX = TRUE),
+        rownames = FALSE,
+        selection = "none"
+      )
     })
 
     # ---- Run drift correction ----
@@ -2697,15 +3016,22 @@ module_cond_qc_server <- function(id) {
         )
 
         drift_log <- attr(result, "qaqc_log")
-        cond_qc_result(result)
 
-        # Append drift log
+        # wq_drift_correction() returns the full dataset (all stations) with
+        # the selected station's rows updated in-place via rows_update(),
+        # so no merge-back step is needed.
+        cond_qc_result(result)
+        rv_qaqc_data$qc_conductivity <- result
+
+        # Append drift log (coerce ts columns to avoid type mismatch)
         if (!is.null(drift_log)) {
           existing <- qaqc_log()
-          if (!is.null(existing)) {
-            drift_log$ts_start <- as.character(drift_log$ts_start)
-            drift_log$ts_end   <- as.character(drift_log$ts_end)
+          if (!is.null(existing) && nrow(existing) > 0) {
+            existing$ts_start <- as.character(existing$ts_start)
+            existing$ts_end   <- as.character(existing$ts_end)
           }
+          drift_log$ts_start <- as.character(drift_log$ts_start)
+          drift_log$ts_end   <- as.character(drift_log$ts_end)
           qaqc_log(dplyr::bind_rows(existing, drift_log))
         }
 
@@ -2713,17 +3039,19 @@ module_cond_qc_server <- function(id) {
         showNotification(sprintf("Drift correction applied for %s", station),
           type = "message", duration = 5)
 
+        # Show summary
         n_drift <- if ("edit_cond_drift" %in% names(result)) {
           sum(result$edit_cond_drift, na.rm = TRUE)
-        } else 0L
+        } else { 0L }
 
         output$drift_result_summary <- renderUI({
           tags$div(
-            style = "margin-top: 10px; padding: 10px; background: #e8f5e9; border-radius: 5px;",
+            style = "color: #155724; background: #d4edda; padding: 12px; border-radius: 5px; margin-top: 15px;",
+            icon("check-circle"),
             sprintf(" Drift correction complete for %s: %s records corrected.",
                     station, format(n_drift, big.mark = ",")),
             if (length(drift_messages) > 0) {
-              tags$div(style = "margin-top: 5px; font-size: 12px; color: #555;",
+              tags$div(style = "margin-top: 8px; font-size: 12px; color: #666;",
                 tags$em(paste(drift_messages, collapse = " "))
               )
             }
@@ -2736,6 +3064,643 @@ module_cond_qc_server <- function(id) {
           type = "error", duration = 8)
       })
     })
+
+    # ---- QAQC Plot (3-4 panel time series) ----
+    drag_range_js <- sprintf("
+      function(el, x) {
+        var _resetting = false;
+        var _savedRange = null;
+
+        el.on('plotly_relayout', function(evt) {
+          if (_resetting) return;
+
+          var keys = Object.keys(evt);
+          var isShapeOnly = keys.every(function(k) {
+            return k === 'shapes' || k.indexOf('shapes[') === 0;
+          });
+          if (isShapeOnly) return;
+
+          if (evt['xaxis.autorange'] || evt['yaxis.autorange']) {
+            _savedRange = null;
+            return;
+          }
+
+          var x0 = evt['xaxis.range[0]'];
+          var x1 = evt['xaxis.range[1]'];
+          if (!x0 || !x1) return;
+
+          var mode = Shiny.shinyapp.$inputValues['%s'];
+          if (mode !== 'select') {
+            _savedRange = { x0: x0, x1: x1 };
+            return;
+          }
+
+          Shiny.setInputValue('%s', {
+            x0: String(x0), x1: String(x1), nonce: Math.random()
+          });
+
+          _resetting = true;
+          var restore = _savedRange
+            ? { 'xaxis.range[0]': _savedRange.x0, 'xaxis.range[1]': _savedRange.x1 }
+            : { 'xaxis.autorange': true };
+          Plotly.relayout(el, restore).then(function() { _resetting = false; });
+        });
+
+        el.on('plotly_doubleclick', function() { _savedRange = null; });
+      }
+    ", session$ns("plot_mode"), session$ns("drag_range"))
+
+    # ---- Parsed reference data for plotting (station-filtered) ----
+    plot_ref_data <- reactive({
+      ref <- drift_ref_data()
+      if (is.null(ref)) return(NULL)
+      station <- input$station_select
+      if (is.null(station)) return(NULL)
+
+      stn_ref <- ref[ref$site_station_code == station, ]
+      if (nrow(stn_ref) == 0) return(NULL)
+
+      # Parse timestamps
+      parse_orders <- c("ymd HMS", "ymd HM", "mdy HMS", "mdy HM", "dmy HMS", "dmy HM")
+      stn_ref$ts_parsed <- lubridate::parse_date_time(
+        stn_ref$timestamp, orders = parse_orders, quiet = TRUE)
+      stn_ref <- stn_ref[!is.na(stn_ref$ts_parsed), ]
+      if (nrow(stn_ref) == 0) return(NULL)
+
+      stn_ref
+    })
+
+    output$qaqc_plot <- renderPlotly({
+      data <- selected_data()
+      req(nrow(data) > 0)
+      station <- input$station_select
+
+      # Reference data for overlay (may be NULL)
+      ref <- plot_ref_data()
+
+      # Build panels dynamically
+      panels <- list()
+
+      # Panel 1: Conductivity (uS/cm)
+      p1 <- plot_ly(data, x = ~timestamp, y = ~conduct_uScm,
+              type = "scattergl", mode = "lines",
+              line = list(color = "rgba(230,81,0,0.4)", width = 1),
+              name = "Raw Cond",
+              hovertemplate = "Raw: %{y:.1f} \u00b5S/cm<extra></extra>") %>%
+        add_trace(y = ~conduct_uScm_adj,
+              type = "scattergl", mode = "lines",
+              line = list(color = "#e65100", width = 1),
+              name = "Adj Cond",
+              hovertemplate = "Adj: %{y:.1f} \u00b5S/cm<extra></extra>")
+
+      # Overlay conductivity reference points
+      if (!is.null(ref)) {
+        cond_units <- c("uscm", "us/cm", "\u00b5s/cm")
+        ref_cond <- ref[tolower(trimws(ref$unit)) %in% cond_units, ]
+        if (nrow(ref_cond) > 0) {
+          p1 <- p1 %>% add_trace(
+            data = ref_cond, x = ~ts_parsed, y = ~value,
+            type = "scatter", mode = "markers",
+            inherit = FALSE,
+            marker = list(color = "#d32f2f", size = 10, symbol = "diamond",
+                         line = list(color = "#ffffff", width = 1.5)),
+            name = "Field Ref (cond)",
+            text = ~paste0(event_type, ": ", value, " \u00b5S/cm\n", timestamp),
+            hovertemplate = "%{text}<extra></extra>"
+          )
+        }
+      }
+      panels <- c(panels, list(p1))
+
+      # Panel 2: Water Temperature
+      p2 <- plot_ly(data, x = ~timestamp, y = ~watertemp_C,
+              type = "scattergl", mode = "lines",
+              line = list(color = "rgba(97,155,138,0.4)", width = 1),
+              name = "Raw Water Temp",
+              hovertemplate = "Raw: %{y:.1f} \u00b0C<extra></extra>") %>%
+        add_trace(y = ~watertemp_C_adj,
+              type = "scattergl", mode = "lines",
+              line = list(color = "#619b8a", width = 1),
+              name = "Adj Water Temp",
+              hovertemplate = "Adj: %{y:.1f} \u00b0C<extra></extra>")
+
+      # Overlay temperature reference points
+      if (!is.null(ref) && nrow(ref) > 0) {
+        p2 <- p2 %>% add_trace(
+          data = ref, x = ~ts_parsed, y = ~watertemp_C,
+          type = "scatter", mode = "markers",
+          inherit = FALSE,
+          marker = list(color = "#d32f2f", size = 10, symbol = "diamond",
+                       line = list(color = "#ffffff", width = 1.5)),
+          name = "Field Ref (temp)",
+          text = ~paste0(event_type, ": ", watertemp_C, "\u00b0C\n", timestamp),
+          hovertemplate = "%{text}<extra></extra>"
+        )
+      }
+      panels <- c(panels, list(p2))
+
+      # Panel 3: Air Temperature (CONDITIONAL)
+      if ("airtemp_C" %in% names(data)) {
+        p3 <- plot_ly(data, x = ~timestamp, y = ~airtemp_C,
+                type = "scattergl", mode = "lines",
+                line = list(color = "#FDB840", width = 1),
+                name = "Air Temp",
+                hovertemplate = "Air: %{y:.1f} \u00b0C<extra></extra>")
+        panels <- c(panels, list(p3))
+      }
+
+      n_panels <- length(panels)
+
+      # Y-axis titles
+      yaxis_titles <- c("Cond (\u00b5S/cm)", "Water Temp (\u00b0C)")
+      if ("airtemp_C" %in% names(data)) yaxis_titles <- c(yaxis_titles, "Air Temp (\u00b0C)")
+
+      p <- subplot(panels, nrows = n_panels, shareX = TRUE, titleY = TRUE)
+
+      layout_args <- list(
+        p = p,
+        title = list(text = paste("Conductivity QAQC \u2014", station), font = list(size = 14)),
+        xaxis = list(title = ""),
+        yaxis = list(title = yaxis_titles[1], fixedrange = TRUE),
+        yaxis2 = list(title = yaxis_titles[2], fixedrange = TRUE),
+        hovermode = "x unified",
+        legend = list(orientation = "h", y = -0.08),
+        margin = list(b = 80)
+      )
+
+      if (n_panels >= 3) {
+        layout_args$yaxis3 <- list(title = yaxis_titles[3], fixedrange = TRUE)
+        layout_args[[paste0("xaxis", n_panels)]] <- list(title = "Date")
+      } else {
+        layout_args$xaxis2 <- list(title = "Date")
+      }
+
+      p <- do.call(layout, layout_args)
+
+      p %>%
+        htmlwidgets::onRender(drag_range_js) %>%
+        htmlwidgets::onRender(sprintf("
+          function(el, x) {
+            var flagId = '%s';
+            var modeId = '%s';
+            if (!window._condSyncGuard) window._condSyncGuard = false;
+            el.on('plotly_relayout', function(evt) {
+              if (window._condSyncGuard) return;
+              var mode = Shiny.shinyapp.$inputValues[modeId];
+              if (mode === 'select') return;
+              var keys = Object.keys(evt);
+              var isShapeOnly = keys.every(function(k) {
+                return k === 'shapes' || k.indexOf('shapes[') === 0;
+              });
+              if (isShapeOnly) return;
+              var flagEl = document.getElementById(flagId);
+              if (!flagEl || !flagEl.layout) return;
+              window._condSyncGuard = true;
+              if (evt['xaxis.autorange']) {
+                Plotly.relayout(flagEl, {'xaxis.autorange': true}).then(function() { window._condSyncGuard = false; });
+              } else {
+                var x0 = evt['xaxis.range[0]'];
+                var x1 = evt['xaxis.range[1]'];
+                if (x0 && x1) {
+                  Plotly.relayout(flagEl, {'xaxis.range[0]': x0, 'xaxis.range[1]': x1}).then(function() { window._condSyncGuard = false; });
+                } else { window._condSyncGuard = false; }
+              }
+            });
+            el.on('plotly_doubleclick', function() {
+              var flagEl = document.getElementById(flagId);
+              if (flagEl) {
+                window._condSyncGuard = true;
+                Plotly.relayout(flagEl, {'xaxis.autorange': true}).then(function() { window._condSyncGuard = false; });
+              }
+            });
+          }
+        ", session$ns("flag_plot"), session$ns("plot_mode")))
+    })
+
+    # ---- Flag review plot ----
+    output$flag_plot <- renderPlotly({
+      data <- selected_data()
+      req(nrow(data) > 0)
+
+      flag_cols <- c("flag_co_spike", "flag_co_temp_ice", "flag_co_temp_low",
+                     "flag_co_temp_high", "flag_co_temp_neg_near", "flag_co_dry")
+      edit_cols <- grep("^edit_", names(data), value = TRUE)
+      all_flag_cols <- intersect(c(flag_cols, edit_cols), names(data))
+
+      symbols <- c("circle", "triangle-up", "square", "cross", "x",
+                   "diamond", "star-triangle-up", "hexagram")
+
+      p <- plot_ly()
+      for (i in seq_along(all_flag_cols)) {
+        col <- all_flag_cols[i]
+        flagged <- data[which(data[[col]] == TRUE), ]
+        if (nrow(flagged) > 0) {
+          p <- p %>% add_trace(
+            data = flagged, x = ~timestamp,
+            y = col, type = "scatter", mode = "markers",
+            marker = list(color = "#000000", size = 6,
+                         symbol = symbols[((i - 1) %% length(symbols)) + 1]),
+            name = col
+          )
+        }
+      }
+
+      p %>% layout(
+        title = list(text = "QA/QC Flags", font = list(size = 13)),
+        xaxis = list(title = "Date"),
+        yaxis = list(title = "", categoryorder = "trace"),
+        legend = list(orientation = "h", y = -0.3),
+        margin = list(b = 80, l = 150)
+      ) %>%
+        htmlwidgets::onRender(sprintf("
+          function(el, x) {
+            var mainId = '%s';
+            if (!window._condSyncGuard) window._condSyncGuard = false;
+            el.on('plotly_relayout', function(evt) {
+              if (window._condSyncGuard) return;
+              var keys = Object.keys(evt);
+              var isShapeOnly = keys.every(function(k) {
+                return k === 'shapes' || k.indexOf('shapes[') === 0;
+              });
+              if (isShapeOnly) return;
+              var mainEl = document.getElementById(mainId);
+              if (!mainEl || !mainEl.layout) return;
+              window._condSyncGuard = true;
+              if (evt['xaxis.autorange']) {
+                Plotly.relayout(mainEl, {'xaxis.autorange': true}).then(function() { window._condSyncGuard = false; });
+              } else {
+                var x0 = evt['xaxis.range[0]'];
+                var x1 = evt['xaxis.range[1]'];
+                if (x0 && x1) {
+                  Plotly.relayout(mainEl, {'xaxis.range[0]': x0, 'xaxis.range[1]': x1}).then(function() { window._condSyncGuard = false; });
+                } else { window._condSyncGuard = false; }
+              }
+            });
+            el.on('plotly_doubleclick', function() {
+              var mainEl = document.getElementById(mainId);
+              if (mainEl) {
+                window._condSyncGuard = true;
+                Plotly.relayout(mainEl, {'xaxis.autorange': true}).then(function() { window._condSyncGuard = false; });
+              }
+            });
+          }
+        ", session$ns("qaqc_plot")))
+    })
+
+    # ---- Multi-range selection via drag ----
+    merge_ranges <- function(ranges) {
+      if (length(ranges) <= 1) return(ranges)
+      sorted <- ranges[order(sapply(ranges, `[[`, 1))]
+      merged <- list(sorted[[1]])
+      for (i in seq(2, length(sorted))) {
+        last <- merged[[length(merged)]]
+        curr <- sorted[[i]]
+        if (curr[1] <= last[2]) {
+          merged[[length(merged)]] <- c(min(last[1], curr[1]), max(last[2], curr[2]))
+        } else {
+          merged <- c(merged, list(curr))
+        }
+      }
+      merged
+    }
+
+    observeEvent(input$drag_range, {
+      info <- input$drag_range
+      req(info$x0, info$x1)
+
+      t0 <- as.character(info$x0)
+      t1 <- as.character(info$x1)
+      if (t0 > t1) { tmp <- t0; t0 <- t1; t1 <- tmp }
+
+      range_history(c(range_history(), list(selected_ranges())))
+      new_ranges <- merge_ranges(c(selected_ranges(), list(c(t0, t1))))
+      selected_ranges(new_ranges)
+    })
+
+    observe({
+      ranges <- selected_ranges()
+      if (length(ranges) > 0) {
+        plot_id <- session$ns("qaqc_plot")
+        shapes_json <- jsonlite::toJSON(
+          lapply(ranges, function(r) {
+            list(type = "rect", xref = "x", yref = "paper",
+                 x0 = r[1], x1 = r[2], y0 = 0, y1 = 1,
+                 fillcolor = "rgba(255, 165, 0, 0.20)",
+                 line = list(color = "rgba(255, 140, 0, 0.8)", width = 1))
+          }),
+          auto_unbox = TRUE
+        )
+        shinyjs::runjs(sprintf(
+          "var el = document.getElementById('%s');
+           if (el && el.layout) { el.layout.shapes = %s; Plotly.redraw(el); }",
+          plot_id, shapes_json
+        ))
+      }
+    })
+
+    observeEvent(input$station_select, {
+      selected_ranges(list())
+      range_history(list())
+    })
+
+    observeEvent(input$undo_range, {
+      hist <- range_history()
+      if (length(hist) > 0) {
+        selected_ranges(hist[[length(hist)]])
+        range_history(hist[-length(hist)])
+      }
+    })
+
+    observeEvent(input$clear_ranges, {
+      range_history(c(range_history(), list(selected_ranges())))
+      selected_ranges(list())
+      df <- cond_qc_result()
+      if (!is.null(df)) {
+        attr(df, ".redraw") <- Sys.time()
+        cond_qc_result(df)
+      }
+    })
+
+    output$range_status <- renderUI({
+      n <- length(selected_ranges())
+      if (input$plot_mode == "select") {
+        if (n == 0) {
+          tags$span(style = "font-size: 13px; color: #666;",
+                    "Drag across the plot to select a period")
+        } else {
+          tags$span(style = "font-size: 13px; color: #e65100; font-weight: bold;",
+                    sprintf("%d range%s selected", n, if (n > 1) "s" else ""))
+        }
+      }
+    })
+
+    # ---- Helpers: timestamp parsing, snapping, merge ----
+    parse_plotly_ts <- function(ts_char) {
+      ts <- lubridate::ymd_hms(ts_char, quiet = TRUE)
+      if (!is.na(ts)) return(ts)
+      ts <- lubridate::ymd_hm(ts_char, quiet = TRUE)
+      if (!is.na(ts)) return(ts)
+      ts <- lubridate::ymd(ts_char, quiet = TRUE)
+      if (!is.na(ts)) return(ts)
+      stripped <- sub("\\.\\d+$", "", ts_char)
+      ts <- lubridate::ymd_hms(stripped, quiet = TRUE)
+      if (!is.na(ts)) return(ts)
+      ts <- tryCatch(as.POSIXct(ts_char), error = function(e) NA)
+      ts
+    }
+
+    snap_to_data <- function(ts_char, timestamps) {
+      ts <- parse_plotly_ts(ts_char)
+      if (is.na(ts)) return(ts_char)
+      idx <- which.min(abs(as.numeric(difftime(timestamps, ts, units = "secs"))))
+      format(timestamps[idx], "%Y-%m-%d %H:%M:%S")
+    }
+
+    snap_ranges <- function(ranges, station_timestamps) {
+      lapply(ranges, function(r) {
+        c(snap_to_data(r[1], station_timestamps),
+          snap_to_data(r[2], station_timestamps))
+      })
+    }
+
+    merge_station_back <- function(full_data, station_data, station) {
+      other_data <- dplyr::filter(full_data, site_station_code != station)
+      dplyr::bind_rows(other_data, station_data) %>%
+        dplyr::arrange(site_station_code, timestamp)
+    }
+
+    apply_adjustment_result <- function(station_data, station) {
+      updated <- merge_station_back(cond_qc_result(), station_data, station)
+      selected_ranges(list())
+      range_history(list())
+      cond_qc_result(updated)
+      rv_qaqc_data$qc_conductivity <- updated
+
+      adj_log <- attr(station_data, "qaqc_log")
+      if (!is.null(adj_log)) {
+        existing <- qaqc_log()
+        if (!is.null(existing) && nrow(existing) > 0) {
+          existing$ts_start <- as.character(existing$ts_start)
+          existing$ts_end   <- as.character(existing$ts_end)
+        }
+        adj_log$ts_start <- as.character(adj_log$ts_start)
+        adj_log$ts_end   <- as.character(adj_log$ts_end)
+        qaqc_log(dplyr::bind_rows(existing, adj_log))
+      }
+    }
+
+    # ---- Remove Selected Periods (adjust_logger_NA) ----
+    observeEvent(input$btn_remove, {
+      ranges <- selected_ranges()
+      if (length(ranges) == 0) {
+        showNotification("Select at least one range on the plot first.",
+          type = "warning", duration = 4)
+        return()
+      }
+
+      n <- length(ranges)
+      showModal(modalDialog(
+        title = sprintf("Remove %d Selected Period%s", n, if (n > 1) "s" else ""),
+        tags$p(sprintf("Station: %s", input$station_select)),
+        tags$ul(
+          lapply(ranges, function(r) {
+            tags$li(paste(r[1], "to", r[2]))
+          })
+        ),
+        selectInput(session$ns("modal_reason"), "Reason:",
+          choices = c("ice", "dry", "disturbance"),
+          selected = "disturbance"),
+        checkboxInput(session$ns("modal_keep_temp"),
+          "Keep water temperature (keep_temp = TRUE)", value = FALSE),
+        textInput(session$ns("modal_note"), "Note (required):", value = ""),
+        footer = tagList(
+          modalButton("Cancel"),
+          actionButton(session$ns("modal_remove_confirm"), "Confirm Removal",
+            class = "btn-warning", icon = icon("eraser"),
+            style = "color: #ffffff;")
+        ),
+        easyClose = TRUE
+      ))
+    })
+
+    observeEvent(input$modal_remove_confirm, {
+      ranges <- selected_ranges()
+      req(length(ranges) > 0)
+      note <- input$modal_note
+      if (is.null(note) || nchar(trimws(note)) == 0) {
+        showNotification("Enter a note describing the reason for removal.",
+          type = "error", duration = 3)
+        return()
+      }
+
+      removeModal()
+      station <- input$station_select
+      req(station)
+
+      tryCatch({
+        station_data <- dplyr::filter(cond_qc_result(), site_station_code == station)
+        snapped <- snap_ranges(ranges, station_data$timestamp)
+
+        for (r in snapped) {
+          station_data <- waterlogged::adjust_logger_NA(
+            input_data       = station_data,
+            select_station   = station,
+            metric           = "conductivity",
+            reason_to_adjust = input$modal_reason,
+            timestamp_start  = r[1],
+            timestamp_end    = r[2],
+            keep_temp        = input$modal_keep_temp,
+            manual_note      = paste0(note, " (", r[1], " to ", r[2], ")"),
+            log_root         = NULL
+          )
+        }
+
+        apply_adjustment_result(station_data, station)
+        showNotification(
+          sprintf("Removed %d period%s for %s", length(ranges),
+                  if (length(ranges) > 1) "s" else "", station),
+          type = "message", duration = 5)
+
+      }, error = function(e) {
+        showNotification(paste("Removal error:", conditionMessage(e)),
+          type = "error", duration = 8)
+      })
+    })
+
+    # ---- Summary stats ----
+    output$summary_station_label <- renderUI({
+      stn <- input$station_select
+      req(stn)
+      data <- selected_data()
+      req(nrow(data) > 0)
+      date_range <- paste(format(min(data$timestamp), "%Y-%m-%d"),
+                          "to", format(max(data$timestamp), "%Y-%m-%d"))
+      tags$div(
+        style = "background-color: #e8f5e9; padding: 12px; border-radius: 5px; border: 2px solid #2e7d32; margin-bottom: 15px;",
+        tags$p(style = "margin: 0; font-size: 14px;",
+          "Showing summary statistics for station: ",
+          tags$strong(stn, style = "color: #2e7d32;"),
+          tags$span(style = "color: #555; margin-left: 10px;",
+            sprintf("(%s records, %s)", format(nrow(data), big.mark = ","), date_range)
+          )
+        )
+      )
+    })
+
+    output$cond_summary <- renderPrint({
+      data <- selected_data()
+      req(nrow(data) > 0)
+      n_dup <- sum(duplicated(data$timestamp))
+      cat("Records:", nrow(data), " | Duplicate timestamps:", n_dup, "\n\n")
+      cat("--- Raw Conductivity (\u00b5S/cm) ---\n")
+      print(round(summary(data$conduct_uScm), 1))
+      cat("\n--- Adjusted Conductivity (\u00b5S/cm) ---\n")
+      if ("conduct_uScm_adj" %in% names(data)) {
+        print(round(summary(data$conduct_uScm_adj), 1))
+      } else {
+        cat("(column not yet created)\n")
+      }
+    })
+
+    output$spc_summary <- renderPrint({
+      data <- selected_data()
+      req(nrow(data) > 0)
+      if ("spc_uScm_adj" %in% names(data)) {
+        cat("--- SPC (\u00b5S/cm @ 25\u00b0C) ---\n")
+        print(round(summary(data$spc_uScm_adj), 1))
+      } else {
+        cat("SPC not yet computed.\n")
+        cat("Run temperature compensation in the Convert tab first.\n")
+      }
+    })
+
+    output$temp_summary <- renderPrint({
+      data <- selected_data()
+      req(nrow(data) > 0)
+      cat("--- Raw Water Temperature (\u00b0C) ---\n")
+      print(round(summary(data$watertemp_C), 1))
+      cat("\n--- Adjusted Water Temperature (\u00b0C) ---\n")
+      if ("watertemp_C_adj" %in% names(data)) {
+        print(round(summary(data$watertemp_C_adj), 1))
+      } else {
+        cat("(column not yet created)\n")
+      }
+    })
+
+    # ---- Download: Clean CSV ----
+    output$download_csv <- downloadHandler(
+      filename = function() {
+        station <- input$station_select
+        paste0("cond_qaqc_", station, "_", format(Sys.Date(), "%Y%m%d"), ".csv")
+      },
+      content = function(file) {
+        data <- selected_data()
+        req(nrow(data) > 0)
+
+        export_cols <- c(
+          "site_station_code", "timestamp",
+          "conduct_uScm", "conduct_uScm_adj",
+          "spc_uScm_adj",
+          "watertemp_C", "watertemp_C_adj",
+          "airpress_kPa", "airtemp_C"
+        )
+        flag_cols <- grep("^(edit_|flag_co_)", names(data), value = TRUE)
+        export_cols <- intersect(c(export_cols, flag_cols), names(data))
+
+        export_df <- data[, export_cols]
+        export_df$timestamp <- format(export_df$timestamp, "%Y-%m-%d %H:%M:%S")
+        write.csv(export_df, file, row.names = FALSE)
+      }
+    )
+
+    # ---- Download: QAQC Log ----
+    output$download_log <- downloadHandler(
+      filename = function() {
+        station <- input$station_select
+        paste0("cond_qaqc_log_", station, "_", format(Sys.Date(), "%Y%m%d"), ".csv")
+      },
+      content = function(file) {
+        log <- qaqc_log()
+        if (!is.null(log) && nrow(log) > 0) {
+          station <- input$station_select
+          if ("station" %in% names(log) && !is.null(station)) {
+            station_log <- log[log$station == station, ]
+            if (nrow(station_log) > 0) {
+              write.csv(station_log, file, row.names = FALSE)
+              return()
+            }
+          }
+          write.csv(log, file, row.names = FALSE)
+        } else {
+          write.csv(
+            data.frame(
+              station = character(), metric = character(),
+              field = character(), action = character(),
+              n_affected = integer(), note = character(),
+              stringsAsFactors = FALSE
+            ),
+            file, row.names = FALSE
+          )
+        }
+      }
+    )
+
+    # ---- Download: Metadata ----
+    output$download_metadata <- downloadHandler(
+      filename = function() {
+        paste0("cond_metadata_", format(Sys.Date(), "%Y%m%d"), ".csv")
+      },
+      content = function(file) {
+        meta <- rv_raw_data$metadata
+        if (!is.null(meta) && nrow(meta) > 0) {
+          cond_meta <- meta[grepl("^(conductivity|cond)$",
+                                  tolower(trimws(meta$metric))), ]
+          write.csv(cond_meta, file, row.names = FALSE)
+        } else {
+          write.csv(data.frame(), file, row.names = FALSE)
+        }
+      }
+    )
 
   })
 }

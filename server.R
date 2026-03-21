@@ -11,12 +11,10 @@ server <- function(input, output, session) {
   # Welcome
   module_welcome_server("welcome")
 
-  # Temperature (hidden: pipeline not yet complete)
-  # module_temp_upload_server("temp_upload")
-  # module_temp_snap_server("temp_snap")
-  # module_temp_baro_server("temp_baro")
-  # module_temp_qc_air_server("temp_qc_air")
-  # module_temp_qc_water_server("temp_qc_water")
+  # Temperature (Water & Air)
+  module_temp_upload_server("temp_upload")
+  module_temp_qc_water_server("temp_qc_water")
+  module_temp_qc_air_server("temp_qc_air")
 
   # Barometric Pressure
   module_baro_upload_server("baro_upload")
@@ -26,6 +24,7 @@ server <- function(input, output, session) {
   module_wl_upload_server("wl_upload")
   module_wl_convert_server("wl_convert")
   module_wl_qaqc_server("wl_qaqc")
+  module_wl_datum_server("wl_datum")
 
   # Dissolved Oxygen
   module_do_upload_server("do_upload")

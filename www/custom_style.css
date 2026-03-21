@@ -31,3 +31,7 @@ body, p, div, label {
   .custom-h2 {
     color: #00AFDB
   }
+
+  .content-wrapper {
+    background-color: #ecf0f5;
+  }

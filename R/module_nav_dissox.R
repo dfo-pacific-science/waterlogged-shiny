@@ -92,19 +92,37 @@ module_do_upload_ui <- function(id) {
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
               tags$li(tags$code("site_station_code"), " \u2014 station identifier"),
-              tags$li(tags$code("timestamp_deploy"), " / ", tags$code("timestamp_remove")),
+              tags$li(tags$code("timestamp_deploy"), " / ", tags$code("timestamp_remove"),
+                      " \u2014 date-time in ", tags$code("MM/DD/YYYY HH:MM"), " format",
+                      " (e.g. ", tags$code("05/15/2025 14:30"), ").",
+                      " Also accepts ", tags$code("YYYY-MM-DD HH:MM"), ".",
+                      " ", tags$code("timestamp_remove"), " may be ", tags$code("NA"),
+                      " for loggers still deployed."),
               tags$li(tags$code("model"), " \u2014 logger model (e.g. HOBO_U26)"),
               tags$li(tags$code("sn"), " \u2014 logger serial number"),
-              tags$li(tags$code("metric"), " \u2014 ", tags$code("\"dissolvedoxygen\""),
-                      " or ", tags$code("\"barometric\"")),
+              tags$li(tags$code("metric"), " \u2014 ",
+                      tags$strong("must"), " be ", tags$code("\"dissolvedoxygen\""),
+                      " or ", tags$code("\"barometric\""),
+                      " \u2014 this determines how the logger data is classified and processed"),
               tags$li(tags$code("status"), " \u2014 deployment status"),
-              tags$li(tags$code("latitude"), " / ", tags$code("longitude"))
+              tags$li(tags$code("latitude"), " / ", tags$code("longitude"),
+                      " \u2014 decimal degrees",
+                      " (e.g. ", tags$code("49.2827"), ", ", tags$code("-123.1207"), ")")
             ),
             tags$p(style = "font-size: 13px; color: #666;",
               "Upload your own metadata CSV, or use the pre-loaded sample. ",
               "The file must contain one row per deployment period per logger. ",
               "Include metadata for barometric stations as well, so they can be ",
               "matched to DO stations."
+            ),
+            tags$p(style = "font-size: 12px; margin-top: 10px;",
+              tags$a(
+                href = "sample_metadata.csv",
+                download = "sample_metadata.csv",
+                icon("download"),
+                " Download sample metadata (pre-loaded demo)",
+                style = "color: #1565c0;"
+              )
             )
           )
         ),
@@ -125,15 +143,6 @@ module_do_upload_ui <- function(id) {
               accept = ".csv",
               placeholder = "Choose metadata CSV...",
               width = "100%"
-            ),
-            tags$p(style = "font-size: 12px; margin-top: -5px;",
-              tags$a(
-                href = "sample_metadata.csv",
-                download = "sample_metadata.csv",
-                icon("download"),
-                " Download sample metadata template",
-                style = "color: #1565c0;"
-              )
             )
           ),
 
@@ -187,7 +196,11 @@ module_do_upload_ui <- function(id) {
             tags$h4("How to Import", style = "margin-top: 0;"),
             tags$p(
               "Upload the raw CSV files exported from HOBOware for your ",
-              "dissolved oxygen loggers. You can select multiple files at once."
+              "dissolved oxygen loggers. You can select multiple files at once. ",
+              "The CSV must contain a ", tags$code("Date Time"), " column in ",
+              "HOBOware's default export format: ",
+              tags$code("MM/DD/YYYY HH:MM:SS AM/PM"),
+              " (e.g. ", tags$code("06/01/2025 02:30:00 PM"), ")."
             ),
             tags$ol(
               style = "padding-left: 20px; font-size: 13px;",
@@ -202,6 +215,24 @@ module_do_upload_ui <- function(id) {
             tags$p(style = "font-size: 13px; color: #666;",
               "If no files are uploaded, the app will use pre-loaded sample ",
               "data for demonstration."
+            ),
+            tags$p(style = "font-size: 13px; margin-top: 10px;",
+              tags$a(
+                href = "#", `data-toggle` = "modal",
+                `data-target` = "#hoboware_export_modal",
+                style = "color: #1565c0;",
+                icon("question-circle"),
+                " How to export CSV files from HOBOware"
+              )
+            ),
+            tags$p(style = "font-size: 12px; margin-top: 10px;",
+              tags$a(
+                href = "sample_do_raw.csv",
+                download = "sample_do_raw.csv",
+                icon("download"),
+                " Download sample DO logger CSV (pre-loaded demo)",
+                style = "color: #1565c0;"
+              )
             )
           ),
 
@@ -222,12 +253,18 @@ module_do_upload_ui <- function(id) {
             tags$h4("Columns Produced", style = "margin-top: 0;"),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px; margin-bottom: 0;",
-              tags$li(tags$code("site_station_code"), " \u2014 station ID"),
-              tags$li(tags$code("timestamp"), " \u2014 date-time"),
-              tags$li(tags$code("do_mgl"), " \u2014 dissolved oxygen (mg/L)"),
-              tags$li(tags$code("watertemp_C"), " \u2014 water temperature"),
-              tags$li(tags$code("sn"), " \u2014 logger serial number"),
-              tags$li(tags$code("metric"), " \u2014 \"dissolvedoxygen\"")
+              tags$li(tags$code("site_station_code"), " \u2014 station ID",
+                      " (e.g. ", tags$code("COOK_WE_40"), ")"),
+              tags$li(tags$code("timestamp"), " \u2014 date-time in ",
+                      tags$code("YYYY-MM-DD HH:MM:SS"), " format",
+                      " (e.g. ", tags$code("2025-06-01 14:30:00"), ")"),
+              tags$li(tags$code("do_mgl"), " \u2014 dissolved oxygen in mg/L",
+                      " (e.g. ", tags$code("8.42"), ")"),
+              tags$li(tags$code("watertemp_C"), " \u2014 water temperature in \u00b0C",
+                      " (e.g. ", tags$code("14.7"), ")"),
+              tags$li(tags$code("sn"), " \u2014 logger serial number",
+                      " (e.g. ", tags$code("21473863"), ")"),
+              tags$li(tags$code("metric"), " \u2014 ", tags$code("\"dissolvedoxygen\""))
             )
           )
         ),
@@ -306,13 +343,21 @@ module_do_upload_ui <- function(id) {
             ),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
-              tags$li(tags$code("site_station_code")),
-              tags$li(tags$code("timestamp")),
-              tags$li(tags$code("airpress_kPa")),
-              tags$li(tags$code("airpress_kPa_adj")),
-              tags$li(tags$code("airtemp_C")),
-              tags$li(tags$code("airtemp_C_adj")),
-              tags$li("Plus any ", tags$code("edit_*"), " / ", tags$code("flag_*"), " columns")
+              tags$li(tags$code("site_station_code"),
+                      " (e.g. ", tags$code("ALBR_ST_30"), ")"),
+              tags$li(tags$code("timestamp"), " \u2014 ",
+                      tags$code("YYYY-MM-DD HH:MM:SS"), " format",
+                      " (e.g. ", tags$code("2025-06-01 14:30:00"), ")"),
+              tags$li(tags$code("airpress_kPa"),
+                      " \u2014 raw pressure in kPa"),
+              tags$li(tags$code("airpress_kPa_adj"),
+                      " \u2014 QC'd pressure in kPa"),
+              tags$li(tags$code("airtemp_C"),
+                      " \u2014 raw air temp in \u00b0C"),
+              tags$li(tags$code("airtemp_C_adj"),
+                      " \u2014 QC'd air temp in \u00b0C"),
+              tags$li("Plus any ", tags$code("edit_*"), " / ", tags$code("flag_*"),
+                      " columns (", tags$code("TRUE"), "/", tags$code("FALSE"), ")")
             ),
             tags$div(
               style = "background-color: #e8e8e8; padding: 10px; border-radius: 4px; margin-top: 10px;",
@@ -320,6 +365,15 @@ module_do_upload_ui <- function(id) {
               tags$code("barometric_qaqc_all()"),
               tags$p(style = "font-size: 12px; color: #666; margin-top: 5px; margin-bottom: 0;",
                      "Run automated QAQC on baro data (produces the required columns)")
+            ),
+            tags$p(style = "font-size: 12px; margin-top: 10px;",
+              tags$a(
+                href = "demo_baro_processed.csv",
+                download = "demo_baro_processed.csv",
+                style = "color: #1565c0;",
+                icon("download"),
+                " Download sample processed baro CSV"
+              )
             )
           )
         ),
@@ -471,6 +525,35 @@ module_do_upload_ui <- function(id) {
       # ---- Preview Plot (full width, 4 panels) ----
       tags$h4("Data Preview"),
       plotlyOutput(ns("preview_plot"), height = "1065px") %>% withSpinner(),
+
+      # ---- (Optional) Filter Data by Date Range ----
+      tags$div(
+        style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+        tags$span(
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          "(Optional) Filter Data by Date Range"
+        )
+      ),
+
+      tags$p(
+        class = "clean-print",
+        "If your data contains records outside the period of interest (e.g., pre-deployment ",
+        "or post-retrieval), you can filter to a specific date range. This will remove records ",
+        "outside the selected range from all time series loaded in this section."
+      ),
+
+      fluidRow(
+        column(4, dateInput(ns("filter_from"), "From Date:", value = NULL)),
+        column(4, dateInput(ns("filter_to"),   "To Date:",   value = NULL)),
+        column(4, tags$div(
+          style = "margin-top: 25px;",
+          actionButton(ns("apply_filter"), "Apply Filter",
+                       class = "btn-primary", icon = icon("filter"),
+                       style = "color: #fff; background-color: #1565c0; border-color: #1565c0;")
+        ))
+      ),
+
+      uiOutput(ns("filter_status")),
 
       # ---- Next step link ----
       tags$div(
@@ -792,6 +875,19 @@ module_do_upload_server <- function(id) {
           metadata <- metadata[metadata$metric %in% valid_metrics, ]
         }
 
+        # Warn if no dissolvedoxygen rows found after filtering
+        n_do <- sum(metadata$metric == "dissolvedoxygen")
+        if (n_do == 0) {
+          found_metrics <- unique(metadata$metric)
+          showNotification(
+            paste0("Warning: No rows with metric 'dissolvedoxygen' found in metadata. ",
+                   "Found metric values: ",
+                   if (length(found_metrics) > 0) paste(found_metrics, collapse = ", ") else "none",
+                   "."),
+            type = "warning", duration = 10
+          )
+        }
+
         rv_raw_data$metadata <- metadata
         showNotification("Metadata updated.", type = "message", duration = 3)
       }, error = function(e) {
@@ -838,7 +934,7 @@ module_do_upload_server <- function(id) {
         shinyjs::disable("bind_btn")
 
         tryCatch({
-          result <- waterlogged::bind_hobo_files(
+          result <- bind_hobo_files(
             file_paths = raw_files$datapath,
             metadata = metadata
           )
@@ -959,7 +1055,7 @@ module_do_upload_server <- function(id) {
 
         station_arg <- if (input$snap_station == "all") NULL else input$snap_station
 
-        result <- waterlogged::resample_timestamps(
+        result <- resample_timestamps(
           input_data = df,
           interval = input$snap_interval,
           align = input$snap_align,
@@ -1235,6 +1331,52 @@ module_do_upload_server <- function(id) {
           legend = list(orientation = "h", y = -0.08),
           margin = list(b = 80)
         )
+    })
+
+    # ---- Date Range Filter: auto-populate ----
+    observe({
+      do_data <- rv_bound_data$do_bound
+      req(do_data, nrow(do_data) > 0)
+      ts_range <- range(do_data$timestamp, na.rm = TRUE)
+      updateDateInput(session, "filter_from", value = as.Date(ts_range[1]),
+                      min = as.Date(ts_range[1]), max = as.Date(ts_range[2]))
+      updateDateInput(session, "filter_to",   value = as.Date(ts_range[2]),
+                      min = as.Date(ts_range[1]), max = as.Date(ts_range[2]))
+    })
+
+    # ---- Date Range Filter: apply ----
+    observeEvent(input$apply_filter, {
+      from_date <- input$filter_from
+      to_date   <- input$filter_to
+      req(from_date, to_date)
+
+      from_ts <- as.POSIXct(from_date, tz = "UTC")
+      to_ts   <- as.POSIXct(paste(to_date, "23:59:59"), tz = "UTC")
+
+      do_data <- rv_bound_data$do_bound
+      if (!is.null(do_data) && nrow(do_data) > 0)
+        rv_bound_data$do_bound <- do_data[do_data$timestamp >= from_ts & do_data$timestamp <= to_ts, ]
+
+      showNotification(
+        sprintf("Filtered to %s \u2013 %s", format(from_date), format(to_date)),
+        type = "message", duration = 5
+      )
+    })
+
+    # ---- Date Range Filter: status ----
+    output$filter_status <- renderUI({
+      req(input$apply_filter > 0)
+      isolate({
+        from_date <- input$filter_from
+        to_date   <- input$filter_to
+        n <- nrow(rv_bound_data$do_bound)
+        tags$div(
+          style = "color: #155724; background: #d4edda; padding: 10px; border-radius: 5px; margin-top: 10px;",
+          icon("check-circle"),
+          sprintf(" Filter applied: %s to %s. %s records remaining.",
+                  format(from_date), format(to_date), format(n, big.mark = ","))
+        )
+      })
     })
 
   })
@@ -1733,13 +1875,13 @@ module_do_convert_server <- function(id) {
           cat("[add_baro_do] Running for ALL stations\n")
         }
 
-        cat("[add_baro_do] Calling waterlogged::add_nearest_baro() ...\n")
+        cat("[add_baro_do] Calling add_nearest_baro() ...\n")
         t_start <- Sys.time()
 
         # Capture message() output for calibration diagnostics
         msgs <- character(0)
         result <- withCallingHandlers(
-          waterlogged::add_nearest_baro(
+          add_nearest_baro(
             input_data       = input_data,
             metric           = "DO",
             baro_data        = baro_data,
@@ -2104,7 +2246,7 @@ module_do_convert_server <- function(id) {
         cat("[convert_do] Input data:", nrow(input_data), "rows,",
             length(unique(input_data$site_station_code)), "station(s)\n")
 
-        result <- waterlogged::convert_do_mgl_percsat(
+        result <- convert_do_mgl_percsat(
           input_data = input_data,
           path_to_output_folder = NULL  # Shiny mode
         )
@@ -2365,9 +2507,9 @@ module_do_qc_ui <- function(id) {
               style = "padding-left: 20px; font-size: 13px;",
               tags$li(tags$strong("DO_ERROR"), " \u2014 -888.88 values \u2192 NA"),
               tags$li(tags$strong("NEGATIVE_DO"), " \u2014 -1 to 0 \u2192 0; < -1 \u2192 NA"),
-              tags$li(tags$strong("OUTLIER_DO"), " \u2014 > 21 mg/L \u2192 NA"),
+              tags$li(tags$strong("OUTLIER_DO"), " \u2014 above high limit \u2192 NA"),
               tags$li(tags$strong("NEGATIVE_TEMP"), " \u2014 -1 to 0 \u2192 0; \u2264 -1 \u2192 NA"),
-              tags$li(tags$strong("FLAG_ICE"), " \u2014 temp < 0.3\u00b0C \u2192 flagged"),
+              tags$li(tags$strong("FLAG_ICE"), " \u2014 temp below ice threshold \u2192 flagged"),
               tags$li(tags$strong("FLAG_DO_DRY"), " \u2014 12-point window (%sat \u2265 100, air-water temp diff \u2264 2\u00b0C) \u2192 flagged")
             )
           ),
@@ -2404,6 +2546,26 @@ module_do_qc_ui <- function(id) {
               selectInput(ns("station_select"), "Select Station:",
                 choices = NULL, width = "100%")
             ),
+            tags$h4("QAQC Thresholds", style = "margin-top: 0;"),
+            tags$p(style = "font-size: 13px; color: #666; margin-bottom: 10px;",
+              icon("sliders-h"),
+              " Adjust the thresholds used by ", tags$code("qc_dissox()"),
+              ". Default values are shown."
+            ),
+            fluidRow(
+              column(4,
+                numericInput(ns("threshold_do_high"), "DO high limit (mg/L)",
+                  value = 30, min = 0, max = 100, step = 1)
+              ),
+              column(4,
+                numericInput(ns("threshold_do_low"), "DO low limit (mg/L)",
+                  value = 0, min = -10, max = 10, step = 0.5)
+              ),
+              column(4,
+                numericInput(ns("threshold_ice"), "Ice threshold (\u00b0C)",
+                  value = 0.3, min = 0, max = 5, step = 0.1)
+              )
+            ),
             actionButton(ns("run_qaqc"), "Run DO QAQC",
               class = "btn-primary btn-lg", width = "100%",
               style = "color: #fff;",
@@ -2430,15 +2592,24 @@ module_do_qc_ui <- function(id) {
         ns = ns,
 
         # ================================================================
-        # Section 2: Drift Correction
+        # Section 2: Drift Correction (collapsible)
         # ================================================================
         tags$div(
           style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
           tags$span(
             style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
-            "Drift Correction"
+            "(Optional) Drift Correction: Warning Experimental"
           )
         ),
+
+        tags$a(
+          `data-toggle` = "collapse", href = paste0("#", ns("drift_collapse")),
+          style = "display: block; margin-bottom: 10px; color: #1565c0; font-weight: bold; cursor: pointer;",
+          icon("chevron-right"), " Show / Hide Drift Correction"
+        ),
+
+        tags$div(
+          id = ns("drift_collapse"), class = "collapse",
 
         tags$div(
           style = "display: flex; flex-wrap: wrap; margin: 0 -15px;",
@@ -2611,6 +2782,8 @@ module_do_qc_ui <- function(id) {
           )
         ),
 
+        ), # end drift_collapse div
+
         # ================================================================
         # Section 3: Manual Adjustments
         # ================================================================
@@ -2730,7 +2903,7 @@ module_do_qc_ui <- function(id) {
           column(
             width = 4,
             tags$div(
-              style = "background-color: #e3f2fd; padding: 15px; border-radius: 5px; margin-bottom: 15px;",
+              style = "background-color: #f0f0f0; padding: 15px; border-radius: 5px; margin-bottom: 15px;",
               tags$h4("DO mg/L Summary (raw vs adjusted)", style = "margin-top: 0;"),
               verbatimTextOutput(ns("do_mgl_summary"))
             )
@@ -2738,7 +2911,7 @@ module_do_qc_ui <- function(id) {
           column(
             width = 4,
             tags$div(
-              style = "background-color: #e3f2fd; padding: 15px; border-radius: 5px; margin-bottom: 15px;",
+              style = "background-color: #f0f0f0; padding: 15px; border-radius: 5px; margin-bottom: 15px;",
               tags$h4("DO %sat Summary (raw vs adjusted)", style = "margin-top: 0;"),
               verbatimTextOutput(ns("do_percsat_summary"))
             )
@@ -2746,7 +2919,7 @@ module_do_qc_ui <- function(id) {
           column(
             width = 4,
             tags$div(
-              style = "background-color: #e3f2fd; padding: 15px; border-radius: 5px; margin-bottom: 15px;",
+              style = "background-color: #f0f0f0; padding: 15px; border-radius: 5px; margin-bottom: 15px;",
               tags$h4("Temperature Summary (raw vs adjusted)", style = "margin-top: 0;"),
               verbatimTextOutput(ns("temp_summary"))
             )
@@ -2770,7 +2943,7 @@ module_do_qc_ui <- function(id) {
           tags$div(
             style = "flex: 0 0 33.333%; max-width: 33.333%; padding: 0 15px; display: flex;",
             tags$div(
-              style = "background-color: #e3f2fd; padding: 20px; border-radius: 5px; flex: 1;",
+              style = "background-color: #f0f0f0; padding: 20px; border-radius: 5px; flex: 1;",
               tags$h4("Download Results", style = "margin-top: 0;"),
               tags$p(style = "font-size: 13px;",
                 "Download the QAQC'd dissolved oxygen data as CSV for the ",
@@ -2884,11 +3057,14 @@ module_do_qc_server <- function(id) {
         showNotification("Running DO QAQC...",
           type = "message", duration = NULL, id = "do_qaqc_progress")
 
-        result <- waterlogged::qc_dissox(
-          input_data     = converted_data,
-          select_station = station,
-          log_root       = NULL,
-          user           = NULL
+        result <- qc_dissox(
+          input_data           = converted_data,
+          select_station       = station,
+          do_high_limit_mgl    = input$threshold_do_high,
+          do_low_limit_mgl     = input$threshold_do_low,
+          temp_ice_threshold_C = input$threshold_ice,
+          log_root             = NULL,
+          user                 = NULL
         )
 
         qaqc_log(attr(result, "qaqc_log"))
@@ -2927,11 +3103,9 @@ module_do_qc_server <- function(id) {
       data <- selected_data()
       req(nrow(data) > 0)
 
-      flag_cols <- c("do_error", "do_neg_between", "do_neg_lt_minus1", "do_high",
-                     "temp_flag_ice", "temp_neg_between", "temp_neg_leq_minus1",
-                     "flag_do_dry")
+      flag_cols <- c("ERROR_DO", "OUTLIER_DO", "OUTLIER_WT", "FLAG_ICE", "FLAG_DRY", "FLAG_RANGE")
       flag_cols <- intersect(flag_cols, names(data))
-      n_flags <- sum(sapply(flag_cols, function(col) sum(data[[col]], na.rm = TRUE)))
+      n_flags <- sum(vapply(flag_cols, function(col) sum(as.logical(data[[col]]), na.rm = TRUE), integer(1)))
 
       date_range <- paste(
         format(min(data$timestamp), "%Y-%m-%d"),
@@ -2957,20 +3131,18 @@ module_do_qc_server <- function(id) {
       req(nrow(data) > 0)
 
       safe_sum <- function(col) {
-        if (col %in% names(data)) sum(data[[col]], na.rm = TRUE) else 0L
+        if (col %in% names(data)) sum(as.logical(data[[col]]), na.rm = TRUE) else 0L
       }
 
       summary_df <- data.frame(
         Station = data$site_station_code[1],
         Records = nrow(data),
-        do_error = safe_sum("do_error"),
-        do_neg_between = safe_sum("do_neg_between"),
-        do_neg_lt_minus1 = safe_sum("do_neg_lt_minus1"),
-        do_high = safe_sum("do_high"),
-        temp_flag_ice = safe_sum("temp_flag_ice"),
-        temp_neg_between = safe_sum("temp_neg_between"),
-        temp_neg_leq_minus1 = safe_sum("temp_neg_leq_minus1"),
-        flag_do_dry = safe_sum("flag_do_dry"),
+        ERROR_DO = safe_sum("ERROR_DO"),
+        OUTLIER_DO = safe_sum("OUTLIER_DO"),
+        OUTLIER_WT = safe_sum("OUTLIER_WT"),
+        FLAG_ICE = safe_sum("FLAG_ICE"),
+        FLAG_DRY = safe_sum("FLAG_DRY"),
+        FLAG_RANGE = safe_sum("FLAG_RANGE"),
         DO_mgl_NA = sum(is.na(data$do_mgl_adj)),
         DO_percsat_NA = sum(is.na(data$do_percsat_adj)),
         stringsAsFactors = FALSE
@@ -3087,7 +3259,7 @@ module_do_qc_server <- function(id) {
 
         drift_messages <- character()
         result <- withCallingHandlers(
-          waterlogged::wq_drift_correction(
+          wq_drift_correction(
             input_data     = do_qc_result(),
             ref_data_path  = NULL,
             select_station = station,
@@ -3363,9 +3535,7 @@ module_do_qc_server <- function(id) {
       data <- selected_data()
       req(nrow(data) > 0)
 
-      flag_cols <- c("do_error", "do_neg_between", "do_neg_lt_minus1", "do_high",
-                     "temp_flag_ice", "temp_neg_between", "temp_neg_leq_minus1",
-                     "flag_do_dry")
+      flag_cols <- c("ERROR_DO", "OUTLIER_DO", "OUTLIER_WT", "FLAG_ICE", "FLAG_DRY", "FLAG_RANGE")
       edit_cols <- grep("^edit_", names(data), value = TRUE)
       all_flag_cols <- intersect(c(flag_cols, edit_cols), names(data))
 
@@ -3627,7 +3797,7 @@ module_do_qc_server <- function(id) {
         snapped <- snap_ranges(ranges, station_data$timestamp)
 
         for (r in snapped) {
-          station_data <- waterlogged::adjust_logger_NA(
+          station_data <- adjust_logger_NA(
             input_data       = station_data,
             select_station   = station,
             metric           = "dissolvedoxygen",
@@ -3730,7 +3900,7 @@ module_do_qc_server <- function(id) {
           "watertemp_C", "watertemp_C_do_adj",
           "airpress_kPa", "airtemp_C"
         )
-        flag_cols <- grep("^(edit_|flag_|do_error|do_neg|do_high|temp_flag|temp_neg)", names(data), value = TRUE)
+        flag_cols <- grep("^(edit_|flag_|FLAG_|ERROR_|OUTLIER_)", names(data), value = TRUE)
         export_cols <- intersect(c(export_cols, flag_cols), names(data))
 
         export_df <- data[, export_cols]

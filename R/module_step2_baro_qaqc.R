@@ -22,7 +22,7 @@ module_step2_baro_qaqc_ui <- function(id) {
           "This step applies automated QAQC checks to all barometric stations at once.
           Flagged readings are replaced with NA in the adjusted columns (airpress_kPa_adj,
           airtemp_C_adj), while the original raw values are preserved. The edit flag columns
-          (edit_press_high, edit_press_low, etc.) record which check flagged each reading."
+          (OUTLIER_AP, OUTLIER_AT, FLAG_DISTURBANCE, FLAG_FLATLINE) record which check flagged each reading."
         )
       ),
 
@@ -269,7 +269,7 @@ module_step2_baro_qaqc_server <- function(id) {
         showNotification("Running barometric QAQC...", type = "message",
           duration = NULL, id = "baro_qaqc_progress")
 
-        result <- waterlogged::barometric_qaqc_all(
+        result <- barometric_qaqc_all(
           baro_data           = baro_combined,
           metadata            = metadata,
           path_to_output_folder = NULL,
@@ -310,11 +310,10 @@ module_step2_baro_qaqc_server <- function(id) {
         dplyr::group_by(site_station_code) %>%
         dplyr::summarise(
           Records = dplyr::n(),
-          `High Pressure` = sum(edit_press_high, na.rm = TRUE),
-          `Low Pressure` = sum(edit_press_low, na.rm = TRUE),
-          `Temp Range` = sum(edit_temp_range, na.rm = TRUE),
-          Spike = sum(edit_spike, na.rm = TRUE),
-          Flatline = sum(edit_flatline, na.rm = TRUE),
+          OUTLIER_AP = sum(as.logical(OUTLIER_AP), na.rm = TRUE),
+          OUTLIER_AT = sum(as.logical(OUTLIER_AT), na.rm = TRUE),
+          FLAG_DISTURBANCE = sum(as.logical(FLAG_DISTURBANCE), na.rm = TRUE),
+          FLAG_FLATLINE = sum(as.logical(FLAG_FLATLINE), na.rm = TRUE),
           `Pressure NA (adj)` = sum(is.na(airpress_kPa_adj)),
           `Temp NA (adj)` = sum(is.na(airtemp_C_adj)),
           .groups = "drop"
@@ -353,8 +352,8 @@ module_step2_baro_qaqc_server <- function(id) {
 
       n_records <- nrow(data)
       n_flags <- sum(
-        data$edit_press_high, data$edit_press_low,
-        data$edit_temp_range, data$edit_spike, data$edit_flatline,
+        as.logical(data$OUTLIER_AP), as.logical(data$OUTLIER_AT),
+        as.logical(data$FLAG_DISTURBANCE), as.logical(data$FLAG_FLATLINE),
         na.rm = TRUE
       )
       date_range <- paste(
@@ -393,10 +392,10 @@ module_step2_baro_qaqc_server <- function(id) {
               hovertemplate = "Adj: %{y:.2f} kPa<extra></extra>")
 
       # Add flag markers for pressure (use which() to safely exclude NA indices)
-      high_flags <- data[which(data$edit_press_high), ]
-      low_flags <- data[which(data$edit_press_low), ]
-      spike_flags <- data[which(data$edit_spike), ]
-      flat_flags <- data[which(data$edit_flatline), ]
+      high_flags <- data[which(as.logical(data$OUTLIER_AP) & !is.na(data$airpress_kPa) & data$airpress_kPa > stats::median(data$airpress_kPa, na.rm = TRUE)), ]
+      low_flags  <- data[which(as.logical(data$OUTLIER_AP) & !is.na(data$airpress_kPa) & data$airpress_kPa <= stats::median(data$airpress_kPa, na.rm = TRUE)), ]
+      spike_flags <- data[which(as.logical(data$FLAG_DISTURBANCE)), ]
+      flat_flags <- data[which(as.logical(data$FLAG_FLATLINE)), ]
 
       if (nrow(high_flags) > 0) {
         p1 <- p1 %>% add_trace(data = high_flags, x = ~timestamp, y = ~airpress_kPa,
@@ -440,7 +439,7 @@ module_step2_baro_qaqc_server <- function(id) {
               hovertemplate = "Adj: %{y:.2f} C<extra></extra>")
 
       # Temperature flag markers (use which() to safely exclude NA indices)
-      temp_flags <- data[which(data$edit_temp_range), ]
+      temp_flags <- data[which(as.logical(data$OUTLIER_AT)), ]
       if (nrow(temp_flags) > 0) {
         p2 <- p2 %>% add_trace(data = temp_flags, x = ~timestamp, y = ~airtemp_C,
           type = "scattergl", mode = "markers",

@@ -11,17 +11,14 @@ page_sidebar_tab_ui <- function(id) {
 
       menuItem("Welcome", tabName = "t_welcome", icon = icon("home")),
 
-      # ---- Temperature (TidbiT / air / water temp channels) ----
-      # Hidden: Temperature pipeline not yet complete
-      # menuItem(
-      #   "Temperature",
-      #   icon = icon("thermometer-half"),
-      #   menuSubItem("Import Data",          tabName = "t_temp_upload"),
-      #   menuSubItem("Snap Timestamps",      tabName = "t_temp_snap"),
-      #   menuSubItem("Add Nearest Baro",     tabName = "t_temp_baro"),
-      #   menuSubItem("QC Air Temperature",   tabName = "t_temp_qc_air"),
-      #   menuSubItem("QC Water Temperature", tabName = "t_temp_qc_water")
-      # ),
+      # ---- Temperature (Water & Air) ----
+      menuItem(
+        "Temperature (Water & Air)",
+        icon = icon("thermometer-half"),
+        menuSubItem("Import Data",    tabName = "t_temp_upload"),
+        menuSubItem("QC Water Temp",  tabName = "t_temp_qc_water"),
+        menuSubItem("QC Air Temp",    tabName = "t_temp_qc_air")
+      ),
 
       # ---- Barometric Pressure ----
       menuItem(
@@ -37,7 +34,8 @@ page_sidebar_tab_ui <- function(id) {
         icon = icon("water"),
         menuSubItem("Import Data",          tabName = "t_wl_upload"),
         menuSubItem("Convert to Meters", tabName = "t_wl_convert"),
-        menuSubItem("QC Water Level",       tabName = "t_wl_qaqc")
+        menuSubItem("QC Water Level",       tabName = "t_wl_qaqc"),
+        menuSubItem("(Optional) Adjust Datum", tabName = "t_wl_datum")
       ),
 
       # ---- Dissolved Oxygen ----

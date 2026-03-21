@@ -201,7 +201,7 @@ module_step1_cond_server <- function(id) {
 
       p2 <- plot_ly(data, x = ~timestamp, y = ~watertemp_C,
               type = "scattergl", mode = "lines",
-              line = list(color = "#E65100", width = 1),
+              line = list(color = "#2e7d32", width = 1),
               name = "Temperature",
               hovertemplate = "Temp: %{y:.2f} C<extra></extra>")
 

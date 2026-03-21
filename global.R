@@ -12,11 +12,16 @@ library(DT) # JS DataTables
 library(plotly) # Plotly for interactive plots
 library(leaflet) # For interactive maps
 
-# Robust timestamp parser: handles both "2023-10-19 13:00:00" and "2023-10-19"
-# (midnight rows where CSV export drops the time component)
+# Robust timestamp parser: handles "2023-10-19 13:00:00", "2023-10-19 13:00"
+# (no seconds), and "2023-10-19" (date-only midnight rows)
 .parse_timestamp <- function(x) {
   if (inherits(x, "POSIXct")) return(x)
   x <- as.character(x)
+  # Pad "YYYY-MM-DD HH:MM" to "YYYY-MM-DD HH:MM:SS"
+  hhmm_only <- grepl("^\\d{4}-\\d{2}-\\d{2} \\d{1,2}:\\d{2}$", trimws(x))
+  if (any(hhmm_only, na.rm = TRUE)) {
+    x[hhmm_only] <- paste0(trimws(x[hhmm_only]), ":00")
+  }
   parsed <- as.POSIXct(x, format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
   na_idx <- is.na(parsed) & !is.na(x) & nchar(trimws(x)) > 0
   if (any(na_idx)) {
@@ -31,7 +36,22 @@ library(tidyr) # data reshaping
 library(ggplot2) # plotting
 library(lubridate) # date handling
 library(purrr) # functional programming
-library(waterlogged)
+
+# Load waterlogged: use installed package if available, otherwise source
+# from embedded copy (for shinyapps.io where the private repo is not accessible).
+# To install locally: devtools::install("./waterlogged/")
+if (requireNamespace("waterlogged", quietly = TRUE)) {
+  library(waterlogged)
+} else {
+  message("waterlogged package not installed - sourcing from embedded copy...")
+  for (.f in sort(list.files("waterlogged/R", full.names = TRUE, pattern = "\\.R$"))) {
+    source(.f, local = globalenv())
+  }
+  rm(.f)
+}
+
+
+
 
 # Turn off scientific notation
 options(scipen = 999)
@@ -76,6 +96,9 @@ demo_conductivity_list <- list(
 for (nm in names(demo_conductivity_list)) {
   demo_conductivity_list[[nm]]$timestamp <- .parse_timestamp(demo_conductivity_list[[nm]]$timestamp)
 }
+
+# Load temperature metadata
+demo_temp_metadata <- read.csv("inst/extdata/water_temperature/metadata_wt.csv")
 
 # Supplementary data
 demo_stage_readings <- read.csv("inst/extdata/stage_readings.csv")

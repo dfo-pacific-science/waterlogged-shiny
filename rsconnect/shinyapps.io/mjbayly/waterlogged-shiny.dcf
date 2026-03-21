@@ -1,0 +1,12 @@
+name: waterlogged-shiny
+title: waterlogged-shiny
+username: mjbayly
+account: mjbayly
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 16942596
+bundleId: 11741704
+url: https://mjbayly.shinyapps.io/waterlogged-shiny/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE

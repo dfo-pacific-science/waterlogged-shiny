@@ -88,16 +88,34 @@ module_baro_upload_ui <- function(id) {
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
               tags$li(tags$code("site_station_code"), " \u2014 station identifier"),
-              tags$li(tags$code("timestamp_deploy"), " / ", tags$code("timestamp_remove")),
+              tags$li(tags$code("timestamp_deploy"), " / ", tags$code("timestamp_remove"),
+                      " \u2014 date-time in ", tags$code("MM/DD/YYYY HH:MM"), " format",
+                      " (e.g. ", tags$code("05/15/2025 14:30"), ").",
+                      " Also accepts ", tags$code("YYYY-MM-DD HH:MM"), ".",
+                      " ", tags$code("timestamp_remove"), " may be ", tags$code("NA"),
+                      " for loggers still deployed."),
               tags$li(tags$code("model"), " \u2014 logger model (e.g. HOBO_U20)"),
               tags$li(tags$code("sn"), " \u2014 logger serial number"),
-              tags$li(tags$code("metric"), " \u2014 must be ", tags$code("\"barometric\"")),
+              tags$li(tags$code("metric"), " \u2014 ",
+                      tags$strong("must"), " be ", tags$code("\"barometric\""),
+                      " \u2014 this determines how the logger data is classified and processed"),
               tags$li(tags$code("status"), " \u2014 deployment status"),
-              tags$li(tags$code("latitude"), " / ", tags$code("longitude"))
+              tags$li(tags$code("latitude"), " / ", tags$code("longitude"),
+                      " \u2014 decimal degrees",
+                      " (e.g. ", tags$code("49.2827"), ", ", tags$code("-123.1207"), ")")
             ),
             tags$p(style = "font-size: 13px; color: #666;",
               "Upload your own metadata CSV, or use the pre-loaded sample. ",
               "The file must contain one row per deployment period per logger."
+            ),
+            tags$p(style = "font-size: 12px; margin-top: 10px;",
+              tags$a(
+                href = "sample_metadata.csv",
+                download = "sample_metadata.csv",
+                icon("download"),
+                " Download sample metadata template",
+                style = "color: #1565c0;"
+              )
             )
           )
         ),
@@ -118,15 +136,6 @@ module_baro_upload_ui <- function(id) {
               accept = ".csv",
               placeholder = "Choose metadata CSV...",
               width = "100%"
-            ),
-            tags$p(style = "font-size: 12px; margin-top: -5px;",
-              tags$a(
-                href = "sample_metadata.csv",
-                download = "sample_metadata.csv",
-                icon("download"),
-                " Download sample metadata template",
-                style = "color: #1565c0;"
-              )
             )
           ),
 
@@ -180,7 +189,11 @@ module_baro_upload_ui <- function(id) {
             tags$h4("How to Import", style = "margin-top: 0;"),
             tags$p(
               "Upload the raw CSV files exported from HOBOware for your ",
-              "barometric loggers. You can select multiple files at once."
+              "barometric loggers. You can select multiple files at once. ",
+              "The CSV must contain a ", tags$code("Date Time"), " column in ",
+              "HOBOware's default export format: ",
+              tags$code("MM/DD/YYYY HH:MM:SS AM/PM"),
+              " (e.g. ", tags$code("06/01/2025 02:30:00 PM"), ")."
             ),
             tags$ol(
               style = "padding-left: 20px; font-size: 13px;",
@@ -195,6 +208,25 @@ module_baro_upload_ui <- function(id) {
             tags$p(style = "font-size: 13px; color: #666;",
               "If no files are uploaded, the app will use pre-loaded sample ",
               "data for demonstration."
+            ),
+            tags$p(style = "font-size: 12px; margin-top: 10px;",
+              icon("download"),
+              " ",
+              tags$a(
+                href = "demo_baro_files.zip",
+                download = "demo_baro_files.zip",
+                style = "color: #1565c0;",
+                "Download sample barometric files (.zip)"
+              )
+            ),
+            tags$p(style = "font-size: 13px; margin-top: 10px;",
+              tags$a(
+                href = "#", `data-toggle` = "modal",
+                `data-target` = "#hoboware_export_modal",
+                style = "color: #1565c0;",
+                icon("question-circle"),
+                " How to export CSV files from HOBOware"
+              )
             )
           ),
 
@@ -215,12 +247,18 @@ module_baro_upload_ui <- function(id) {
             tags$h4("Columns Produced", style = "margin-top: 0;"),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px; margin-bottom: 0;",
-              tags$li(tags$code("site_station_code"), " \u2014 station ID"),
-              tags$li(tags$code("timestamp"), " \u2014 date-time"),
-              tags$li(tags$code("airpress_kPa"), " \u2014 absolute pressure"),
-              tags$li(tags$code("airtemp_C"), " \u2014 air temperature"),
-              tags$li(tags$code("sn"), " \u2014 logger serial number"),
-              tags$li(tags$code("metric"), " \u2014 \"barometric\"")
+              tags$li(tags$code("site_station_code"), " \u2014 station ID",
+                      " (e.g. ", tags$code("ALBR_ST_30"), ")"),
+              tags$li(tags$code("timestamp"), " \u2014 date-time in ",
+                      tags$code("YYYY-MM-DD HH:MM:SS"), " format",
+                      " (e.g. ", tags$code("2025-06-01 14:30:00"), ")"),
+              tags$li(tags$code("airpress_kPa"), " \u2014 absolute pressure in kPa",
+                      " (e.g. ", tags$code("101.325"), ")"),
+              tags$li(tags$code("airtemp_C"), " \u2014 air temperature in \u00b0C",
+                      " (e.g. ", tags$code("18.4"), ")"),
+              tags$li(tags$code("sn"), " \u2014 logger serial number",
+                      " (e.g. ", tags$code("20810501"), ")"),
+              tags$li(tags$code("metric"), " \u2014 ", tags$code("\"barometric\""))
             )
           )
         ),
@@ -359,6 +397,35 @@ module_baro_upload_ui <- function(id) {
       # ---- Preview Plot (full width) ----
       tags$h4("Data Preview"),
       plotlyOutput(ns("preview_plot"), height = "650px") %>% withSpinner(),
+
+      # ---- (Optional) Filter Data by Date Range ----
+      tags$div(
+        style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+        tags$span(
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          "(Optional) Filter Data by Date Range"
+        )
+      ),
+
+      tags$p(
+        class = "clean-print",
+        "If your data contains records outside the period of interest (e.g., pre-deployment ",
+        "or post-retrieval), you can filter to a specific date range. This will remove records ",
+        "outside the selected range from all time series loaded in this section."
+      ),
+
+      fluidRow(
+        column(4, dateInput(ns("filter_from"), "From Date:", value = NULL)),
+        column(4, dateInput(ns("filter_to"),   "To Date:",   value = NULL)),
+        column(4, tags$div(
+          style = "margin-top: 25px;",
+          actionButton(ns("apply_filter"), "Apply Filter",
+                       class = "btn-primary", icon = icon("filter"),
+                       style = "color: #fff; background-color: #1565c0; border-color: #1565c0;")
+        ))
+      ),
+
+      uiOutput(ns("filter_status")),
 
       # ---- Next step link ----
       tags$div(
@@ -588,6 +655,20 @@ module_baro_upload_server <- function(id) {
           return()
         }
 
+        # Normalize metric column: lowercase, strip spaces
+        metadata$metric <- tolower(trimws(gsub("\\s+", "", metadata$metric)))
+
+        # Warn if no barometric rows found
+        n_baro <- sum(metadata$metric == "barometric")
+        if (n_baro == 0) {
+          found_metrics <- unique(metadata$metric)
+          showNotification(
+            paste0("Warning: No rows with metric 'barometric' found in metadata. ",
+                   "Found metric values: ", paste(found_metrics, collapse = ", "), "."),
+            type = "warning", duration = 10
+          )
+        }
+
         rv_raw_data$metadata <- metadata
         showNotification("Metadata updated.", type = "message", duration = 3)
       }, error = function(e) {
@@ -640,7 +721,7 @@ module_baro_upload_server <- function(id) {
           showNotification("Binding HOBO files...", type = "message",
             duration = NULL, id = "bind_progress")
 
-          result <- waterlogged::bind_hobo_files(
+          result <- bind_hobo_files(
             file_paths = raw_files$datapath,
             metadata = metadata
           )
@@ -770,7 +851,7 @@ module_baro_upload_server <- function(id) {
 
         station_arg <- if (input$snap_station == "all") NULL else input$snap_station
 
-        result <- waterlogged::resample_timestamps(
+        result <- resample_timestamps(
           input_data = df,
           interval = input$snap_interval,
           align = input$snap_align,
@@ -859,6 +940,52 @@ module_baro_upload_server <- function(id) {
         )
     })
 
+    # ---- Date Range Filter: auto-populate ----
+    observe({
+      baro <- rv_bound_data$baro_bound
+      req(baro, nrow(baro) > 0)
+      ts_range <- range(baro$timestamp, na.rm = TRUE)
+      updateDateInput(session, "filter_from", value = as.Date(ts_range[1]),
+                      min = as.Date(ts_range[1]), max = as.Date(ts_range[2]))
+      updateDateInput(session, "filter_to",   value = as.Date(ts_range[2]),
+                      min = as.Date(ts_range[1]), max = as.Date(ts_range[2]))
+    })
+
+    # ---- Date Range Filter: apply ----
+    observeEvent(input$apply_filter, {
+      from_date <- input$filter_from
+      to_date   <- input$filter_to
+      req(from_date, to_date)
+
+      from_ts <- as.POSIXct(from_date, tz = "UTC")
+      to_ts   <- as.POSIXct(paste(to_date, "23:59:59"), tz = "UTC")
+
+      baro <- rv_bound_data$baro_bound
+      if (!is.null(baro) && nrow(baro) > 0)
+        rv_bound_data$baro_bound <- baro[baro$timestamp >= from_ts & baro$timestamp <= to_ts, ]
+
+      showNotification(
+        sprintf("Filtered to %s \u2013 %s", format(from_date), format(to_date)),
+        type = "message", duration = 5
+      )
+    })
+
+    # ---- Date Range Filter: status ----
+    output$filter_status <- renderUI({
+      req(input$apply_filter > 0)
+      isolate({
+        from_date <- input$filter_from
+        to_date   <- input$filter_to
+        n <- nrow(rv_bound_data$baro_bound)
+        tags$div(
+          style = "color: #155724; background: #d4edda; padding: 10px; border-radius: 5px; margin-top: 10px;",
+          icon("check-circle"),
+          sprintf(" Filter applied: %s to %s. %s records remaining.",
+                  format(from_date), format(to_date), format(n, big.mark = ","))
+        )
+      })
+    })
+
   })
 }
 
@@ -916,13 +1043,13 @@ module_baro_qc_ui <- function(id) {
             ),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
-              tags$li(tags$strong("edit_press_high/low"), " \u2014 pressure outside ",
+              tags$li(tags$strong("OUTLIER_AP"), " \u2014 pressure outside ",
                       "range \u2192 adj set to NA"),
-              tags$li(tags$strong("edit_temp_range"), " \u2014 temp outside range ",
+              tags$li(tags$strong("OUTLIER_AT"), " \u2014 temp outside range ",
                       "\u2192 adj set to NA"),
-              tags$li(tags$strong("edit_spike"), " \u2014 sudden pressure jump ",
+              tags$li(tags$strong("FLAG_DISTURBANCE"), " \u2014 sudden pressure jump ",
                       "\u2192 flagged (value kept)"),
-              tags$li(tags$strong("edit_flatline"), " \u2014 consecutive identical ",
+              tags$li(tags$strong("FLAG_FLATLINE"), " \u2014 consecutive identical ",
                       "values \u2192 flagged (value kept)")
             ),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 10px;",
@@ -944,13 +1071,20 @@ module_baro_qc_ui <- function(id) {
             tags$h4("Columns Produced", style = "margin-top: 0;"),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px; margin-bottom: 0;",
-              tags$li(tags$code("airpress_kPa_adj"), " \u2014 adjusted pressure"),
-              tags$li(tags$code("airtemp_C_adj"), " \u2014 adjusted temperature"),
-              tags$li(tags$code("edit_press_high"), ", ",
-                      tags$code("edit_press_low")),
-              tags$li(tags$code("edit_temp_range"), ", ",
-                      tags$code("edit_spike"), ", ",
-                      tags$code("edit_flatline"))
+              tags$li(tags$code("airpress_kPa_adj"), " \u2014 adjusted pressure in kPa",
+                      " (copy of raw, with flagged values set to ", tags$code("NA"), ")"),
+              tags$li(tags$code("airtemp_C_adj"), " \u2014 adjusted temperature in \u00b0C",
+                      " (copy of raw, with flagged values set to ", tags$code("NA"), ")"),
+              tags$li(tags$code("OUTLIER_AP"),
+                      " \u2014 ", tags$code("TRUE"), "/", tags$code("FALSE"),
+                      " flag for pressure outside range"),
+              tags$li(tags$code("OUTLIER_AT"),
+                      " \u2014 ", tags$code("TRUE"), "/", tags$code("FALSE"),
+                      " flag for temp outside range"),
+              tags$li(tags$code("FLAG_DISTURBANCE"), ", ",
+                      tags$code("FLAG_FLATLINE"),
+                      " \u2014 ", tags$code("TRUE"), "/", tags$code("FALSE"),
+                      " flags for spikes and flatlines")
             )
           )
         ),
@@ -1340,7 +1474,7 @@ module_baro_qc_server <- function(id) {
           sprintf("Running barometric QAQC on %d station(s)...", n_stns),
           type = "message", duration = NULL, id = "qaqc_progress")
 
-        result <- waterlogged::barometric_qaqc_all(
+        result <- barometric_qaqc_all(
           baro_data           = baro_data,
           metadata            = metadata,
           path_to_output_folder = NULL,
@@ -1394,11 +1528,10 @@ module_baro_qc_server <- function(id) {
         dplyr::group_by(site_station_code) %>%
         dplyr::summarise(
           Records = dplyr::n(),
-          `High Pressure` = sum(edit_press_high, na.rm = TRUE),
-          `Low Pressure` = sum(edit_press_low, na.rm = TRUE),
-          `Temp Range` = sum(edit_temp_range, na.rm = TRUE),
-          Spike = sum(edit_spike, na.rm = TRUE),
-          Flatline = sum(edit_flatline, na.rm = TRUE),
+          OUTLIER_AP = sum(as.logical(OUTLIER_AP), na.rm = TRUE),
+          OUTLIER_AT = sum(as.logical(OUTLIER_AT), na.rm = TRUE),
+          FLAG_DISTURBANCE = sum(as.logical(FLAG_DISTURBANCE), na.rm = TRUE),
+          FLAG_FLATLINE = sum(as.logical(FLAG_FLATLINE), na.rm = TRUE),
           `Pressure NA (adj)` = sum(is.na(airpress_kPa_adj)),
           `Temp NA (adj)` = sum(is.na(airtemp_C_adj)),
           .groups = "drop"
@@ -1438,8 +1571,8 @@ module_baro_qc_server <- function(id) {
       req(nrow(data) > 0)
 
       n_flags <- sum(
-        data$edit_press_high, data$edit_press_low,
-        data$edit_temp_range, data$edit_spike, data$edit_flatline,
+        as.logical(data$OUTLIER_AP), as.logical(data$OUTLIER_AT),
+        as.logical(data$FLAG_DISTURBANCE), as.logical(data$FLAG_FLATLINE),
         na.rm = TRUE
       )
       date_range <- paste(
@@ -1530,10 +1663,10 @@ module_baro_qc_server <- function(id) {
               hovertemplate = "Adj: %{y:.2f} kPa<extra></extra>")
 
       # Pressure flag markers
-      high_flags <- data[which(data$edit_press_high), ]
-      low_flags  <- data[which(data$edit_press_low), ]
-      spike_flags <- data[which(data$edit_spike), ]
-      flat_flags  <- data[which(data$edit_flatline), ]
+      high_flags <- data[which(as.logical(data$OUTLIER_AP) & !is.na(data$airpress_kPa) & data$airpress_kPa > stats::median(data$airpress_kPa, na.rm = TRUE)), ]
+      low_flags  <- data[which(as.logical(data$OUTLIER_AP) & !is.na(data$airpress_kPa) & data$airpress_kPa <= stats::median(data$airpress_kPa, na.rm = TRUE)), ]
+      spike_flags <- data[which(as.logical(data$FLAG_DISTURBANCE)), ]
+      flat_flags  <- data[which(as.logical(data$FLAG_FLATLINE)), ]
 
       if (nrow(high_flags) > 0) {
         p1 <- p1 %>% add_trace(data = high_flags, x = ~timestamp, y = ~airpress_kPa,
@@ -1580,7 +1713,7 @@ module_baro_qc_server <- function(id) {
               name = "Adjusted Temperature",
               hovertemplate = "Adj: %{y:.1f} \u00b0C<extra></extra>")
 
-      temp_flags <- data[which(data$edit_temp_range), ]
+      temp_flags <- data[which(as.logical(data$OUTLIER_AT)), ]
       if (nrow(temp_flags) > 0) {
         p2 <- p2 %>% add_trace(data = temp_flags, x = ~timestamp, y = ~airtemp_C,
           type = "scatter", mode = "markers",
@@ -1822,7 +1955,7 @@ module_baro_qc_server <- function(id) {
         snapped <- snap_ranges(ranges, station_data$timestamp)
 
         for (r in snapped) {
-          station_data <- waterlogged::adjust_logger_NA(
+          station_data <- adjust_logger_NA(
             input_data        = station_data,
             select_station    = station,
             metric            = "BARO",

@@ -366,9 +366,9 @@ module_step3_wl_qaqc_ui <- function(id) {
               style = "padding-left: 20px; font-size: 13px;",
               tags$li(tags$strong("waterlevel_m_adj"), " \u2014 adjusted water level (working column)"),
               tags$li(tags$strong("watertemp_C_adj"), " \u2014 adjusted water temperature"),
-              tags$li(tags$strong("flag_disturbance"), " \u2014 step change detected"),
-              tags$li(tags$strong("flag_ice"), " \u2014 temperature suggests ice"),
-              tags$li(tags$strong("flag_wl_dry"), " \u2014 sensor may be out of water")
+              tags$li(tags$strong("FLAG_DISTURBANCE"), " \u2014 step change detected"),
+              tags$li(tags$strong("FLAG_ICE"), " \u2014 temperature suggests ice"),
+              tags$li(tags$strong("FLAG_DRY"), " \u2014 sensor may be out of water")
             )
           ),
 
@@ -406,10 +406,10 @@ wl_qc <- qc_waterlevel(
 
 # Summarize what was flagged
 cat(\"Total rows:       \", nrow(wl_qc))
-cat(\"Ice flagged:      \", sum(wl_qc$flag_ice, na.rm = TRUE))
-cat(\"Disturbance:      \", sum(wl_qc$flag_disturbance, na.rm = TRUE))
-cat(\"Dry flagged:      \", sum(wl_qc$flag_wl_dry, na.rm = TRUE))
-cat(\"Temp < -1C removed:\", sum(wl_qc$neg_lt_minus1, na.rm = TRUE))
+cat(\"Ice flagged:      \", sum(wl_qc$FLAG_ICE, na.rm = TRUE))
+cat(\"Disturbance:      \", sum(wl_qc$FLAG_DISTURBANCE, na.rm = TRUE))
+cat(\"Dry flagged:      \", sum(wl_qc$FLAG_DRY, na.rm = TRUE))
+cat(\"Temp outlier:     \", sum(wl_qc$OUTLIER_WT, na.rm = TRUE))
 
 # The QAQC log is stored as an attribute
 qaqc_log <- attr(wl_qc, \"qaqc_log\")

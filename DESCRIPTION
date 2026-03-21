@@ -31,4 +31,8 @@ Imports:
     tidyr,
     ggplot2,
     lubridate,
-    purrr
+    purrr,
+    geosphere,
+    rlang,
+    tibble,
+    leaflet

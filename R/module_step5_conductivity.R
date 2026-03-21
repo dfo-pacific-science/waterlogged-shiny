@@ -60,10 +60,10 @@ module_step5_cond_qaqc_ui <- function(id) {
               style = "padding-left: 20px; font-size: 13px;",
               tags$li(tags$strong("conduct_uScm_adj"), " \u2014 adjusted conductivity (working column)"),
               tags$li(tags$strong("watertemp_C_adj"), " \u2014 adjusted water temperature"),
-              tags$li(tags$strong("flag_co_spike"), " \u2014 conductivity spike detected"),
-              tags$li(tags$strong("flag_co_temp_ice"), " \u2014 temp < 0.1\u00B0C (possible ice)"),
-              tags$li(tags$strong("flag_co_temp_low / flag_co_temp_high"), " \u2014 temp out of range"),
-              tags$li(tags$strong("flag_co_dry"), " \u2014 sensor appears out of water")
+              tags$li(tags$strong("FLAG_DISTURBANCE"), " \u2014 conductivity spike detected"),
+              tags$li(tags$strong("FLAG_ICE"), " \u2014 temp < 0.1\u00B0C (possible ice)"),
+              tags$li(tags$strong("FLAG_RANGE"), " \u2014 temp out of range"),
+              tags$li(tags$strong("FLAG_DRY"), " \u2014 sensor appears out of water")
             )
           ),
 
@@ -103,11 +103,10 @@ cond_qc <- qc_conductivity(
 
 # Summarize flags
 cat(\"Total rows:     \", nrow(cond_qc))
-cat(\"Spikes:         \", sum(cond_qc$flag_co_spike, na.rm = TRUE))
-cat(\"Ice flagged:    \", sum(cond_qc$flag_co_temp_ice, na.rm = TRUE))
-cat(\"Temp too low:   \", sum(cond_qc$flag_co_temp_low, na.rm = TRUE))
-cat(\"Temp too high:  \", sum(cond_qc$flag_co_temp_high, na.rm = TRUE))
-cat(\"Dry flagged:    \", sum(cond_qc$flag_co_dry, na.rm = TRUE))
+cat(\"Spikes:         \", sum(cond_qc$FLAG_DISTURBANCE, na.rm = TRUE))
+cat(\"Ice flagged:    \", sum(cond_qc$FLAG_ICE, na.rm = TRUE))
+cat(\"Temp out range: \", sum(cond_qc$FLAG_RANGE, na.rm = TRUE))
+cat(\"Dry flagged:    \", sum(cond_qc$FLAG_DRY, na.rm = TRUE))
 
 # Visual review
 plot_qaqc_timeseries(

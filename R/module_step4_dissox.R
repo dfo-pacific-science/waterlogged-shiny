@@ -340,8 +340,8 @@ module_step4_do_qaqc_ui <- function(id) {
               tags$li(tags$strong("do_mgl_adj"), " \u2014 adjusted DO in mg/L"),
               tags$li(tags$strong("do_percsat_adj"), " \u2014 adjusted DO in %sat"),
               tags$li(tags$strong("watertemp_C_do_adj"), " \u2014 adjusted water temperature"),
-              tags$li(tags$strong("flag_do_dry"), " \u2014 sensor may be in air"),
-              tags$li(tags$strong("temp_flag_ice"), " \u2014 temperature suggests ice")
+              tags$li(tags$strong("FLAG_DRY"), " \u2014 sensor may be in air"),
+              tags$li(tags$strong("FLAG_ICE"), " \u2014 temperature suggests ice")
             )
           ),
 
@@ -381,11 +381,11 @@ do_qc <- qc_dissox(
 
 # Summarize the flags
 cat(\"Total rows:      \", nrow(do_qc))
-cat(\"Logger errors:   \", sum(do_qc$do_error, na.rm = TRUE))
-cat(\"DO < -1 removed: \", sum(do_qc$do_neg_lt_minus1, na.rm = TRUE))
-cat(\"DO > 21 removed: \", sum(do_qc$do_high, na.rm = TRUE))
-cat(\"Ice flagged:     \", sum(do_qc$temp_flag_ice, na.rm = TRUE))
-cat(\"Dry flagged:     \", sum(do_qc$flag_do_dry, na.rm = TRUE))
+cat(\"Logger errors:   \", sum(do_qc$ERROR_DO, na.rm = TRUE))
+cat(\"DO outliers:     \", sum(do_qc$OUTLIER_DO, na.rm = TRUE))
+cat(\"Ice flagged:     \", sum(do_qc$FLAG_ICE, na.rm = TRUE))
+cat(\"Dry flagged:     \", sum(do_qc$FLAG_DRY, na.rm = TRUE))
+cat(\"Range flagged:   \", sum(do_qc$FLAG_RANGE, na.rm = TRUE))
 
 # Visual review
 plot_qaqc_timeseries(

@@ -84,6 +84,53 @@ module_welcome_ui <- function(id) {
                     "github.com/dfo-pacific-science/waterlogged-shiny"
                   )
                 )
+              ),
+              # ---- Documentation downloads row ----
+              tags$div(
+                style = "display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;",
+                tags$div(
+                  style = "flex: 1; min-width: 250px; background: #f8f9fa; padding: 12px 16px; border-radius: 6px; border-left: 4px solid #8e44ad;",
+                  icon("file-pdf", style = "color: #8e44ad; margin-right: 6px;"),
+                  tags$span(style = "color: #555; font-weight: bold;", "Documentation & Tutorials"),
+                  tags$ul(
+                    style = "list-style: none; padding-left: 0; margin: 8px 0 0 0;",
+                    tags$li(style = "margin-bottom: 4px;",
+                      tags$a(href = "waterlogged_manual.pdf", target = "_blank",
+                        style = "color: #8e44ad;",
+                        icon("download", style = "margin-right: 4px;"),
+                        "waterlogged R package manual"
+                      )
+                    ),
+                    tags$li(style = "margin-bottom: 4px;",
+                      tags$a(href = "barometric-pressure.pdf", target = "_blank",
+                        style = "color: #8e44ad;",
+                        icon("download", style = "margin-right: 4px;"),
+                        "Tutorial: Barometric timeseries"
+                      )
+                    ),
+                    tags$li(style = "margin-bottom: 4px;",
+                      tags$a(href = "water-level.pdf", target = "_blank",
+                        style = "color: #8e44ad;",
+                        icon("download", style = "margin-right: 4px;"),
+                        "Tutorial: Water level timeseries"
+                      )
+                    ),
+                    tags$li(style = "margin-bottom: 4px;",
+                      tags$a(href = "dissolved-oxygen.pdf", target = "_blank",
+                        style = "color: #8e44ad;",
+                        icon("download", style = "margin-right: 4px;"),
+                        "Tutorial: Dissolved oxygen timeseries"
+                      )
+                    ),
+                    tags$li(
+                      tags$a(href = "conductivity.pdf", target = "_blank",
+                        style = "color: #8e44ad;",
+                        icon("download", style = "margin-right: 4px;"),
+                        "Tutorial: Conductivity timeseries"
+                      )
+                    )
+                  )
+                )
               )
             )
           ),
@@ -214,7 +261,7 @@ module_welcome_ui <- function(id) {
                 width = 4,
                 tags$h4("Technical Support", style = "color: #3498db; font-size: 14px; margin-bottom: 10px;"),
                 tags$div(style = "font-size: 13px; line-height: 1.8;",
-                  tags$div("Matthew Bayly: MJBA (App Development)"),
+                  tags$div("Matthew Bayly: MJBA (R Package & App Development)"),
                   tags$div("Frank Poulsen: Ashlu (Techical Support)")
                 )
               )

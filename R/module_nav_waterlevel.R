@@ -26,34 +26,48 @@ module_wl_upload_ui <- function(id) {
     ")),
     shinydashboard::box(
       width = 12,
-      tags$h1("Import Water Level Data", class = "custom-h1"),
-      tags$h2("Upload raw HOBO U20 water level logger files, barometric data, and align timestamps",
-              class = "custom-h2"),
-
-      tags$p(
-        class = "clean-print",
-        "Import raw HOBO CSV files from submerged water level pressure loggers ",
-        "(HOBO U20). These loggers record absolute pressure (water + atmosphere) ",
-        "in kPa, plus water temperature in \u00b0C. The raw pressure column is ",
-        "named ", tags$code("waterpress_kPa"), ". Because the HOBO U20 is not ",
-        "vented, atmospheric pressure must be subtracted before converting to ",
-        "water depth \u2014 that conversion happens in the next step."
-      ),
-
       tags$div(
-        class = "clean-print",
-        style = "background-color: #fff3cd; padding: 15px; border-radius: 5px; margin: 15px 0;",
-        tags$p(style = "margin: 0;",
-          tags$strong("Important:"), " Barometric pressure data must be processed ",
-          "and QC'd ", tags$strong("before"), " water level conversion. If you ",
-          "haven't done so yet, complete the ",
-          tags$a(
-            href = "#",
-            onclick = "$(\"a[href='#shiny-tab-t_baro_upload']\").tab('show'); return false;",
-            style = "color: #856404; font-weight: bold;",
-            "Barometric Pressure"
+        style = "display: flex; flex-wrap: wrap; align-items: flex-start;",
+        # ---- Left: header text (2/3 width) ----
+        tags$div(
+          style = "flex: 0 0 66.667%; max-width: 66.667%; padding-right: 20px;",
+          tags$h1("Import Water Level Data", class = "custom-h1"),
+          tags$h2("Upload raw HOBO U20 water level logger files, barometric data, and align timestamps",
+                  class = "custom-h2"),
+          tags$p(
+            class = "clean-print",
+            "Import raw HOBO CSV files from submerged water level pressure loggers ",
+            "(HOBO U20). These loggers record absolute pressure (water + atmosphere) ",
+            "in kPa, plus water temperature in \u00b0C. The raw pressure column is ",
+            "named ", tags$code("waterpress_kPa"), ". Because the HOBO U20 is not ",
+            "vented, atmospheric pressure must be subtracted before converting to ",
+            "water depth \u2014 that conversion happens in the next step."
           ),
-          " workflow first."
+          tags$div(
+            class = "clean-print",
+            style = "background-color: #fff3cd; padding: 15px; border-radius: 5px; margin-top: 15px;",
+            tags$p(style = "margin: 0;",
+              tags$strong("Important:"), " Barometric pressure data must be processed ",
+              "and QC'd ", tags$strong("before"), " water level conversion. If you ",
+              "haven't done so yet, complete the ",
+              tags$a(
+                href = "#",
+                onclick = "$(\"a[href='#shiny-tab-t_baro_upload']\").tab('show'); return false;",
+                style = "color: #856404; font-weight: bold;",
+                "Barometric Pressure"
+              ),
+              " workflow first."
+            )
+          )
+        ),
+        # ---- Right: logger image (1/3 width) ----
+        tags$div(
+          style = "flex: 0 0 33.333%; max-width: 33.333%; text-align: center; padding-top: 10px;",
+          tags$img(
+            src = "img/toprightpic_waterlevel.png",
+            style = "max-width: 100%; height: auto;",
+            alt = "HOBO U20 water level logger"
+          )
         )
       ),
 
@@ -94,18 +108,36 @@ module_wl_upload_ui <- function(id) {
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
               tags$li(tags$code("site_station_code"), " \u2014 station identifier"),
-              tags$li(tags$code("timestamp_deploy"), " / ", tags$code("timestamp_remove")),
+              tags$li(tags$code("timestamp_deploy"), " / ", tags$code("timestamp_remove"),
+                      " \u2014 date-time in ", tags$code("MM/DD/YYYY HH:MM"), " format",
+                      " (e.g. ", tags$code("05/15/2025 14:30"), ").",
+                      " Also accepts ", tags$code("YYYY-MM-DD HH:MM"), ".",
+                      " ", tags$code("timestamp_remove"), " may be ", tags$code("NA"),
+                      " for loggers still deployed."),
               tags$li(tags$code("model"), " \u2014 logger model (e.g. HOBO_U20)"),
               tags$li(tags$code("sn"), " \u2014 logger serial number"),
-              tags$li(tags$code("metric"), " \u2014 ", tags$code("\"barometric\""),
-                      " or ", tags$code("\"waterlevel\"")),
+              tags$li(tags$code("metric"), " \u2014 ",
+                      tags$strong("must"), " be ", tags$code("\"barometric\""),
+                      " or ", tags$code("\"waterlevel\""),
+                      " \u2014 this determines how the logger data is classified and processed"),
               tags$li(tags$code("status"), " \u2014 deployment status"),
-              tags$li(tags$code("latitude"), " / ", tags$code("longitude"))
+              tags$li(tags$code("latitude"), " / ", tags$code("longitude"),
+                      " \u2014 decimal degrees",
+                      " (e.g. ", tags$code("49.2827"), ", ", tags$code("-123.1207"), ")")
             ),
             tags$p(style = "font-size: 13px; color: #666;",
               "Upload your own metadata CSV, or use the pre-loaded sample. ",
               "The file must contain one row per deployment period per logger.",
               "Be sure to include metadata for barometric stations as well, so they can be matched to water level stations and shown on the map."
+            ),
+            tags$p(style = "font-size: 12px; margin-top: 10px;",
+              tags$a(
+                href = "sample_wl_metadata.csv",
+                download = "sample_wl_metadata.csv",
+                icon("download"),
+                " Download sample water level metadata (pre-loaded demo)",
+                style = "color: #1565c0;"
+              )
             )
           )
         ),
@@ -126,15 +158,6 @@ module_wl_upload_ui <- function(id) {
               accept = ".csv",
               placeholder = "Choose metadata CSV...",
               width = "100%"
-            ),
-            tags$p(style = "font-size: 12px; margin-top: -5px;",
-              tags$a(
-                href = "sample_metadata.csv",
-                download = "sample_metadata.csv",
-                icon("download"),
-                " Download sample metadata template",
-                style = "color: #1565c0;"
-              )
             )
           ),
 
@@ -188,7 +211,11 @@ module_wl_upload_ui <- function(id) {
             tags$h4("How to Import", style = "margin-top: 0;"),
             tags$p(
               "Upload the raw CSV files exported from HOBOware for your ",
-              "water level loggers. You can select multiple files at once."
+              "water level loggers. You can select multiple files at once. ",
+              "The CSV must contain a ", tags$code("Date Time"), " column in ",
+              "HOBOware's default export format: ",
+              tags$code("MM/DD/YYYY HH:MM:SS AM/PM"),
+              " (e.g. ", tags$code("06/01/2025 02:30:00 PM"), ")."
             ),
             tags$ol(
               style = "padding-left: 20px; font-size: 13px;",
@@ -203,6 +230,43 @@ module_wl_upload_ui <- function(id) {
             tags$p(style = "font-size: 13px; color: #666;",
               "If no files are uploaded, the app will use pre-loaded sample ",
               "data for demonstration."
+            ),
+            tags$p(style = "font-size: 12px; margin-top: 10px;",
+              icon("download"), " Download sample raw HOBO water level files:",
+              tags$br(),
+              tags$a(href = "WL_ALBR_ST_30_20533550_20250423.csv",
+                     download = "WL_ALBR_ST_30_20533550_20250423.csv",
+                     style = "color: #1565c0; font-size: 12px;",
+                     "WL_ALBR_ST_30_20533550_20250423.csv"),
+              tags$br(),
+              tags$a(href = "WL_ALBR_ST_30_20533550_20251022.csv",
+                     download = "WL_ALBR_ST_30_20533550_20251022.csv",
+                     style = "color: #1565c0; font-size: 12px;",
+                     "WL_ALBR_ST_30_20533550_20251022.csv"),
+              tags$br(),
+              tags$a(href = "WL_CEDA_ST_30_20558102_20250423.csv",
+                     download = "WL_CEDA_ST_30_20558102_20250423.csv",
+                     style = "color: #1565c0; font-size: 12px;",
+                     "WL_CEDA_ST_30_20558102_20250423.csv"),
+              tags$br(),
+              tags$a(href = "WL_CEDA_ST_30_20558102_20251021.csv",
+                     download = "WL_CEDA_ST_30_20558102_20251021.csv",
+                     style = "color: #1565c0; font-size: 12px;",
+                     "WL_CEDA_ST_30_20558102_20251021.csv"),
+              tags$br(),
+              tags$a(href = "WL_FISH_ST_30_20810314_20251024.csv",
+                     download = "WL_FISH_ST_30_20810314_20251024.csv",
+                     style = "color: #1565c0; font-size: 12px;",
+                     "WL_FISH_ST_30_20810314_20251024.csv")
+            ),
+            tags$p(style = "font-size: 13px; margin-top: 10px;",
+              tags$a(
+                href = "#", `data-toggle` = "modal",
+                `data-target` = "#hoboware_export_modal",
+                style = "color: #1565c0;",
+                icon("question-circle"),
+                " How to export CSV files from HOBOware"
+              )
             )
           ),
 
@@ -223,12 +287,18 @@ module_wl_upload_ui <- function(id) {
             tags$h4("Columns Produced", style = "margin-top: 0;"),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px; margin-bottom: 0;",
-              tags$li(tags$code("site_station_code"), " \u2014 station ID"),
-              tags$li(tags$code("timestamp"), " \u2014 date-time"),
-              tags$li(tags$code("waterpress_kPa"), " \u2014 absolute pressure"),
-              tags$li(tags$code("watertemp_C"), " \u2014 water temperature"),
-              tags$li(tags$code("sn"), " \u2014 logger serial number"),
-              tags$li(tags$code("metric"), " \u2014 \"waterlevel\"")
+              tags$li(tags$code("site_station_code"), " \u2014 station ID",
+                      " (e.g. ", tags$code("ALBR_ST_30"), ")"),
+              tags$li(tags$code("timestamp"), " \u2014 date-time in ",
+                      tags$code("YYYY-MM-DD HH:MM:SS"), " format",
+                      " (e.g. ", tags$code("2025-06-01 14:30:00"), ")"),
+              tags$li(tags$code("waterpress_kPa"), " \u2014 absolute pressure in kPa",
+                      " (e.g. ", tags$code("110.52"), ")"),
+              tags$li(tags$code("watertemp_C"), " \u2014 water temperature in \u00b0C",
+                      " (e.g. ", tags$code("12.3"), ")"),
+              tags$li(tags$code("sn"), " \u2014 logger serial number",
+                      " (e.g. ", tags$code("20533550"), ")"),
+              tags$li(tags$code("metric"), " \u2014 ", tags$code("\"waterlevel\""))
             )
           )
         ),
@@ -307,13 +377,21 @@ module_wl_upload_ui <- function(id) {
             ),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
-              tags$li(tags$code("site_station_code")),
-              tags$li(tags$code("timestamp")),
-              tags$li(tags$code("airpress_kPa")),
-              tags$li(tags$code("airpress_kPa_adj")),
-              tags$li(tags$code("airtemp_C")),
-              tags$li(tags$code("airtemp_C_adj")),
-              tags$li("Plus any ", tags$code("edit_*"), " / ", tags$code("flag_*"), " columns")
+              tags$li(tags$code("site_station_code"),
+                      " (e.g. ", tags$code("ALBR_ST_30"), ")"),
+              tags$li(tags$code("timestamp"), " \u2014 ",
+                      tags$code("YYYY-MM-DD HH:MM:SS"), " format",
+                      " (e.g. ", tags$code("2025-06-01 14:30:00"), ")"),
+              tags$li(tags$code("airpress_kPa"),
+                      " \u2014 raw pressure in kPa"),
+              tags$li(tags$code("airpress_kPa_adj"),
+                      " \u2014 QC'd pressure in kPa"),
+              tags$li(tags$code("airtemp_C"),
+                      " \u2014 raw air temp in \u00b0C"),
+              tags$li(tags$code("airtemp_C_adj"),
+                      " \u2014 QC'd air temp in \u00b0C"),
+              tags$li("Plus any ", tags$code("edit_*"), " / ", tags$code("flag_*"),
+                      " columns (", tags$code("TRUE"), "/", tags$code("FALSE"), ")")
             ),
             tags$div(
               style = "background-color: #e8e8e8; padding: 10px; border-radius: 4px; margin-top: 10px;",
@@ -321,6 +399,15 @@ module_wl_upload_ui <- function(id) {
               tags$code("barometric_qaqc_all()"),
               tags$p(style = "font-size: 12px; color: #666; margin-top: 5px; margin-bottom: 0;",
                      "Run automated QAQC on baro data (produces the required columns)")
+            ),
+            tags$p(style = "font-size: 12px; margin-top: 10px;",
+              tags$a(
+                href = "demo_baro_processed.csv",
+                download = "demo_baro_processed.csv",
+                style = "color: #1565c0;",
+                icon("download"),
+                " Download sample processed baro CSV"
+              )
             )
           )
         ),
@@ -473,6 +560,35 @@ module_wl_upload_ui <- function(id) {
       # ---- Preview Plot (full width, 4 panels) ----
       tags$h4("Data Preview"),
       plotlyOutput(ns("preview_plot"), height = "1065px") %>% withSpinner(),
+
+      # ---- (Optional) Filter Data by Date Range ----
+      tags$div(
+        style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+        tags$span(
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          "(Optional) Filter Data by Date Range"
+        )
+      ),
+
+      tags$p(
+        class = "clean-print",
+        "If your data contains records outside the period of interest (e.g., pre-deployment ",
+        "or post-retrieval), you can filter to a specific date range. This will remove records ",
+        "outside the selected range from all time series loaded in this section."
+      ),
+
+      fluidRow(
+        column(4, dateInput(ns("filter_from"), "From Date:", value = NULL)),
+        column(4, dateInput(ns("filter_to"),   "To Date:",   value = NULL)),
+        column(4, tags$div(
+          style = "margin-top: 25px;",
+          actionButton(ns("apply_filter"), "Apply Filter",
+                       class = "btn-primary", icon = icon("filter"),
+                       style = "color: #fff; background-color: #1565c0; border-color: #1565c0;")
+        ))
+      ),
+
+      uiOutput(ns("filter_status")),
 
       # ---- Next step link ----
       tags$div(
@@ -793,6 +909,19 @@ module_wl_upload_server <- function(id) {
           metadata <- metadata[metadata$metric %in% c("barometric", "waterlevel"), ]
         }
 
+        # Warn if no waterlevel rows found after filtering
+        n_wl <- sum(metadata$metric == "waterlevel")
+        if (n_wl == 0) {
+          found_metrics <- unique(metadata$metric)
+          showNotification(
+            paste0("Warning: No rows with metric 'waterlevel' found in metadata. ",
+                   "Found metric values: ",
+                   if (length(found_metrics) > 0) paste(found_metrics, collapse = ", ") else "none",
+                   "."),
+            type = "warning", duration = 10
+          )
+        }
+
         rv_raw_data$wl_metadata <- metadata
         showNotification("Metadata updated.", type = "message", duration = 3)
       }, error = function(e) {
@@ -844,7 +973,7 @@ module_wl_upload_server <- function(id) {
         shinyjs::disable("bind_btn")
 
         tryCatch({
-          result <- waterlogged::bind_hobo_files(
+          result <- bind_hobo_files(
             file_paths = raw_files$datapath,
             metadata = metadata
           )
@@ -965,7 +1094,7 @@ module_wl_upload_server <- function(id) {
 
         station_arg <- if (input$snap_station == "all") NULL else input$snap_station
 
-        result <- waterlogged::resample_timestamps(
+        result <- resample_timestamps(
           input_data = df,
           interval = input$snap_interval,
           align = input$snap_align,
@@ -1243,6 +1372,52 @@ module_wl_upload_server <- function(id) {
         )
     })
 
+    # ---- Date Range Filter: auto-populate ----
+    observe({
+      wl <- rv_bound_data$waterlevel_bound
+      req(wl, nrow(wl) > 0)
+      ts_range <- range(wl$timestamp, na.rm = TRUE)
+      updateDateInput(session, "filter_from", value = as.Date(ts_range[1]),
+                      min = as.Date(ts_range[1]), max = as.Date(ts_range[2]))
+      updateDateInput(session, "filter_to",   value = as.Date(ts_range[2]),
+                      min = as.Date(ts_range[1]), max = as.Date(ts_range[2]))
+    })
+
+    # ---- Date Range Filter: apply ----
+    observeEvent(input$apply_filter, {
+      from_date <- input$filter_from
+      to_date   <- input$filter_to
+      req(from_date, to_date)
+
+      from_ts <- as.POSIXct(from_date, tz = "UTC")
+      to_ts   <- as.POSIXct(paste(to_date, "23:59:59"), tz = "UTC")
+
+      wl <- rv_bound_data$waterlevel_bound
+      if (!is.null(wl) && nrow(wl) > 0)
+        rv_bound_data$waterlevel_bound <- wl[wl$timestamp >= from_ts & wl$timestamp <= to_ts, ]
+
+      showNotification(
+        sprintf("Filtered to %s \u2013 %s", format(from_date), format(to_date)),
+        type = "message", duration = 5
+      )
+    })
+
+    # ---- Date Range Filter: status ----
+    output$filter_status <- renderUI({
+      req(input$apply_filter > 0)
+      isolate({
+        from_date <- input$filter_from
+        to_date   <- input$filter_to
+        n <- nrow(rv_bound_data$waterlevel_bound)
+        tags$div(
+          style = "color: #155724; background: #d4edda; padding: 10px; border-radius: 5px; margin-top: 10px;",
+          icon("check-circle"),
+          sprintf(" Filter applied: %s to %s. %s records remaining.",
+                  format(from_date), format(to_date), format(n, big.mark = ","))
+        )
+      })
+    })
+
   })
 }
 
@@ -1448,6 +1623,41 @@ module_wl_convert_ui <- function(id) {
 
         shinycssloaders::withSpinner(
           plotly::plotlyOutput(ns("baro_assign_plot"), height = "650px")
+        ),
+
+        tags$div(
+          style = "background-color: #ffffff; padding: 20px; border-radius: 5px; margin-top: 15px; border: 1px solid #e0e0e0;",
+          tags$h4("What to Look For", style = "margin-top: 0; color: #1565c0;"),
+          tags$p(style = "font-size: 13px;",
+            "Review the barometric pressure overlay against the raw water pressure ",
+            "time series. This is the data that will be used to compensate for ",
+            "atmospheric pressure during the conversion step. Look for:"
+          ),
+          tags$ul(
+            style = "font-size: 13px; padding-left: 20px;",
+            tags$li(tags$strong("Gaps in barometric data"), " \u2014 missing baro values ",
+                    "will produce ", tags$code("NA"), " in the converted water level. If ",
+                    "the nearest baro station has gaps, consider adding additional baro ",
+                    "stations or adjusting the ", tags$code("max_stations"), " parameter ",
+                    "in ", tags$code("add_nearest_baro()"), " to increase overlap."),
+            tags$li(tags$strong("Sudden spikes in air pressure"), " \u2014 sharp jumps or ",
+                    "drops in the barometric trace that do not correspond to real weather ",
+                    "events may indicate logger malfunction or sensor disturbance. These ",
+                    "will propagate directly into the water level calculation. Return to the ",
+                    "Barometric Pressure QC tab to flag and remove these before converting."),
+            tags$li(tags$strong("Temporal misalignment"), " \u2014 verify that the baro and ",
+                    "water level traces overlap in time. If timestamps are offset (e.g. ",
+                    "different time zones), the compensation will be incorrect."),
+            tags$li(tags$strong("Station assignment"), " \u2014 confirm that the correct ",
+                    "barometric station has been matched to each water level station. The ",
+                    "nearest station by distance is selected automatically, but you can ",
+                    "override this if a closer station has poorer data quality.")
+          ),
+          tags$p(style = "font-size: 12px; color: #666; margin-top: 10px;",
+            "See ", tags$code("add_nearest_baro()"), " and ",
+            tags$code("convert_waterlevel_kPa_m()"), " in the ",
+            tags$code("waterlogged"), " R package documentation for details."
+          )
         )
       ),
 
@@ -1486,6 +1696,66 @@ module_wl_convert_ui <- function(id) {
             )
           ),
           tags$div(
+            style = "background-color: #f0f0f0; padding: 20px; border-radius: 5px; margin-bottom: 15px;",
+            tags$h4("Stage / Depth Reference File", style = "margin-top: 0;"),
+            tags$p(style = "font-size: 13px;",
+              "The stage readings CSV contains field reference measurements used to ",
+              "anchor the pressure-to-depth conversion. Each row records a site visit ",
+              "where a staff gauge reading or direct depth measurement was taken."
+            ),
+            tags$p(style = "font-weight: bold; margin-bottom: 5px;",
+              "Required columns:"
+            ),
+            tags$ul(
+              style = "padding-left: 20px; font-size: 13px;",
+              tags$li(tags$code("site_station_code"), " \u2014 station identifier. ",
+                      tags$strong("Must exactly match"), " the codes in your metadata file",
+                      " (e.g. ", tags$code("ALBR_ST_30"), ")"),
+              tags$li(tags$code("timestamp"), " \u2014 date-time of the field measurement in ",
+                      tags$code("MM/DD/YYYY HH:MM"), " format",
+                      " (e.g. ", tags$code("07/25/2024 13:00"), ").",
+                      " Also accepts ", tags$code("YYYY-MM-DD HH:MM"), "."),
+              tags$li(tags$code("stage_m"), " \u2014 staff gauge reading in metres",
+                      " (e.g. ", tags$code("0.35"), ").",
+                      " Use this ", tags$strong("or"), " ", tags$code("depth_m"),
+                      ", not both."),
+              tags$li(tags$code("depth_m"), " \u2014 direct depth measurement (water surface ",
+                      "to sensor) in metres",
+                      " (e.g. ", tags$code("0.43"), ").",
+                      " Use this ", tags$strong("or"), " ", tags$code("stage_m"),
+                      ", not both.")
+            ),
+            tags$p(style = "font-weight: bold; margin-bottom: 5px;",
+              "Optional columns:"
+            ),
+            tags$ul(
+              style = "padding-left: 20px; font-size: 13px;",
+              tags$li(tags$code("metric"), " \u2014 ", tags$code("\"WL\""),
+                      " (water level)"),
+              tags$li(tags$code("site_name"), " \u2014 descriptive site name"),
+              tags$li(tags$code("site_comments"), " \u2014 field notes for this visit"),
+              tags$li(tags$code("logger_dry"), ", ", tags$code("logger_ice"), ", ",
+                      tags$code("logger_disturbance"),
+                      " \u2014 flags (", tags$code("1"), " = true) noting field conditions")
+            ),
+            tags$p(style = "font-size: 13px; color: #666; margin-top: 10px;",
+              "The conversion function will match the reference measurement closest in ",
+              "time to each station's data. Only one of ", tags$code("stage_m"), " or ",
+              tags$code("depth_m"), " should be populated per row \u2014 the column you ",
+              "use determines the ", tags$code("reference_type"), " parameter ",
+              "(", tags$code("\"stage\""), " or ", tags$code("\"depth\""), ")."
+            ),
+            tags$p(style = "font-size: 12px; margin-top: 10px;",
+              tags$a(
+                href = "sample_stage_readings.csv",
+                download = "sample_stage_readings.csv",
+                icon("download"),
+                " Download sample stage readings CSV",
+                style = "color: #2e7d32;"
+              )
+            )
+          ),
+          tags$div(
             style = "background-color: #f0f0f0; padding: 15px; border-radius: 5px;",
             tags$h4("Follow Along in the R Package (waterlogged)", style = "margin-top: 0;"),
             tags$code("convert_waterlevel_kPa_m()"),
@@ -1516,12 +1786,7 @@ module_wl_convert_ui <- function(id) {
                   accept = ".csv", width = "100%")
               ),
               column(4,
-                tags$div(style = "margin-top: 28px;",
-                  tags$a(href = "sample_stage_readings.csv", download = "sample_stage_readings.csv",
-                    icon("download"), " Download sample CSV",
-                    style = "color: #2e7d32; font-size: 13px;"
-                  )
-                )
+                tags$div(style = "margin-top: 28px;")
               )
             ),
             uiOutput(ns("stage_upload_status"))
@@ -1800,13 +2065,13 @@ module_wl_convert_server <- function(id) {
           cat("[add_baro] Running for ALL stations\n")
         }
 
-        cat("[add_baro] Calling waterlogged::add_nearest_baro() ...\n")
+        cat("[add_baro] Calling add_nearest_baro() ...\n")
         t_start <- Sys.time()
 
         # Capture message() output for calibration diagnostics
         msgs <- character(0)
         result <- withCallingHandlers(
-          waterlogged::add_nearest_baro(
+          add_nearest_baro(
             input_data       = input_data,
             metric           = "water level",
             baro_data        = baro_data,
@@ -2105,7 +2370,7 @@ module_wl_convert_server <- function(id) {
       if (!is.null(convert_ref_data())) return()
 
       tryCatch({
-        validated <- waterlogged::QAQC_reference_data(ref_data = demo)
+        validated <- QAQC_reference_data(ref_data = demo)
         convert_ref_data(validated)
         cat("[convert_wl] Demo stage readings loaded:", nrow(validated), "rows\n")
       }, error = function(e) {
@@ -2120,7 +2385,7 @@ module_wl_convert_server <- function(id) {
 
       tryCatch({
         uploaded <- read.csv(file$datapath, stringsAsFactors = FALSE)
-        validated <- waterlogged::QAQC_reference_data(ref_data = uploaded)
+        validated <- QAQC_reference_data(ref_data = uploaded)
         convert_ref_data(validated)
         rv_raw_data$stage_readings <- uploaded  # store raw for convert function
         cat("[convert_wl] Uploaded stage readings:", nrow(validated), "rows\n")
@@ -2380,7 +2645,7 @@ module_wl_convert_server <- function(id) {
           stn_result <- tryCatch({
             msgs <- character(0)
             res <- withCallingHandlers(
-              waterlogged::convert_waterlevel_kPa_m(
+              convert_waterlevel_kPa_m(
                 input_data         = wl_baro,
                 select_station     = stn,
                 reference_data     = ref_raw,
@@ -2816,8 +3081,8 @@ module_wl_qaqc_ui <- function(id) {
               tags$li(tags$strong("LOGGER_ICE"), " \u2014 temp < -1\u00b0C removed"),
               tags$li(tags$strong("NEGATIVE_WT"), " \u2014 temp -1 to 0\u00b0C set to 0"),
               tags$li(tags$strong("FLAG_DRY"), " \u2014 water press \u2264 air press + warm"),
-              tags$li(tags$strong("FLAG_ICE"), " \u2014 water temp < 0.3\u00b0C"),
-              tags$li(tags$strong("FLAG_DISTURBANCE"), " \u2014 > 0.1m change in 1 hour")
+              tags$li(tags$strong("FLAG_ICE"), " \u2014 water temp below ice threshold"),
+              tags$li(tags$strong("FLAG_DISTURBANCE"), " \u2014 step change exceeds disturbance threshold")
             )
           ),
           tags$div(
@@ -2858,6 +3123,26 @@ module_wl_qaqc_ui <- function(id) {
               style = "background-color: #e8f5e9; padding: 10px; border-radius: 5px; border: 2px solid #2e7d32; margin-bottom: 15px;",
               selectInput(ns("station_select"), "Select Station:",
                 choices = NULL, width = "100%")
+            ),
+            tags$h4("QAQC Thresholds", style = "margin-top: 0;"),
+            tags$p(style = "font-size: 13px; color: #666; margin-bottom: 10px;",
+              icon("sliders-h"),
+              " Adjust the thresholds used by ", tags$code("qc_waterlevel()"),
+              ". Default values are shown."
+            ),
+            fluidRow(
+              column(4,
+                numericInput(ns("threshold_ice"), "Ice threshold (\u00b0C)",
+                  value = 0.3, min = 0, max = 5, step = 0.1)
+              ),
+              column(4,
+                numericInput(ns("threshold_dry"), "Dry temp threshold (\u00b0C)",
+                  value = 19, min = 0, max = 40, step = 1)
+              ),
+              column(4,
+                numericInput(ns("threshold_disturb"), "Disturbance threshold (m)",
+                  value = 0.1, min = 0.01, max = 1, step = 0.01)
+              )
             ),
             actionButton(ns("run_qaqc"), "Run Water Level QAQC",
               class = "btn-success btn-lg", width = "100%",
@@ -3033,7 +3318,7 @@ module_wl_qaqc_ui <- function(id) {
           column(
             width = 6,
             tags$div(
-              style = "background-color: #e8f5e9; padding: 15px; border-radius: 5px; margin-bottom: 15px;",
+              style = "background-color: #f0f0f0; padding: 15px; border-radius: 5px; margin-bottom: 15px;",
               tags$h4("Water Level Summary (raw vs adjusted)", style = "margin-top: 0;"),
               verbatimTextOutput(ns("wl_summary"))
             )
@@ -3041,7 +3326,7 @@ module_wl_qaqc_ui <- function(id) {
           column(
             width = 6,
             tags$div(
-              style = "background-color: #e8f5e9; padding: 15px; border-radius: 5px; margin-bottom: 15px;",
+              style = "background-color: #f0f0f0; padding: 15px; border-radius: 5px; margin-bottom: 15px;",
               tags$h4("Temperature Summary (raw vs adjusted)", style = "margin-top: 0;"),
               verbatimTextOutput(ns("temp_summary"))
             )
@@ -3065,7 +3350,7 @@ module_wl_qaqc_ui <- function(id) {
           tags$div(
             style = "flex: 0 0 33.333%; max-width: 33.333%; padding: 0 15px; display: flex;",
             tags$div(
-              style = "background-color: #e8f5e9; padding: 20px; border-radius: 5px; flex: 1;",
+              style = "background-color: #f0f0f0; padding: 20px; border-radius: 5px; flex: 1;",
               tags$h4("Download Results", style = "margin-top: 0;"),
               tags$p(style = "font-size: 13px;",
                 "Download the QAQC'd water level data as CSV for the ",
@@ -3107,6 +3392,16 @@ module_wl_qaqc_ui <- function(id) {
             )
           )
         )
+      )
+    ),
+    tags$div(
+      style = "text-align: right; margin-top: 20px; margin-bottom: 10px;",
+      tags$a(
+        href = "#",
+        onclick = "$(\"a[href='#shiny-tab-t_wl_datum']\").tab('show'); return false;",
+        style = "color: #2e7d32; font-weight: bold; font-size: 14px;",
+        "Ready to proceed? (Optionally) Continue to Adjust Datum ",
+        icon("arrow-right")
       )
     ),
     .wireframe_footer()
@@ -3176,11 +3471,14 @@ module_wl_qaqc_server <- function(id) {
         showNotification("Running Water Level QAQC...",
           type = "message", duration = NULL, id = "wl_qaqc_progress")
 
-        result <- waterlogged::qc_waterlevel(
-          input_data     = converted_data,
-          select_station = station,
-          log_root       = NULL,
-          user           = NULL
+        result <- qc_waterlevel(
+          input_data             = converted_data,
+          select_station         = station,
+          temp_ice_threshold_C   = input$threshold_ice,
+          temp_high_dry_C        = input$threshold_dry,
+          wl_disturb_threshold_m = input$threshold_disturb,
+          log_root               = NULL,
+          user                   = NULL
         )
 
         qaqc_log(attr(result, "qaqc_log"))
@@ -3219,10 +3517,9 @@ module_wl_qaqc_server <- function(id) {
       data <- selected_data()
       req(nrow(data) > 0)
 
-      flag_cols <- c("flag_disturbance", "flag_ice", "neg_lt_minus1",
-                     "neg_between", "flag_wl_dry")
+      flag_cols <- c("FLAG_DISTURBANCE", "FLAG_ICE", "OUTLIER_WT", "FLAG_DRY")
       flag_cols <- intersect(flag_cols, names(data))
-      n_flags <- sum(sapply(flag_cols, function(col) sum(data[[col]], na.rm = TRUE)))
+      n_flags <- sum(vapply(flag_cols, function(col) sum(as.logical(data[[col]]), na.rm = TRUE), integer(1)))
 
       date_range <- paste(
         format(min(data$timestamp), "%Y-%m-%d"),
@@ -3249,17 +3546,16 @@ module_wl_qaqc_server <- function(id) {
 
       # Build summary with guards for columns that may not exist
       safe_sum <- function(col) {
-        if (col %in% names(data)) sum(data[[col]], na.rm = TRUE) else 0L
+        if (col %in% names(data)) sum(as.logical(data[[col]]), na.rm = TRUE) else 0L
       }
 
       summary_df <- data.frame(
         Station = data$site_station_code[1],
         Records = nrow(data),
-        flag_disturbance = safe_sum("flag_disturbance"),
-        flag_ice = safe_sum("flag_ice"),
-        neg_lt_minus1 = safe_sum("neg_lt_minus1"),
-        neg_between = safe_sum("neg_between"),
-        flag_wl_dry = safe_sum("flag_wl_dry"),
+        FLAG_DISTURBANCE = safe_sum("FLAG_DISTURBANCE"),
+        FLAG_ICE = safe_sum("FLAG_ICE"),
+        OUTLIER_WT = safe_sum("OUTLIER_WT"),
+        FLAG_DRY = safe_sum("FLAG_DRY"),
         WL_NA = sum(is.na(data$waterlevel_m_adj)),
         stringsAsFactors = FALSE
       )
@@ -3433,8 +3729,7 @@ module_wl_qaqc_server <- function(id) {
       req(nrow(data) > 0)
 
       # Collect all flag/edit columns that exist and have TRUE values
-      flag_cols <- c("flag_disturbance", "flag_ice", "neg_lt_minus1",
-                     "neg_between", "flag_wl_dry")
+      flag_cols <- c("FLAG_DISTURBANCE", "FLAG_ICE", "OUTLIER_WT", "FLAG_DRY")
       edit_cols <- grep("^edit_", names(data), value = TRUE)
       all_flag_cols <- intersect(c(flag_cols, edit_cols), names(data))
 
@@ -3705,7 +4000,7 @@ module_wl_qaqc_server <- function(id) {
         snapped <- snap_ranges(ranges, station_data$timestamp)
 
         for (r in snapped) {
-          station_data <- waterlogged::adjust_logger_NA(
+          station_data <- adjust_logger_NA(
             input_data       = station_data,
             select_station   = station,
             metric           = "waterlevel",
@@ -3781,7 +4076,7 @@ module_wl_qaqc_server <- function(id) {
 
           # Apply to each selected range
           for (r in snapped) {
-            station_data <- waterlogged::adjust_WL_zero(
+            station_data <- adjust_WL_zero(
               input_data      = station_data,
               select_station  = station,
               change_value    = change_val,
@@ -3793,7 +4088,7 @@ module_wl_qaqc_server <- function(id) {
           }
         } else {
           # Apply to entire series
-          station_data <- waterlogged::adjust_WL_zero(
+          station_data <- adjust_WL_zero(
             input_data      = station_data,
             select_station  = station,
             change_value    = change_val,
@@ -3830,7 +4125,15 @@ module_wl_qaqc_server <- function(id) {
         tags$p(sprintf("Range: %s to %s", ranges[[1]][1], ranges[[1]][2])),
         tags$p(style = "font-size: 13px; color: #666;",
           "Values within this range will be replaced with linear interpolation ",
-          "between the raw water level at the start and end timestamps."
+          "between the raw water level at the start and end timestamps. ",
+          "This is useful for removing short-lived anomalies caused by ice build-up, ",
+          "debris, or sensor disturbance that produce sudden jumps or dips in the record."
+        ),
+        tags$p(style = "font-size: 13px; color: #666; margin-top: 6px;",
+          tags$strong("Example: "), "A sensor frozen in ice might read 0.85 m, then spike ",
+          "to 1.40 m as ice shifts, before returning to 0.87 m. After flattening, the ",
+          "adjusted column will show a smooth, straight line from 0.85 m to 0.87 m across ",
+          "that period, and the spike values will be overwritten with the interpolated values."
         ),
         selectInput(session$ns("modal_spike_reason"), "Reason:",
           choices = c("ice", "disturbance"),
@@ -3866,7 +4169,7 @@ module_wl_qaqc_server <- function(id) {
         # Snap range endpoints to nearest actual timestamps in data
         snapped <- snap_ranges(ranges, station_data$timestamp)
 
-        station_data <- waterlogged::adjust_waterlevel_spike(
+        station_data <- adjust_waterlevel_spike(
           input_data       = station_data,
           select_station   = station,
           timestamp_start  = snapped[[1]][1],
@@ -3903,7 +4206,17 @@ module_wl_qaqc_server <- function(id) {
         tags$p(tags$strong("Post-break reference: "), ranges[[1]][2]),
         tags$p(style = "font-size: 13px; color: #666;",
           "Offset is computed from the raw water level difference at these two ",
-          "timestamps and applied from the post-break timestamp onward."
+          "timestamps and applied from the post-break timestamp onward. ",
+          "This corrects for a sudden, persistent shift in the water level record caused ",
+          "by physical movement of the sensor cable (e.g., the cable slipping in its housing, ",
+          "or being pulled during a site visit)."
+        ),
+        tags$p(style = "font-size: 13px; color: #666; margin-top: 6px;",
+          tags$strong("Example: "), "A logger reads a steady base level of 0.50 m. After a ",
+          "site visit the record jumps to 0.55 m and stays there, even though actual water ",
+          "levels haven't changed. The offset (0.05 m) is calculated from the difference at ",
+          "the two reference timestamps you selected, and all values from the post-break point ",
+          "onward are shifted down by 0.05 m so the record is continuous again."
         ),
         textInput(session$ns("modal_offset_note"), "Note (required):", value = ""),
         footer = tagList(
@@ -3936,7 +4249,7 @@ module_wl_qaqc_server <- function(id) {
         # Snap range endpoints to nearest actual timestamps in data
         snapped <- snap_ranges(ranges, station_data$timestamp)
 
-        station_data <- waterlogged::adjust_WL_offset(
+        station_data <- adjust_WL_offset(
           input_data      = station_data,
           select_station  = station,
           timestamp_start = snapped[[1]][1],
@@ -4084,3 +4397,1030 @@ module_wl_qaqc_server <- function(id) {
 
 ## module_wl_adjust_ui / module_wl_adjust_server removed —
 ## Manual adjustment functionality is now part of module_wl_qaqc.
+
+
+# -----------------------------------------------------------------------------
+# 4. Adjust Datum
+# -----------------------------------------------------------------------------
+module_wl_datum_ui <- function(id) {
+  ns <- NS(id)
+  tagList(
+    shinydashboard::box(
+      width = 12,
+      tags$h1("Adjust Datum", class = "custom-h1"),
+
+      tags$p(
+        class = "clean-print",
+        "To convert a sensor's depth readings to actual elevations using nearby ",
+        "benchmarks, the primary method used is differential leveling. This process ",
+        "relates the sensor's output (effective stage) to a fixed vertical reference ",
+        "plane known as the gauge datum."
+      ),
+
+      tags$p(
+        class = "clean-print", style = "font-weight: bold;",
+        "The summary of the method involves the following steps:"
+      ),
+
+      tags$ol(
+        class = "clean-print", style = "padding-left: 20px;",
+        tags$li(
+          tags$strong("Establish the Gauge Datum and Reference Network"),
+          " \u2014 The nearby benchmarks serve as a permanent, fixed reference network ",
+          "for the site. One of these benchmarks is assigned an elevation to define the ",
+          "gauge datum, which provides a common surface to which all water levels will ",
+          "be referred."
+        ),
+        tags$li(
+          tags$strong("Obtain a Direct Water Level Measurement"),
+          " \u2014 Using a surveying level (optical, digital, or a total station) and a ",
+          "graduated leveling rod, a surveyor measures the vertical difference between ",
+          "the known benchmark and the current water surface. The water level read on ",
+          "the rod is added or subtracted to the surveyed elevation of the benchmark to ",
+          "determine the actual reference water level (the true elevation of the water ",
+          "surface). If the water surface is choppy, a temporary stilling well, such as ",
+          "a bucket with holes in the bottom, can be used to stabilize the water for an ",
+          "accurate reading."
+        ),
+        tags$li(
+          tags$strong("Calculate the Sensor Reset Correction (SRC)"),
+          " \u2014 Once the actual reference water level is calculated, it is compared to ",
+          "the depth value recorded by the automated stage sensor at that exact coinciding ",
+          "time. The difference between these two values is called the Sensor Reset ",
+          "Correction (SRC), which is calculated using the formula: ",
+          tags$code("SRC = Reference Water Level \u2013 Stage Sensor"), "."
+        ),
+        tags$li(
+          tags$strong("Apply Corrections to the Sensor Data"),
+          " \u2014 If the absolute difference between the surveyed water level and the ",
+          "sensor reading is greater than 0.003 metres, the SRC must be applied to the ",
+          "sensor's records. This offset effectively converts the sensor's raw depth ",
+          "readings into true elevations tied to the benchmark's datum."
+        )
+      ),
+
+      tags$p(
+        class = "clean-print",
+        "Additionally, if there is an established physical reference gauge in the water ",
+        "(such as a staff gauge or electric tape gauge), it must also be leveled against ",
+        "the benchmarks. If leveling reveals that the reference gauge has shifted ",
+        "vertically, a Gauge Correction (GC) is calculated ",
+        "(Surveyed Elevation \u2013 Established Elevation) and applied to the data to ",
+        "ensure the records remain perfectly tied to the benchmark elevations."
+      ),
+
+      tags$p(
+        class = "clean-print",
+        style = "background-color: #e3f2fd; padding: 12px; border-radius: 5px;",
+        "This section may require more extensive background reading before continuing ",
+        "further. Please see the ",
+        tags$a(
+          href = "https://publications.gc.ca/collections/collection_2021/eccc/en37/En37-465-2019-eng.pdf",
+          target = "_blank",
+          style = "color: #1565c0; font-weight: bold;",
+          "Manual of Hydrometric Data Computation and Publication Procedures"
+        ),
+        " and the associated ",
+        tags$a(
+          href = "https://www2.gov.bc.ca/assets/gov/environment/natural-resource-stewardship/nr-laws-policy/risc/man_bc_hydrometric_stand_v2.pdf",
+          target = "_blank",
+          style = "color: #1565c0; font-weight: bold;",
+          "Manual of British Columbia Hydrometric Standards"
+        ), "."
+      ),
+
+      tags$h2("Convert relative stage to absolute elevation using surveyed benchmarks",
+              class = "custom-h2"),
+
+      tags$p(
+        class = "clean-print",
+        "Datum adjustment anchors water level data to an arbitrary but consistent ",
+        "elevation reference. The first valid levelling visit's primary benchmark is ",
+        "set to a user-specified elevation (default 100 m). A benchmark network is ",
+        "built across all visits, and the water surface elevation at the anchor visit ",
+        "determines a single constant offset applied to all logger readings. The result ",
+        "is a new ", tags$code("wl_elev_m"), " column representing water level on the datum."
+      ),
+
+      # ---- Data readiness status ----
+      uiOutput(ns("datum_status")),
+
+      hr(),
+
+      # ================================================================
+      # Section 1: Benchmark Level Runs
+      # ================================================================
+      tags$div(
+        style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+        tags$span(
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          "Benchmark Level Runs"
+        )
+      ),
+
+      tags$div(
+        style = "display: flex; flex-wrap: wrap; margin: 0 -15px;",
+        # ---- Left: Benchmark format info (33%) ----
+        tags$div(
+          style = "flex: 0 0 33.333%; max-width: 33.333%; padding: 0 15px; display: flex;",
+          tags$div(
+            style = "background-color: #f0f0f0; padding: 20px; border-radius: 5px; margin-bottom: 15px; flex: 1;",
+            tags$h4("Benchmark CSV Format", style = "margin-top: 0;"),
+            tags$p(
+              "The benchmark file contains levelling-run survey data, with one row ",
+              "per visit per station."
+            ),
+            tags$p(style = "font-weight: bold; margin-bottom: 5px;",
+              "Required columns:"
+            ),
+            tags$ul(
+              style = "padding-left: 20px; font-size: 13px;",
+              tags$li(
+                tags$code("site_station_code"), " \u2014 station identifier (must match ",
+                "the station name of the time series)"
+              ),
+              tags$li(
+                tags$code("visit_date"), " \u2014 date of levelling visit. Accepted ",
+                "formats: ", tags$code("YYYY-MM-DD"), " (e.g. ", tags$code("2025-04-18"),
+                "), ", tags$code("MM/DD/YYYY"), " (e.g. ", tags$code("4/18/2025"),
+                "), or ", tags$code("DD/MM/YYYY"), "."
+              ),
+              tags$li(
+                tags$code("visit_time"), " \u2014 time of levelling visit. Accepted ",
+                "formats: ", tags$code("HH:MM"), " (e.g. ", tags$code("13:30"),
+                ") or ", tags$code("HH:MM:SS"), "."
+              ),
+              tags$li(
+                tags$code("primary_bm"), " \u2014 primary benchmark name (must match a ",
+                "BM column, e.g. ", tags$code("BM1"), "). This indicates the Primary ",
+                "Benchmark (PBM). The primary benchmark is the most stable mark in the ",
+                "local reference network, and it serves as the foundational starting ",
+                "point for the levelling circuit used to monitor the site's stability."
+              ),
+              tags$li(
+                tags$code("grade"), " \u2014 Excellent, Good, OK, or Poor. This refers ",
+                "to the quality grade or qualifier of the survey or the data. Hydrometric ",
+                "data and levelling circuits are evaluated against specific survey ",
+                "tolerances (such as a maximum allowable closure error) and graded to ",
+                "indicate the validity, accuracy, and reliability of the records."
+              ),
+              tags$li(
+                "One or more ", tags$code("BM*"), " / ", tags$code("TBM*"),
+                " columns \u2014 survey readings (e.g. ", tags$code("BM1"), ", ",
+                tags$code("BM2"), ", ", tags$code("BM3"), "). These columns represent ",
+                "the individual benchmarks in the station's local reference network. A ",
+                "station must have a minimum of three permanent, independent benchmarks ",
+                "to ensure stability can be reliably verified over time, and so the gauge ",
+                "datum can be recovered if one mark is destroyed. The numerical values ",
+                "(e.g. 0.12, 0.15) represent their surveyed elevations in metres relative ",
+                "to the gauge datum."
+              ),
+              tags$li(
+                "One or more ", tags$code("water_elev_*"), " columns \u2014 water surface ",
+                "readings (e.g. ", tags$code("water_elev_1"), ", ", tags$code("water_elev_2"),
+                ", ", tags$code("water_elev_3"), "). These represent discrete, direct water ",
+                "level measurements. If the water surface is surging or choppy due to ",
+                "turbulence or wind, the surveyor is required to take several observations ",
+                "(preferably at the crest and trough of the waves) and average the results ",
+                "for greater accuracy. The closely clustered values in this file (e.g. 0.37, ",
+                "0.36, 0.38 metres) are consistent with this practice of capturing multiple ",
+                "readings of a fluctuating water surface. These elevations are derived from ",
+                "the benchmarks (BM), not from the automated sensor. They represent direct ",
+                "water level measurements that a surveyor manually obtains during a site ",
+                "visit. To get these values, the surveyor uses the known surveyed elevation ",
+                "of a reference point (like BM1) and measures the vertical distance from ",
+                "that benchmark to the water surface. Because they are manual, direct ",
+                "observations of the water surface, they act as the \"true\" reference water ",
+                "level. Once these benchmark-derived water elevations are recorded, they are ",
+                "compared against the automated stage sensor's logged values at that exact ",
+                "time to check the sensor's performance and determine if a Sensor Reset ",
+                "Correction (SRC) needs to be applied to the sensor data."
+              )
+            ),
+            tags$p(style = "font-size: 12px; margin-top: 10px;",
+              downloadLink(ns("download_sample_bm"),
+                label = tagList(icon("download"), " Download sample benchmark CSV"),
+                style = "color: #1565c0;"
+              )
+            )
+          )
+        ),
+
+        # ---- Right: Upload + Table (67%) ----
+        tags$div(
+          style = "flex: 0 0 66.667%; max-width: 66.667%; padding: 0 15px;",
+          fileInput(ns("benchmark_upload"),
+            "Upload Custom Benchmark CSV (optional \u2014 demo data pre-loaded)",
+            accept = ".csv", width = "100%"),
+          uiOutput(ns("benchmark_validation")),
+          DT::DTOutput(ns("benchmark_table")),
+          tags$h4("Survey Elevations", style = "margin-top: 20px;"),
+          tags$img(
+            src = "img/elevation_survey.png",
+            style = "max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 15px;",
+            alt = "Elevation survey diagram"
+          ),
+          plotly::plotlyOutput(ns("benchmark_dotplot"), height = "400px")
+        )
+      ),
+
+      hr(),
+
+      # ================================================================
+      # Section 2: Apply Datum
+      # ================================================================
+      tags$div(
+        style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+        tags$span(
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          "Apply Datum"
+        )
+      ),
+
+      tags$div(
+        style = "display: flex; flex-wrap: wrap; margin: 0 -15px;",
+        # ---- Left: Parameter explanation (33%) ----
+        tags$div(
+          style = "flex: 0 0 33.333%; max-width: 33.333%; padding: 0 15px; display: flex;",
+          tags$div(
+            style = "background-color: #f0f0f0; padding: 20px; border-radius: 5px; margin-bottom: 15px; flex: 1;",
+            tags$h4("Parameters", style = "margin-top: 0;"),
+            tags$p(style = "font-size: 13px;",
+              tags$code("max_anchor_gap_h"), " \u2014 Maximum hours between the anchor ",
+              "visit time and the nearest logger reading. Increase for loggers with ",
+              "coarse time steps (e.g. 2-hour intervals). Default: 1 hour."
+            ),
+            tags$p(style = "font-size: 13px;",
+              tags$code("bm_tolerance_m"), " \u2014 Threshold (metres) for benchmark ",
+              "consistency across visits. A warning is issued if a benchmark's inferred ",
+              "elevation differs by more than this amount. Default: 0.02 m."
+            ),
+            tags$p(style = "font-size: 13px;",
+              tags$code("datum_elev_m"), " \u2014 The arbitrary elevation (metres) assigned ",
+              "to the first valid visit's primary benchmark. Default: 100 m. Adjust if you ",
+              "want a different datum origin (e.g. a known geodetic elevation)."
+            ),
+            tags$h4("Follow Along in the R Package", style = "margin-top: 15px;"),
+            tags$code("wl_set_datum()"),
+            tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
+              "Anchors first valid visit at 100.0 m, computes constant offset, ",
+              "creates wl_elev_m column"
+            )
+          )
+        ),
+
+        # ---- Right: Station selector & controls (67%) ----
+        tags$div(
+          style = "flex: 0 0 66.667%; max-width: 66.667%; padding: 0 15px;",
+          tags$div(
+            style = "background-color: #fafafa; padding: 20px; border-radius: 5px; border: 1px solid #e0e0e0;",
+            tags$div(
+              style = "background-color: #e8f5e9; padding: 10px; border-radius: 5px; border: 2px solid #2e7d32; margin-bottom: 15px;",
+              selectInput(ns("station_select"), "Select Station:",
+                choices = NULL, width = "100%")
+            ),
+            fluidRow(
+              column(4,
+                numericInput(ns("max_anchor_gap_h"), "Max anchor gap (hours):",
+                  value = 1, min = 0.1, max = 24, step = 0.5, width = "100%")
+              ),
+              column(4,
+                numericInput(ns("bm_tolerance_m"), "BM tolerance (metres):",
+                  value = 0.02, min = 0.001, max = 0.5, step = 0.005, width = "100%")
+              ),
+              column(4,
+                numericInput(ns("datum_elev_m"), "Datum elevation (m):",
+                  value = 100, min = 0, max = 10000, step = 1, width = "100%")
+              )
+            ),
+            actionButton(ns("run_datum"), "Apply Datum",
+              class = "btn-success btn-lg", width = "100%",
+              icon = icon("play"),
+              style = "color: #ffffff;"
+            )
+          )
+        )
+      ),
+
+      hr(),
+
+      # ================================================================
+      # Section 3: Results (conditional)
+      # ================================================================
+      conditionalPanel(
+        condition = sprintf("output['%s']", ns("show_results")),
+
+        tags$div(
+          style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+          tags$span(
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            "Results"
+          )
+        ),
+
+        # Plotly time series
+        tags$h4("Stage vs Datum-Adjusted Elevation"),
+        plotly::plotlyOutput(ns("datum_plot"), height = "450px"),
+
+        hr(),
+
+        # Summary
+        tags$h4("Datum Summary"),
+        verbatimTextOutput(ns("datum_summary")),
+
+        hr(),
+
+        # Benchmark network table
+        tags$h4("Benchmark Network for Selected Station"),
+        DT::DTOutput(ns("bm_network_table")),
+
+        hr(),
+
+        # ================================================================
+        # Section 4: Export
+        # ================================================================
+        tags$div(
+          style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+          tags$span(
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            "Export"
+          )
+        ),
+
+        tags$div(
+          style = "display: flex; flex-wrap: wrap; margin: 0 -15px;",
+          # ---- Left: Export info (33%) ----
+          tags$div(
+            style = "flex: 0 0 33.333%; max-width: 33.333%; padding: 0 15px; display: flex;",
+            tags$div(
+              style = "background-color: #f0f0f0; padding: 20px; border-radius: 5px; margin-bottom: 15px; flex: 1;",
+              tags$h4("Exported Columns", style = "margin-top: 0;"),
+              tags$ul(
+                style = "padding-left: 20px; font-size: 13px;",
+                tags$li(tags$code("wl_elev_m"), " \u2014 water level on datum (metres)"),
+                tags$li(tags$code("flag_wl_datum_applied"), " \u2014 datum was applied"),
+                tags$li("All existing stage and flag columns are preserved")
+              ),
+              tags$p(style = "font-size: 13px; color: #666;",
+                "The QAQC log records the datum offset, anchor visit, and benchmark used."
+              )
+            )
+          ),
+          # ---- Right: Download buttons (67%) ----
+          tags$div(
+            style = "flex: 0 0 66.667%; max-width: 66.667%; padding: 0 15px;",
+            tags$div(
+              style = "background-color: #fafafa; padding: 20px; border-radius: 5px; border: 1px solid #e0e0e0;",
+              downloadButton(ns("download_datum_csv"), "Download Datum-Adjusted CSV",
+                class = "btn-primary", style = "width: 100%; margin-bottom: 10px; color: #ffffff;"),
+              downloadButton(ns("download_datum_log"), "Download QAQC Log CSV",
+                class = "btn-default", style = "width: 100%;")
+            )
+          )
+        )
+      ),
+
+      .wireframe_footer()
+    )
+  )
+}
+
+
+module_wl_datum_server <- function(id) {
+  moduleServer(id, function(input, output, session) {
+
+    rv_raw_data    <- session$userData$rv_raw_data
+    rv_qaqc_data   <- session$userData$rv_qaqc_data
+    rv_clean_data  <- session$userData$rv_clean_data
+
+    # Module-local state
+    active_benchmarks <- reactiveVal(NULL)
+    datum_result      <- reactiveVal(NULL)
+    datum_log         <- reactiveVal(NULL)
+    datum_warnings    <- reactiveVal(character(0))
+
+    # Conditional panel visibility
+    output$show_results <- reactive({ !is.null(datum_result()) })
+    outputOptions(output, "show_results", suspendWhenHidden = FALSE)
+
+    # ------ Initialize benchmarks from demo data ------
+    observe({
+      bm <- rv_raw_data$benchmarks
+      if (!is.null(bm) && nrow(bm) > 0 && is.null(active_benchmarks())) {
+        active_benchmarks(bm)
+      }
+    })
+
+    # ------ Benchmark upload ------
+    observeEvent(input$benchmark_upload, {
+      req(input$benchmark_upload)
+      tryCatch({
+        bm <- read.csv(input$benchmark_upload$datapath, stringsAsFactors = FALSE)
+        required_cols <- c("site_station_code", "visit_date", "visit_time",
+                           "primary_bm", "grade")
+        missing <- setdiff(required_cols, names(bm))
+        if (length(missing) > 0) {
+          showNotification(
+            paste("Missing required columns:", paste(missing, collapse = ", ")),
+            type = "error", duration = 8)
+          return()
+        }
+        # Check for at least one BM/TBM and one water_elev column
+        has_bm <- any(grepl("^(BM|TBM)", names(bm)))
+        has_we <- any(grepl("^water_elev_", names(bm)))
+        if (!has_bm || !has_we) {
+          showNotification(
+            "File must contain at least one BM*/TBM* column and one water_elev_* column",
+            type = "error", duration = 8)
+          return()
+        }
+        active_benchmarks(bm)
+        showNotification("Benchmark data uploaded successfully", type = "message", duration = 5)
+      }, error = function(e) {
+        showNotification(paste("Error reading file:", conditionMessage(e)),
+          type = "error", duration = 8)
+      })
+    })
+
+    # ------ Data readiness status ------
+    output$datum_status <- renderUI({
+      qc_data <- rv_qaqc_data$qc_waterlevel
+      bm      <- active_benchmarks()
+
+      has_qc <- !is.null(qc_data) && nrow(qc_data) > 0
+      has_bm <- !is.null(bm) && nrow(bm) > 0
+
+      if (has_qc && has_bm) {
+        n_stns <- length(unique(qc_data$site_station_code))
+        n_bm_stns <- length(unique(bm$site_station_code))
+        tags$div(
+          style = "color: #155724; background: #d4edda; padding: 12px; border-radius: 5px; margin-bottom: 10px;",
+          icon("check-circle"),
+          sprintf(" Ready: %d QC'd station(s), %d station(s) in benchmark data",
+                  n_stns, n_bm_stns)
+        )
+      } else {
+        msgs <- character(0)
+        if (!has_qc) msgs <- c(msgs, "No QC'd water level data \u2014 complete QC Water Level first")
+        if (!has_bm) msgs <- c(msgs, "No benchmark data loaded")
+        tags$div(
+          style = "color: #856404; background: #fff3cd; padding: 12px; border-radius: 5px; margin-bottom: 10px;",
+          icon("exclamation-triangle"),
+          paste(" ", paste(msgs, collapse = ". "), ".")
+        )
+      }
+    })
+
+    # ------ Benchmark validation banner ------
+    output$benchmark_validation <- renderUI({
+      bm <- active_benchmarks()
+      if (is.null(bm) || nrow(bm) == 0) return(NULL)
+
+      required_cols <- c("site_station_code", "visit_date", "visit_time",
+                         "primary_bm", "grade")
+      missing <- setdiff(required_cols, names(bm))
+      has_bm_cols <- any(grepl("^(BM|TBM)", names(bm)))
+      has_we_cols <- any(grepl("^water_elev_", names(bm)))
+      valid_grades <- all(bm$grade %in% c("Excellent", "Good", "OK", "Poor"))
+
+      if (length(missing) == 0 && has_bm_cols && has_we_cols && valid_grades) {
+        tags$div(
+          style = "color: #155724; background: #d4edda; padding: 10px; border-radius: 5px; margin-bottom: 10px;",
+          icon("check-circle"),
+          sprintf(" Benchmark data valid: %d visits across %d station(s)",
+                  nrow(bm), length(unique(bm$site_station_code)))
+        )
+      } else if (length(missing) > 0) {
+        tags$div(
+          style = "color: #721c24; background: #f8d7da; padding: 10px; border-radius: 5px; margin-bottom: 10px;",
+          icon("times-circle"),
+          paste(" Missing columns:", paste(missing, collapse = ", "))
+        )
+      } else {
+        warns <- character(0)
+        if (!has_bm_cols) warns <- c(warns, "no BM/TBM columns found")
+        if (!has_we_cols) warns <- c(warns, "no water_elev_* columns found")
+        if (!valid_grades) warns <- c(warns, "invalid grade values (expected: Excellent, Good, OK, Poor)")
+        tags$div(
+          style = "color: #856404; background: #fff3cd; padding: 10px; border-radius: 5px; margin-bottom: 10px;",
+          icon("exclamation-triangle"),
+          paste(" Warning:", paste(warns, collapse = "; "))
+        )
+      }
+    })
+
+    # ------ Benchmark table ------
+    output$benchmark_table <- DT::renderDT({
+      bm <- active_benchmarks()
+      req(bm, nrow(bm) > 0)
+      DT::datatable(bm, options = list(pageLength = 10, scrollX = TRUE),
+                    rownames = FALSE)
+    })
+
+    # ------ Benchmark dotplot ------
+    output$benchmark_dotplot <- plotly::renderPlotly({
+      bm <- active_benchmarks()
+      req(bm, nrow(bm) > 0)
+
+      bm_cols <- grep("^(BM|TBM)", names(bm), value = TRUE)
+      we_cols <- grep("^water_elev_", names(bm), value = TRUE)
+
+      # Build visit labels sorted chronologically
+      visit_dt <- lubridate::parse_date_time(
+        paste(bm$visit_date, bm$visit_time),
+        orders = c("ymd HMS", "ymd HM", "mdy HMS", "mdy HM", "dmy HMS", "dmy HM"),
+        tz = "UTC"
+      )
+      bm$visit_label <- paste0("Visit: ", format(visit_dt, "%Y-%m-%d %H:%M"))
+      bm$visit_dt_sort <- visit_dt
+
+      # Sort by datetime
+      bm <- bm[order(bm$visit_dt_sort), ]
+      visit_order <- unique(bm$visit_label)
+
+      # Reshape BM columns to long format
+      plot_data <- data.frame(
+        visit_label = character(), value = numeric(),
+        series = character(), stringsAsFactors = FALSE
+      )
+
+      for (i in seq_len(nrow(bm))) {
+        vlabel <- bm$visit_label[i]
+        # Benchmark points
+        for (col in bm_cols) {
+          val <- suppressWarnings(as.numeric(bm[[col]][i]))
+          if (!is.na(val)) {
+            plot_data <- rbind(plot_data, data.frame(
+              visit_label = vlabel, value = val,
+              series = col, stringsAsFactors = FALSE
+            ))
+          }
+        }
+        # Water elevation points
+        for (col in we_cols) {
+          val <- suppressWarnings(as.numeric(bm[[col]][i]))
+          if (!is.na(val)) {
+            plot_data <- rbind(plot_data, data.frame(
+              visit_label = vlabel, value = val,
+              series = col, stringsAsFactors = FALSE
+            ))
+          }
+        }
+      }
+
+      req(nrow(plot_data) > 0)
+
+      # Set visit_label as ordered factor for categorical x-axis
+      plot_data$visit_label <- factor(plot_data$visit_label, levels = visit_order)
+
+      # Assign colours: red, purple, green for BM1-3; cycle for extras
+      bm_palette <- c("#d32f2f", "#7b1fa2", "#2e7d32", "#e65100", "#00838f",
+                       "#4e342e", "#546e7a")
+      we_colour <- "#1565c0"
+
+      all_bm_series <- intersect(bm_cols, unique(plot_data$series))
+      all_we_series <- intersect(we_cols, unique(plot_data$series))
+
+      colour_map <- character()
+      for (k in seq_along(all_bm_series)) {
+        colour_map[all_bm_series[k]] <- bm_palette[((k - 1) %% length(bm_palette)) + 1]
+      }
+      for (k in seq_along(all_we_series)) {
+        colour_map[all_we_series[k]] <- we_colour
+      }
+
+      p <- plotly::plot_ly()
+
+      # Gauge Datum line at y = 0
+      p <- p %>% plotly::add_lines(
+        x = visit_order, y = rep(0, length(visit_order)),
+        name = "Gauge Datum (y=0)",
+        line = list(color = "#999999", dash = "dash", width = 1.5),
+        hoverinfo = "name"
+      )
+
+      # Add lines + points for each series
+      for (s in c(all_bm_series, all_we_series)) {
+        sdata <- plot_data[plot_data$series == s, ]
+        if (nrow(sdata) == 0) next
+
+        is_we <- s %in% we_cols
+
+        # Line connecting points across visits
+        p <- p %>% plotly::add_lines(
+          data = sdata,
+          x = ~visit_label, y = ~value,
+          name = s,
+          line = list(color = colour_map[s], width = 1.5),
+          text = ~paste0(series, ": ", value, " m"),
+          hoverinfo = "text",
+          showlegend = FALSE
+        )
+
+        # Points on top
+        p <- p %>% plotly::add_markers(
+          data = sdata,
+          x = ~visit_label, y = ~value,
+          name = s,
+          marker = list(
+            size = if (is_we) 8 else 10,
+            color = colour_map[s],
+            symbol = if (is_we) "diamond" else "circle"
+          ),
+          text = ~paste0(series, ": ", value, " m"),
+          hoverinfo = "text"
+        )
+      }
+
+      p %>% plotly::layout(
+        xaxis = list(
+          title = "",
+          type = "category",
+          categoryorder = "array",
+          categoryarray = visit_order
+        ),
+        yaxis = list(title = "Elevation (m)"),
+        legend = list(orientation = "h", x = 0, y = -0.15),
+        margin = list(b = 80)
+      )
+    })
+
+    # ------ Populate station selector ------
+    observe({
+      qc_data <- rv_qaqc_data$qc_waterlevel
+      bm      <- active_benchmarks()
+      req(qc_data, bm)
+
+      qc_stations <- unique(qc_data$site_station_code)
+      bm_stations <- unique(bm$site_station_code)
+      common <- sort(intersect(qc_stations, bm_stations))
+
+      if (length(common) > 0) {
+        updateSelectInput(session, "station_select",
+          choices = common, selected = common[1])
+      } else {
+        updateSelectInput(session, "station_select",
+          choices = list("No matching stations" = ""),
+          selected = "")
+      }
+    })
+
+    # ------ Run datum ------
+    observeEvent(input$run_datum, {
+      station <- input$station_select
+      req(station, station != "")
+      qc_data <- rv_qaqc_data$qc_waterlevel
+      bm <- active_benchmarks()
+      req(qc_data, bm)
+
+      tryCatch({
+        showNotification("Applying datum adjustment...",
+          type = "message", duration = NULL, id = "datum_progress")
+
+        # Capture warnings
+        caught_warnings <- character(0)
+        result <- withCallingHandlers(
+          wl_set_datum(
+            input_data       = qc_data,
+            select_station   = station,
+            level_runs       = bm,
+            log_root         = NULL,
+            user             = NULL,
+            max_anchor_gap_h = input$max_anchor_gap_h,
+            bm_tolerance_m   = input$bm_tolerance_m,
+            datum_elev_m     = input$datum_elev_m
+          ),
+          warning = function(w) {
+            caught_warnings <<- c(caught_warnings, conditionMessage(w))
+            invokeRestart("muffleWarning")
+          }
+        )
+
+        datum_warnings(caught_warnings)
+
+        # Extract QAQC log
+        log_attr <- attr(result, "qaqc_log")
+        datum_log(log_attr)
+
+        # Store results
+        datum_result(result)
+        rv_clean_data$waterlevel_datum <- result
+
+        removeNotification("datum_progress")
+        msg <- sprintf("Datum applied for %s", station)
+        if (length(caught_warnings) > 0) {
+          msg <- paste0(msg, " (with ", length(caught_warnings), " warning(s))")
+        }
+        showNotification(msg, type = "message", duration = 5)
+
+      }, error = function(e) {
+        removeNotification("datum_progress")
+        showNotification(paste("Datum error:", conditionMessage(e)),
+          type = "error", duration = 8)
+      })
+    })
+
+    # ------ Selected station data ------
+    selected_data <- reactive({
+      req(input$station_select, datum_result())
+      dplyr::filter(datum_result(), site_station_code == input$station_select)
+    })
+
+    # ------ Plotly dual-axis time series ------
+    output$datum_plot <- plotly::renderPlotly({
+      df <- selected_data()
+      req(nrow(df) > 0, "wl_elev_m" %in% names(df))
+
+      has_adj <- "waterlevel_m_adj" %in% names(df)
+      stage_col <- if (has_adj) "waterlevel_m_adj" else "waterlevel_m"
+
+      p <- plotly::plot_ly(df, x = ~timestamp) %>%
+        plotly::add_lines(y = as.formula(paste0("~", stage_col)),
+          name = "Stage (m)", line = list(color = "#90caf9"),
+          yaxis = "y") %>%
+        plotly::add_lines(y = ~wl_elev_m,
+          name = "Elevation (m)", line = list(color = "#1565c0"),
+          yaxis = "y2")
+
+      # Add benchmark visit water elevations on the Elevation axis
+      bm <- active_benchmarks()
+      station <- input$station_select
+      datum_elev <- input$datum_elev_m
+      if (!is.null(bm) && !is.null(station) && nrow(bm) > 0) {
+        stn_bm <- bm[bm$site_station_code == station, , drop = FALSE]
+        if (nrow(stn_bm) > 0) {
+          bm_cols_plot <- grep("^(BM|TBM)", names(stn_bm), value = TRUE)
+          we_cols_plot <- grep("^water_elev_", names(stn_bm), value = TRUE)
+
+          # Parse visit datetimes
+          visit_dt <- lubridate::parse_date_time(
+            paste(stn_bm$visit_date, stn_bm$visit_time),
+            orders = c("ymd HMS", "ymd HM", "mdy HMS", "mdy HM", "dmy HMS", "dmy HM"),
+            tz = "UTC"
+          )
+
+          # Rebuild benchmark network to get absolute elevations
+          # (mirrors wl_set_datum logic)
+          stn_bm <- stn_bm[order(visit_dt), ]
+          visit_dt <- sort(visit_dt)
+
+          # Coerce numeric
+          for (nm in c(bm_cols_plot, we_cols_plot)) {
+            stn_bm[[nm]] <- suppressWarnings(as.numeric(stn_bm[[nm]]))
+          }
+          stn_bm$primary_bm <- trimws(stn_bm$primary_bm)
+
+          bm_abs_map <- list()
+          first_valid <- NA
+          for (i in seq_len(nrow(stn_bm))) {
+            pbm_col <- stn_bm$primary_bm[i]
+            pbm_raw <- stn_bm[[pbm_col]][i]
+            we_vals <- unlist(stn_bm[i, we_cols_plot, drop = FALSE])
+            if (!is.na(pbm_raw) && any(!is.na(we_vals))) {
+              first_valid <- i
+              break
+            }
+          }
+
+          if (!is.na(first_valid)) {
+            anchor_pbm_col <- stn_bm$primary_bm[first_valid]
+            anchor_pbm_raw <- stn_bm[[anchor_pbm_col]][first_valid]
+            bm_abs_map[[anchor_pbm_col]] <- datum_elev
+
+            for (i in seq_len(nrow(stn_bm))) {
+              pbm_col <- stn_bm$primary_bm[i]
+              pbm_raw <- stn_bm[[pbm_col]][i]
+              if (is.na(pbm_raw)) next
+
+              pbm_abs <- bm_abs_map[[pbm_col]]
+              if (is.null(pbm_abs)) {
+                # Infer from known co-observed BM
+                for (bc in bm_cols_plot) {
+                  known <- bm_abs_map[[bc]]
+                  bc_raw <- stn_bm[[bc]][i]
+                  if (!is.null(known) && !is.na(bc_raw)) {
+                    pbm_abs <- known - (bc_raw - pbm_raw)
+                    break
+                  }
+                }
+                if (!is.null(pbm_abs)) bm_abs_map[[pbm_col]] <- pbm_abs
+              }
+              if (is.null(pbm_abs)) next
+
+              # Update all BMs on this visit
+              for (bc in bm_cols_plot) {
+                bc_raw <- stn_bm[[bc]][i]
+                if (!is.na(bc_raw) && is.null(bm_abs_map[[bc]])) {
+                  bm_abs_map[[bc]] <- pbm_abs + (bc_raw - pbm_raw)
+                }
+              }
+            }
+
+            # Build visit point data for water elevations and datum height
+            visit_points <- data.frame(
+              timestamp = as.POSIXct(character()), elev = numeric(),
+              label = character(), stringsAsFactors = FALSE
+            )
+
+            for (i in seq_len(nrow(stn_bm))) {
+              pbm_col <- stn_bm$primary_bm[i]
+              pbm_raw <- stn_bm[[pbm_col]][i]
+              pbm_abs <- bm_abs_map[[pbm_col]]
+              if (is.na(pbm_raw) || is.null(pbm_abs)) next
+
+              vdt <- visit_dt[i]
+
+              # Water elevation points
+              for (wc in we_cols_plot) {
+                we_raw <- stn_bm[[wc]][i]
+                if (!is.na(we_raw)) {
+                  we_abs <- pbm_abs + (we_raw - pbm_raw)
+                  visit_points <- rbind(visit_points, data.frame(
+                    timestamp = vdt, elev = we_abs,
+                    label = paste0(wc, ": ", round(we_abs, 3), " m"),
+                    stringsAsFactors = FALSE
+                  ))
+                }
+              }
+
+              # Datum height (PBM absolute elevation)
+              visit_points <- rbind(visit_points, data.frame(
+                timestamp = vdt, elev = pbm_abs,
+                label = paste0("Datum (", pbm_col, "): ", round(pbm_abs, 3), " m"),
+                stringsAsFactors = FALSE
+              ))
+            }
+
+            if (nrow(visit_points) > 0) {
+              # Separate water elev points from datum points
+              is_datum <- grepl("^Datum", visit_points$label)
+
+              we_pts <- visit_points[!is_datum, ]
+              datum_pts <- visit_points[is_datum, ]
+
+              if (nrow(we_pts) > 0) {
+                p <- p %>% plotly::add_markers(
+                  data = we_pts,
+                  x = ~timestamp, y = ~elev,
+                  name = "Visit Water Elev.",
+                  marker = list(size = 10, color = "#43a047",
+                                symbol = "diamond", line = list(width = 1, color = "#1b5e20")),
+                  text = ~label, hoverinfo = "text",
+                  yaxis = "y2"
+                )
+              }
+
+              if (nrow(datum_pts) > 0) {
+                p <- p %>% plotly::add_markers(
+                  data = datum_pts,
+                  x = ~timestamp, y = ~elev,
+                  name = "Datum (PBM)",
+                  marker = list(size = 10, color = "#d32f2f",
+                                symbol = "triangle-up", line = list(width = 1, color = "#b71c1c")),
+                  text = ~label, hoverinfo = "text",
+                  yaxis = "y2"
+                )
+              }
+            }
+          }
+        }
+      }
+
+      p <- p %>% plotly::layout(
+          xaxis = list(title = "Timestamp"),
+          yaxis = list(title = "Stage (m)", side = "left"),
+          yaxis2 = list(title = "Elevation (m)", overlaying = "y",
+                        side = "right"),
+          legend = list(orientation = "h", x = 0, y = 1.12),
+          margin = list(r = 80)
+        )
+
+      p
+    })
+
+    # ------ Datum summary ------
+    output$datum_summary <- renderPrint({
+      df <- selected_data()
+      log <- datum_log()
+      warns <- datum_warnings()
+      req(df, nrow(df) > 0)
+
+      station <- input$station_select
+      elev <- df$wl_elev_m[!is.na(df$wl_elev_m)]
+
+      cat("Station:", station, "\n")
+
+      # Extract offset from log if available
+      if (!is.null(log) && nrow(log) > 0) {
+        stn_log <- log[log$station == station, ]
+        if (nrow(stn_log) > 0) {
+          cat("QAQC Log Entry:\n")
+          for (i in seq_len(nrow(stn_log))) {
+            cat("  Action:", stn_log$action[i], "\n")
+            if ("action_note" %in% names(stn_log)) {
+              cat("  Note:", stn_log$action_note[i], "\n")
+            } else if ("note" %in% names(stn_log)) {
+              cat("  Note:", stn_log$note[i], "\n")
+            }
+          }
+        }
+      }
+
+      if (length(elev) > 0) {
+        cat("\nElevation range:", round(min(elev), 4), "to",
+            round(max(elev), 4), "m\n")
+        cat("Elevation mean:", round(mean(elev), 4), "m\n")
+        cat("Records with datum:", sum(!is.na(df$wl_elev_m)), "of", nrow(df), "\n")
+      }
+
+      if (length(warns) > 0) {
+        cat("\nWarnings:\n")
+        for (w in warns) cat("  -", w, "\n")
+      }
+    })
+
+    # ------ Benchmark network table for selected station ------
+    output$bm_network_table <- DT::renderDT({
+      bm <- active_benchmarks()
+      station <- input$station_select
+      req(bm, station)
+
+      stn_bm <- bm[bm$site_station_code == station, ]
+      req(nrow(stn_bm) > 0)
+
+      DT::datatable(stn_bm, options = list(pageLength = 10, scrollX = TRUE),
+                    rownames = FALSE)
+    })
+
+    # ------ Download: Sample benchmark CSV ------
+    output$download_sample_bm <- downloadHandler(
+      filename = function() { "sample_benchmarks.csv" },
+      content = function(file) {
+        bm <- rv_raw_data$benchmarks
+        if (!is.null(bm) && nrow(bm) > 0) {
+          write.csv(bm, file, row.names = FALSE)
+        } else {
+          # Minimal example
+          example <- data.frame(
+            site_station_code = "ALBR_ST_30",
+            visit_date = "4/18/2025",
+            visit_time = "13:30",
+            primary_bm = "BM1",
+            grade = "Excellent",
+            BM1 = 0.12, BM2 = 0.19, BM3 = 0.08,
+            water_elev_1 = 0.37, water_elev_2 = 0.36, water_elev_3 = 0.38,
+            stringsAsFactors = FALSE
+          )
+          write.csv(example, file, row.names = FALSE)
+        }
+      }
+    )
+
+    # ------ Download: Datum-adjusted CSV ------
+    output$download_datum_csv <- downloadHandler(
+      filename = function() {
+        station <- input$station_select
+        paste0("wl_datum_", station, "_", format(Sys.Date(), "%Y%m%d"), ".csv")
+      },
+      content = function(file) {
+        df <- selected_data()
+        req(nrow(df) > 0)
+
+        export_cols <- c(
+          "site_station_code", "timestamp",
+          "waterlevel_m", "waterlevel_m_adj", "wl_elev_m",
+          "watertemp_C", "watertemp_C_adj",
+          "waterpress_kPa", "airpress_kPa", "airtemp_C"
+        )
+        flag_cols <- grep("^(edit_|flag_|neg_)", names(df), value = TRUE)
+        export_cols <- intersect(c(export_cols, flag_cols), names(df))
+
+        export_df <- df[, export_cols]
+        export_df$timestamp <- format(export_df$timestamp, "%Y-%m-%d %H:%M:%S")
+        write.csv(export_df, file, row.names = FALSE)
+      }
+    )
+
+    # ------ Download: QAQC Log ------
+    output$download_datum_log <- downloadHandler(
+      filename = function() {
+        station <- input$station_select
+        paste0("wl_datum_log_", station, "_", format(Sys.Date(), "%Y%m%d"), ".csv")
+      },
+      content = function(file) {
+        log <- datum_log()
+        if (!is.null(log) && nrow(log) > 0) {
+          write.csv(log, file, row.names = FALSE)
+        } else {
+          write.csv(
+            data.frame(station = character(), metric = character(),
+                       action = character(), note = character(),
+                       stringsAsFactors = FALSE),
+            file, row.names = FALSE
+          )
+        }
+      }
+    )
+
+  })
+}

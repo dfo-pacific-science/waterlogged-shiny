@@ -113,16 +113,74 @@ ui <- dashboardPage(
     # Import shinyjs
     shinyjs::useShinyjs(),
 
+    # ---- Shared HOBOware export instructions modal (Bootstrap 3) ----
+    tags$div(
+      class = "modal fade", id = "hoboware_export_modal",
+      tabindex = "-1", role = "dialog",
+      `aria-labelledby` = "hobowareModalLabel",
+      tags$div(
+        class = "modal-dialog modal-lg", role = "document",
+        tags$div(
+          class = "modal-content",
+          tags$div(
+            class = "modal-header",
+            tags$button(type = "button", class = "close",
+                        `data-dismiss` = "modal", `aria-label` = "Close",
+                        tags$span(`aria-hidden` = "true", HTML("&times;"))),
+            tags$h3(class = "modal-title", id = "hobowareModalLabel",
+                    "How to Download CSV Files in the Correct Format from HOBOware")
+          ),
+          tags$div(
+            class = "modal-body",
+            tags$p(
+              "HOBOware is Onset's free software for reading data from HOBO loggers. ",
+              "You can download it for free here: ",
+              tags$a(
+                href = "https://www.onsetcomp.com/support/help-center/software/hoboware",
+                target = "_blank",
+                style = "color: #1565c0; font-weight: bold;",
+                "onsetcomp.com/support/help-center/software/hoboware"
+              )
+            ),
+            tags$hr(),
+            tags$h4("Step 1"),
+            tags$p("First, open HOBOware, and make sure the units are set to metric (e.g., metres/Celsius)."),
+            tags$img(src = "img/export_instructions_01.png",
+                     style = "max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 20px;",
+                     alt = "HOBOware units settings"),
+            tags$h4("Step 2"),
+            tags$p("Ensure that export settings are set to HOBOware default values. Go to File, and then Preferences..."),
+            tags$img(src = "img/export_instructions_02.png",
+                     style = "max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 20px;",
+                     alt = "HOBOware File Preferences menu"),
+            tags$h4("Step 3"),
+            tags$p("Click 'General' and then ensure the datetime format is set to HOBOware defaults."),
+            tags$img(src = "img/export_instructions_03.png",
+                     style = "max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 20px;",
+                     alt = "HOBOware General preferences datetime format"),
+            tags$h4("Step 4"),
+            tags$p("Load your data file and export as a CSV by clicking 'File' and then 'Export Table Data...'."),
+            tags$img(src = "img/export_instructions_04.png",
+                     style = "max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 20px;",
+                     alt = "HOBOware Export Table Data menu")
+          ),
+          tags$div(
+            class = "modal-footer",
+            tags$button(type = "button", class = "btn btn-default",
+                        `data-dismiss` = "modal", "Close")
+          )
+        )
+      )
+    ),
+
     # Individual pages - right side tab content
     tabItems(
       tabItem("t_welcome", module_welcome_ui("welcome")),
 
-      # ---- Temperature (hidden: pipeline not yet complete) ----
-      # tabItem("t_temp_upload",   module_temp_upload_ui("temp_upload")),
-      # tabItem("t_temp_snap",     module_temp_snap_ui("temp_snap")),
-      # tabItem("t_temp_baro",     module_temp_baro_ui("temp_baro")),
-      # tabItem("t_temp_qc_air",   module_temp_qc_air_ui("temp_qc_air")),
-      # tabItem("t_temp_qc_water", module_temp_qc_water_ui("temp_qc_water")),
+      # ---- Temperature (Water & Air) ----
+      tabItem("t_temp_upload",    module_temp_upload_ui("temp_upload")),
+      tabItem("t_temp_qc_water", module_temp_qc_water_ui("temp_qc_water")),
+      tabItem("t_temp_qc_air",   module_temp_qc_air_ui("temp_qc_air")),
 
       # ---- Barometric Pressure ----
       tabItem("t_baro_upload", module_baro_upload_ui("baro_upload")),
@@ -132,6 +190,7 @@ ui <- dashboardPage(
       tabItem("t_wl_upload",  module_wl_upload_ui("wl_upload")),
       tabItem("t_wl_convert", module_wl_convert_ui("wl_convert")),
       tabItem("t_wl_qaqc",   module_wl_qaqc_ui("wl_qaqc")),
+      tabItem("t_wl_datum",  module_wl_datum_ui("wl_datum")),
 
       # ---- Dissolved Oxygen ----
       tabItem("t_do_upload",  module_do_upload_ui("do_upload")),

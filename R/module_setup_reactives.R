@@ -15,6 +15,8 @@ module_setup_reactives <- function(session = NA) {
     waterlevel_data = NULL,
     do_data = NULL,
     conductivity_data = NULL,
+    watertemp_data = NULL,
+    airtemp_data = NULL,
     metadata = NULL,
     wl_metadata = NULL,
     stage_readings = NULL,
@@ -24,7 +26,8 @@ module_setup_reactives <- function(session = NA) {
   session$userData$rv_raw_data <- rv_raw_data
 
   # Populate with demo data from global.R so app works immediately
-  rv_raw_data$metadata <- demo_metadata
+  # Combine main metadata with temperature metadata (no overlap expected)
+  rv_raw_data$metadata <- rbind(demo_metadata, demo_temp_metadata)
   rv_raw_data$wl_metadata <- demo_metadata
   rv_raw_data$baro_data <- demo_baro_list
   rv_raw_data$waterlevel_data <- demo_waterlevel_list
@@ -42,7 +45,9 @@ module_setup_reactives <- function(session = NA) {
     do_bound = NULL,
     do_with_baro = NULL,
     conductivity_bound = NULL,
-    conductivity_with_baro = NULL
+    conductivity_with_baro = NULL,
+    watertemp_bound = NULL,
+    airtemp_bound = NULL
   )
   session$userData$rv_bound_data <- rv_bound_data
 
@@ -60,6 +65,8 @@ module_setup_reactives <- function(session = NA) {
     qc_waterlevel = NULL,
     do_qaqc = NULL,
     qc_conductivity = NULL,
+    qc_watertemp = NULL,
+    qc_airtemp = NULL,
     qaqc_flags = NULL
   )
   session$userData$rv_qaqc_data <- rv_qaqc_data
@@ -67,6 +74,7 @@ module_setup_reactives <- function(session = NA) {
   # Clean data storage (Step 4 outputs)
   rv_clean_data <- reactiveValues(
     waterlevel_clean = NULL,
+    waterlevel_datum = NULL,
     do_clean = NULL,
     conductivity_clean = NULL
   )

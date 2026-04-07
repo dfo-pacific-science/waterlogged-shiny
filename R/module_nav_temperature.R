@@ -2129,9 +2129,9 @@ module_temp_qc_air_ui <- function(id) {
               tags$div(style = "border: 1px solid #ddd; padding: 10px; border-radius: 5px; background: #f9f9f9;",
                 numericInput(ns("temp_high_flag"), "High flag (\u00b0C):", value = 50, min = 20, max = 80, step = 1, width = "100%")),
               tags$div(style = "border: 1px solid #ddd; padding: 10px; border-radius: 5px; background: #f9f9f9;",
-                numericInput(ns("temp_low"), "Low limit (\u00b0C):", value = -40, min = -60, max = 0, step = 1, width = "100%")),
+                numericInput(ns("temp_low"), "Low limit (\u00b0C):", value = NULL, min = -60, max = 0, step = 1, width = "100%")),
               tags$div(style = "border: 1px solid #ddd; padding: 10px; border-radius: 5px; background: #f9f9f9;",
-                numericInput(ns("temp_high"), "High limit (\u00b0C):", value = 50, min = 20, max = 80, step = 1, width = "100%"))
+                numericInput(ns("temp_high"), "High limit (\u00b0C):", value = NULL, min = 20, max = 80, step = 1, width = "100%"))
             ),
 
             actionButton(ns("run_qaqc"), "Run Air Temp QAQC",

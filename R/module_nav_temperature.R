@@ -1481,7 +1481,7 @@ module_temp_qc_water_ui <- function(id) {
             tags$h4("QAQC Rules", style = "margin-top: 0;"),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
-              tags$li(tags$strong("OUTLIER_WT"), " \u2014 temp < -1\u00b0C \u2192 set to NA; [-1, 0) \u2192 corrected to 0"),
+              tags$li(tags$strong("OUTLIER_WT"), " \u2014 temp < -1\u00b0C \u2192 set to NA; -1\u00b0C < temp < 0\u00b0C \u2192 corrected to 0"),
               tags$li(tags$strong("FLAG_ICE"), " \u2014 temp < threshold \u2192 flagged for review"),
               tags$li(tags$strong("FLAG_DRY"), " \u2014 high temp or air-water convergence \u2192 flagged")
             )

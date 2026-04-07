@@ -1772,7 +1772,7 @@ module_temp_qc_water_server <- function(id) {
         result <- qc_watertemp(
           input_data            = input_df,
           select_station        = station,
-          temp_ice_flag_C  = input$ice_threshold,
+          temp_ice_flag_C       = input$ice_threshold,
           temp_dry_flag_C       = input$high_dry_C,
           temp_air_water_diff_C = input$air_water_diff
         )

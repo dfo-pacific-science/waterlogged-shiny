@@ -274,11 +274,11 @@ module_step2_baro_qaqc_server <- function(id) {
           metadata            = metadata,
           path_to_output_folder = NULL,
           log_root            = NULL,
-          pressure_low_kpa    = input$pressure_low,
-          pressure_high_kpa   = input$pressure_high,
+          pressure_low_limit_kpa    = input$pressure_low,
+          pressure_high_limit_kpa   = input$pressure_high,
           temp_low_limit      = input$temp_low,
           temp_high_limit     = input$temp_high,
-          spike_threshold_kpa = input$spike_threshold,
+          spike_flag_kpa = input$spike_threshold,
           flatline_n          = input$flatline_n
         )
 

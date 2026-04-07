@@ -1481,17 +1481,17 @@ module_temp_qc_water_ui <- function(id) {
             tags$h4("QAQC Rules", style = "margin-top: 0;"),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
-              tags$li(tags$strong("OUTLIER_WT"), " \u2014 temp < -1\u00b0C \u2192 set to NA; -1\u00b0C < temp < 0\u00b0C \u2192 corrected to 0"),
-              tags$li(tags$strong("FLAG_ICE"), " \u2014 temp < threshold \u2192 flagged for review"),
-              tags$li(tags$strong("FLAG_DRY"), " \u2014 high temp or air-water convergence \u2192 flagged")
+              tags$li(tags$strong("OUTLIER_WT"), " \u2014 water temp < -1\u00b0C \u2192 set to NA; -1\u00b0C < water temp < 0\u00b0C \u2192 corrected to 0\u00b0C"),
+              tags$li(tags$strong("FLAG_ICE"), " \u2014 water temp < ice flag threshold (\u00b0C) \u2192 flagged for review"),
+              tags$li(tags$strong("FLAG_DRY"), " \u2014 water temp > dry flag threshold (\u00b0C) or air-water temperature difference > flag threshold (\u00b0C) \u2192 flagged")
             )
           ),
           tags$div(
             style = "background-color: #f0f0f0; padding: 15px; border-radius: 5px; margin-bottom: 15px;",
             tags$h4("Flags vs Edits", style = "margin-top: 0;"),
             tags$p(style = "font-size: 13px;",
-              tags$code("flag_*"), " = suspicious, review needed (data NOT changed)", tags$br(),
-              tags$code("edit_*"), " = data WAS changed (set to NA or corrected)"
+              tags$code("flag_*"), " = data flagged for review, no automatic adjustments applied", tags$br(),
+              tags$code("edit_*"), " = data adjusted (set to NA or corrected)"
             )
           ),
           tags$div(
@@ -1499,7 +1499,7 @@ module_temp_qc_water_ui <- function(id) {
             tags$h4("Follow Along in the R Package (waterlogged)", style = "margin-top: 0;"),
             tags$code("qc_watertemp()"),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
-                   "Ice/dry/negative-temp QAQC for water temperature"),
+                   "Applies automatic qc rules for water temperature"),
             tags$code("adjust_logger_NA()"),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
                    "Remove data for ice / dry / disturbance periods")
@@ -1522,17 +1522,17 @@ module_temp_qc_water_ui <- function(id) {
               style = "display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 15px;",
               tags$div(
                 style = "border: 1px solid #ddd; padding: 10px; border-radius: 5px; background: #f9f9f9;",
-                numericInput(ns("ice_threshold"), "Ice threshold (\u00b0C):",
+                numericInput(ns("ice_threshold"), "Ice flag threshold (\u00b0C):",
                   value = 0.3, min = 0, max = 5, step = 0.1, width = "100%")
               ),
               tags$div(
                 style = "border: 1px solid #ddd; padding: 10px; border-radius: 5px; background: #f9f9f9;",
-                numericInput(ns("high_dry_C"), "High dry threshold (\u00b0C):",
+                numericInput(ns("high_dry_C"), "Dry flag threshold (\u00b0C):",
                   value = 19, min = 10, max = 40, step = 1, width = "100%")
               ),
               tags$div(
                 style = "border: 1px solid #ddd; padding: 10px; border-radius: 5px; background: #f9f9f9;",
-                numericInput(ns("air_water_diff"), "Air-water diff (\u00b0C):",
+                numericInput(ns("air_water_diff"), "Air-water temperature diff threshold (\u00b0C):",
                   value = 2, min = 0.5, max = 10, step = 0.5, width = "100%")
               )
             ),

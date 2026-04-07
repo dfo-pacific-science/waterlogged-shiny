@@ -2098,14 +2098,15 @@ module_temp_qc_air_ui <- function(id) {
             tags$h4("QAQC Rules", style = "margin-top: 0;"),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
-              tags$li(tags$strong("OUTLIER_AT"), " \u2014 air temp outside [low, high] \u2192 set to NA")
+              tags$li(tags$strong("OUTLIER_AT"), " \u2014 low limit \u00b0C < air temp < high limit \u00b0C  \u2192 set to NA"),
+              tags$li(tags$strong("FLAG_RANGE"), " \u2014 low limit \u00b0C < air temp < high limit \u00b0C  \u2192 flagged for review")
             )
           ),
           tags$div(
             style = "background-color: #f0f0f0; padding: 15px; border-radius: 5px; flex: 1;",
             tags$h4("Follow Along in the R Package (waterlogged)", style = "margin-top: 0;"),
             tags$code("qc_airtemp()"),
-            tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;", "Range-check QAQC for air temperature"),
+            tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;", "Applies automatic qc for air temperature"),
             tags$code("adjust_logger_NA()"),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;", "Remove data for disturbance periods")
           )
@@ -2122,11 +2123,15 @@ module_temp_qc_air_ui <- function(id) {
             ),
 
             tags$div(
-              style = "display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 15px;",
+              style = "display: grid; grid-template-columns: repeat(2, 2fr); gap: 12px; margin-bottom: 15px;",
+              tags$div(style = "border: 1px solid #ddd; padding: 10px; border-radius: 5px; background: #f9f9f9;",
+                numericInput(ns("temp_low_flag"), "Low flag (\u00b0C):", value = -40, min = -60, max = 0, step = 1, width = "100%")),
+              tags$div(style = "border: 1px solid #ddd; padding: 10px; border-radius: 5px; background: #f9f9f9;",
+                numericInput(ns("temp_high_flag"), "High flag (\u00b0C):", value = 50, min = 20, max = 80, step = 1, width = "100%"))
               tags$div(style = "border: 1px solid #ddd; padding: 10px; border-radius: 5px; background: #f9f9f9;",
                 numericInput(ns("temp_low"), "Low limit (\u00b0C):", value = -40, min = -60, max = 0, step = 1, width = "100%")),
               tags$div(style = "border: 1px solid #ddd; padding: 10px; border-radius: 5px; background: #f9f9f9;",
-                numericInput(ns("temp_high"), "High limit (\u00b0C):", value = 40, min = 20, max = 80, step = 1, width = "100%"))
+                numericInput(ns("temp_high"), "High limit (\u00b0C):", value = 50, min = 20, max = 80, step = 1, width = "100%"))
             ),
 
             actionButton(ns("run_qaqc"), "Run Air Temp QAQC",
@@ -2243,8 +2248,12 @@ module_temp_qc_air_server <- function(id) {
       station <- input$station_select; req(station); input_df <- at_input_data(); req(input_df)
       tryCatch({
         showNotification("Running air temperature QAQC...", type = "message", duration = NULL, id = "at_qc_progress")
-        result <- qc_airtemp(input_data = input_df, select_station = station,
-          temp_low_limit = input$temp_low, temp_high_limit = input$temp_high)
+        result <- qc_airtemp(input_data = input_df,
+                             select_station = station,
+                             temp_low_limit_C = input$temp_low,
+                             temp_high_limit_C = input$temp_high,
+                             temp_low_flag_C = input$temp_low_flag,
+                             temp_high_flag_C = input$temp_high_flag)
         qaqc_log(attr(result, "qaqc_log"))
         other_data <- dplyr::filter(input_df, site_station_code != station)
         full_data <- dplyr::bind_rows(other_data, result) %>% dplyr::arrange(site_station_code, timestamp)

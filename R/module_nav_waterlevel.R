@@ -3474,9 +3474,9 @@ module_wl_qaqc_server <- function(id) {
         result <- qc_waterlevel(
           input_data             = converted_data,
           select_station         = station,
-          temp_ice_threshold_C   = input$threshold_ice,
+          temp_ice_flag_C        = input$threshold_ice,
           temp_high_dry_C        = input$threshold_dry,
-          wl_disturb_threshold_m = input$threshold_disturb,
+          wl_spike_flag_m        = input$threshold_disturb,
           log_root               = NULL,
           user                   = NULL
         )

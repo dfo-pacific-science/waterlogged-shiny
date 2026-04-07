@@ -3009,7 +3009,7 @@ module_cond_qc_server <- function(id) {
       data <- selected_data()
       req(nrow(data) > 0)
 
-      flag_cols <- c("FLAG_DISTURBANCE", "FLAG_ICE", "FLAG_RANGE", "OUTLIER_WT", "FLAG_DRY")
+      flag_cols <- c("FLAG_SPIKE", "FLAG_ICE", "FLAG_DRY", "OUTLIER_CO", "OUTLIER_WT")
       flag_cols <- intersect(flag_cols, names(data))
       n_flags <- sum(vapply(flag_cols, function(col) sum(as.logical(data[[col]]), na.rm = TRUE), integer(1)))
 
@@ -3043,11 +3043,12 @@ module_cond_qc_server <- function(id) {
       summary_df <- data.frame(
         Station = data$site_station_code[1],
         Records = nrow(data),
-        FLAG_DISTURBANCE = safe_sum("FLAG_DISTURBANCE"),
+        FLAG_SPIKE = safe_sum("FLAG_SPIKE"),
         FLAG_ICE = safe_sum("FLAG_ICE"),
-        FLAG_RANGE = safe_sum("FLAG_RANGE"),
-        OUTLIER_WT = safe_sum("OUTLIER_WT"),
         FLAG_DRY = safe_sum("FLAG_DRY"),
+        OUTLIER_CO = safe_sum("OUTLIER_CO"),
+        OUTLIER_WT = safe_sum("OUTLIER_WT"),
+
         Cond_NA = sum(is.na(data$conduct_uScm_adj)),
         Temp_NA = sum(is.na(data$watertemp_C_adj)),
         stringsAsFactors = FALSE
@@ -3446,7 +3447,7 @@ module_cond_qc_server <- function(id) {
       data <- selected_data()
       req(nrow(data) > 0)
 
-      flag_cols <- c("FLAG_DISTURBANCE", "FLAG_ICE", "FLAG_RANGE", "OUTLIER_WT", "FLAG_DRY")
+      flag_cols <- c("FLAG_SPIKE", "FLAG_ICE", "FLAG_DRY", "OUTLIER_CO", "OUTLIER_WT")
       edit_cols <- grep("^edit_", names(data), value = TRUE)
       all_flag_cols <- intersect(c(flag_cols, edit_cols), names(data))
 

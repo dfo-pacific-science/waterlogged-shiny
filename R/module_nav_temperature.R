@@ -1483,7 +1483,7 @@ module_temp_qc_water_ui <- function(id) {
               style = "padding-left: 20px; font-size: 13px;",
               tags$li(tags$strong("OUTLIER_WT"), " \u2014 water temp < -1\u00b0C \u2192 set to NA; -1\u00b0C < water temp < 0\u00b0C \u2192 corrected to 0\u00b0C"),
               tags$li(tags$strong("FLAG_ICE"), " \u2014 water temp < ice flag threshold (\u00b0C) \u2192 flagged for review"),
-              tags$li(tags$strong("FLAG_DRY"), " \u2014 water temp > dry flag threshold (\u00b0C) or air-water temperature difference > flag threshold (\u00b0C) \u2192 flagged")
+              tags$li(tags$strong("FLAG_DRY"), " \u2014 water temp > dry flag threshold (\u00b0C) or air-water temperature difference > flag threshold (\u00b0C) \u2192 flagged for review")
             )
           ),
           tags$div(

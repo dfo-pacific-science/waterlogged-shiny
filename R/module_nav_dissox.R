@@ -3062,7 +3062,7 @@ module_do_qc_server <- function(id) {
           select_station       = station,
           do_high_limit_mgl    = input$threshold_do_high,
           do_low_limit_mgl     = input$threshold_do_low,
-          temp_ice_threshold_C = input$threshold_ice,
+          temp_ice_flag_C      = input$threshold_ice,
           log_root             = NULL,
           user                 = NULL
         )

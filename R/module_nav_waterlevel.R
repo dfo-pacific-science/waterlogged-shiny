@@ -3475,7 +3475,7 @@ module_wl_qaqc_server <- function(id) {
           input_data             = converted_data,
           select_station         = station,
           temp_ice_flag_C        = input$threshold_ice,
-          temp_high_dry_C        = input$threshold_dry,
+          temp_dry_flag_C        = input$threshold_dry,
           wl_spike_flag_m        = input$threshold_disturb,
           log_root               = NULL,
           user                   = NULL

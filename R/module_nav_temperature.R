@@ -2098,8 +2098,9 @@ module_temp_qc_air_ui <- function(id) {
             tags$h4("QAQC Rules", style = "margin-top: 0;"),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
-              tags$li(tags$strong("OUTLIER_AT"), " \u2014 low limit \u00b0C < air temp < high limit \u00b0C  \u2192 set to NA"),
-              tags$li(tags$strong("FLAG_RANGE"), " \u2014 low limit \u00b0C < air temp < high limit \u00b0C  \u2192 flagged for review")
+              tags$li(tags$strong("FLAG_RANGE"), " \u2014 low limit \u00b0C < air temp < high limit \u00b0C  \u2192 flagged for review"),
+              tags$li(tags$strong("OUTLIER_AT"), " \u2014 low limit \u00b0C < air temp < high limit \u00b0C  \u2192 set to NA")
+
             )
           ),
           tags$div(

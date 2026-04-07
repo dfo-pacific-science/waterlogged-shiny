@@ -2968,9 +2968,9 @@ module_cond_qc_server <- function(id) {
           select_station                = station,
           temp_low_limit_C              = input$temp_low,
           temp_high_limit_C             = input$temp_high,
-          disturbance_threshold_uScm    = input$spike_thresh,
-          dry_threshold_uScm            = input$dry_thresh,
-          air_water_diff_threshold_C    = input$air_water_diff
+          spike_flag_uScm               = input$spike_thresh,
+          dry_flag_uScm                 = input$dry_thresh,
+          temp_air_water_diff_C         = input$air_water_diff
         )
 
         qaqc_log(attr(result, "qaqc_log"))

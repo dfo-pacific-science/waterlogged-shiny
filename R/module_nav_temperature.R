@@ -2275,7 +2275,9 @@ module_temp_qc_air_server <- function(id) {
 
     output$station_info <- renderUI({
       data <- selected_data(); req(nrow(data) > 0)
-      n_flags <- if ("OUTLIER_AT" %in% names(data)) sum(as.logical(data$OUTLIER_AT), na.rm = TRUE) else 0L
+      flag_cols <- intersect(c("FLAG_RANGE", "OUTLIER_AT"), names(data))
+      n_flags <- sum(vapply(flag_cols, function(col) sum(as.logical(data[[col]]), na.rm = TRUE), integer(1)))
+      # n_flags <- if ("OUTLIER_AT" %in% names(data)) sum(as.logical(data$OUTLIER_AT), na.rm = TRUE) else 0L
       date_range <- paste(format(min(data$timestamp), "%Y-%m-%d"), "to", format(max(data$timestamp), "%Y-%m-%d"))
       tags$div(style = "padding-top: 8px;",
         tags$p(style = "margin: 0; font-size: 14px;",
@@ -2289,7 +2291,10 @@ module_temp_qc_air_server <- function(id) {
       req(at_qc_result()); data <- selected_data(); req(nrow(data) > 0)
       safe_sum <- function(col) if (col %in% names(data)) sum(as.logical(data[[col]]), na.rm = TRUE) else 0L
       summary_df <- data.frame(Station = data$site_station_code[1], Records = nrow(data),
-        OUTLIER_AT = safe_sum("OUTLIER_AT"), Temp_NA_adj = sum(is.na(data$airtemp_C_adj)), stringsAsFactors = FALSE)
+        FLAG_RANGE = safe_sum("FLAG_RANGE"),
+        OUTLIER_AT = safe_sum("OUTLIER_AT"),
+        Temp_NA_adj = sum(is.na(data$airtemp_C_adj)),
+        stringsAsFactors = FALSE)
       DT::datatable(summary_df, options = list(dom = "t", pageLength = 50, scrollX = TRUE), rownames = FALSE, selection = "none")
     })
 
@@ -2323,11 +2328,20 @@ module_temp_qc_air_server <- function(id) {
         add_trace(y = ~airtemp_C_adj, type = "scattergl", mode = "lines",
               line = list(color = "#E65100", width = 1), name = "Adjusted Air Temp",
               hovertemplate = "Adj: %{y:.1f} \u00b0C<extra></extra>")
-      temp_flags <- data[which(as.logical(data$OUTLIER_AT)), ]
-      if (nrow(temp_flags) > 0)
-        p <- p %>% add_trace(data = temp_flags, x = ~timestamp, y = ~airtemp_C,
+
+
+      outlier_at <- data[which(as.logical(data$OUTLIER_AT)), ]
+      flag_range <- data[which(as.logical(data$FLAG_RANGE)), ]
+
+      if (nrow(outlier_at) > 0)
+        p <- p %>% add_trace(data = outlier_at, x = ~timestamp, y = ~airtemp_C,
           type = "scatter", mode = "markers", marker = list(color = "#D32F2F", size = 5, symbol = "circle"),
           line = list(width = 0), name = "OUTLIER_AT", hovertemplate = "RANGE: %{y:.1f} \u00b0C<extra></extra>")
+      if (nrow(flag_range) > 0)
+        p <- p %>% add_trace(data = flag_range, x = ~timestamp, y = ~airtemp_C,
+           type = "scatter", mode = "markers", marker = list(color = "#FF9800", size = 5, symbol = "triangle-up"),
+           line = list(width = 0), name = "FLAG_RANGE", hovertemplate = "RANGE: %{y:.1f} \u00b0C<extra></extra>")
+
       p %>% layout(title = list(text = paste("Air Temp QAQC \u2014", station), font = list(size = 14)),
         xaxis = list(title = "Date"), yaxis = list(title = "Temperature (\u00b0C)", fixedrange = TRUE),
         hovermode = "x unified", legend = list(orientation = "h", y = -0.15), margin = list(b = 80)) %>%

@@ -1481,7 +1481,7 @@ module_temp_qc_water_ui <- function(id) {
             tags$h4("QAQC Rules", style = "margin-top: 0;"),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
-              tags$li(tags$strong("OUTLIER_WT"), " \u2014 water temp < -1\u00b0C \u2192 set to NA; -1\u00b0C < water temp < 0\u00b0C \u2192 corrected to 0\u00b0C"),
+              tags$li(tags$strong("OUTLIER_WT"), " \u2014 water temp < -1\u00b0C \u2192 set to NA;", tags$br(),"     -1\u00b0C < water temp < 0\u00b0C \u2192 corrected to 0\u00b0C"),
               tags$li(tags$strong("FLAG_ICE"), " \u2014 water temp < ice flag threshold (\u00b0C) \u2192 flagged for review"),
               tags$li(tags$strong("FLAG_DRY"), " \u2014 water temp > dry flag threshold (\u00b0C) or air-water temperature difference > flag threshold (\u00b0C) \u2192 flagged for review")
             )
@@ -1517,9 +1517,25 @@ module_temp_qc_water_ui <- function(id) {
               selectInput(ns("station_select"), "Select Station:",
                 choices = NULL, width = "100%")
             ),
-
+            # QAQC parameters
+            tags$h4("QAQC Parameters"),
+            tags$p(style = "font-size: 13px; color: #666; margin-bottom: 10px;",
+                   icon("sliders-h"),
+                   " Adjust the thresholds used by ", tags$code("qc_watertemp()"),
+                   ". Default values are shown."
+            ),
             tags$div(
               style = "display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 15px;",
+              tags$div(
+                style = "border: 1px solid #ddd; padding: 10px; border-radius: 5px; background: #f9f9f9;",
+                numericInput(ns("temp_high"), "Temp high limit (\u00b0C):",
+                             value = 50, step = 0.1, width = "100%")
+              ),
+              tags$div(
+                style = "border: 1px solid #ddd; padding: 10px; border-radius: 5px; background: #f9f9f9;",
+                numericInput(ns("temp_low"), "Temp low limit (\u00b0C):",
+                             value = -1, step = 0.1, width = "100%")
+              ),
               tags$div(
                 style = "border: 1px solid #ddd; padding: 10px; border-radius: 5px; background: #f9f9f9;",
                 numericInput(ns("ice_threshold"), "Ice flag threshold (\u00b0C):",
@@ -1532,7 +1548,7 @@ module_temp_qc_water_ui <- function(id) {
               ),
               tags$div(
                 style = "border: 1px solid #ddd; padding: 10px; border-radius: 5px; background: #f9f9f9;",
-                numericInput(ns("air_water_diff"), "Air-water temperature diff threshold (\u00b0C):",
+                numericInput(ns("air_water_diff"), "Air-Water Diff (\u00b0C)",
                   value = 2, min = 0.5, max = 10, step = 0.5, width = "100%")
               )
             ),
@@ -1772,6 +1788,8 @@ module_temp_qc_water_server <- function(id) {
         result <- qc_watertemp(
           input_data            = input_df,
           select_station        = station,
+          temp_high_limit_C     = input$temp_high,
+          temp_low_limit_C      = input$temp_low,
           temp_ice_flag_C       = input$ice_threshold,
           temp_dry_flag_C       = input$high_dry_C,
           temp_air_water_diff_C = input$air_water_diff
@@ -2098,9 +2116,17 @@ module_temp_qc_air_ui <- function(id) {
             tags$h4("QAQC Rules", style = "margin-top: 0;"),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
-              tags$li(tags$strong("FLAG_RANGE"), " \u2014 low limit \u00b0C < air temp < high limit \u00b0C  \u2192 flagged for review"),
+              tags$li(tags$strong("FLAG_RANGE"), " \u2014 low flag \u00b0C < air temp < high flag \u00b0C  \u2192 flagged for review"),
               tags$li(tags$strong("OUTLIER_AT"), " \u2014 low limit \u00b0C < air temp < high limit \u00b0C  \u2192 set to NA")
 
+            )
+          ),
+          tags$div(
+            style = "background-color: #f0f0f0; padding: 15px; border-radius: 5px; margin-bottom: 15px;",
+            tags$h4("Flags vs Edits", style = "margin-top: 0;"),
+            tags$p(style = "font-size: 13px;",
+                   tags$code("flag_*"), " = data flagged for review, no automatic adjustments applied", tags$br(),
+                   tags$code("edit_*"), " = data adjusted (set to NA or corrected)"
             )
           ),
           tags$div(
@@ -2122,7 +2148,13 @@ module_temp_qc_air_ui <- function(id) {
               style = "background-color: #e0f2f1; padding: 10px; border-radius: 5px; border: 2px solid #00796b; margin-bottom: 15px;",
               selectInput(ns("station_select"), "Select Station:", choices = NULL, width = "100%")
             ),
-
+            # QAQC parameters
+            tags$h4("QAQC Parameters"),
+            tags$p(style = "font-size: 13px; color: #666; margin-bottom: 10px;",
+                   icon("sliders-h"),
+                   " Adjust the thresholds used by ", tags$code("qc_airtemp()"),
+                   ". Default values are shown."
+            ),
             tags$div(
               style = "display: grid; grid-template-columns: repeat(2, 2fr); gap: 12px; margin-bottom: 15px;",
               tags$div(style = "border: 1px solid #ddd; padding: 10px; border-radius: 5px; background: #f9f9f9;",
@@ -2130,9 +2162,9 @@ module_temp_qc_air_ui <- function(id) {
               tags$div(style = "border: 1px solid #ddd; padding: 10px; border-radius: 5px; background: #f9f9f9;",
                 numericInput(ns("temp_high_flag"), "High flag (\u00b0C):", value = 50, min = 20, max = 80, step = 1, width = "100%")),
               tags$div(style = "border: 1px solid #ddd; padding: 10px; border-radius: 5px; background: #f9f9f9;",
-                numericInput(ns("temp_low"), "Low limit (\u00b0C):", value = NULL, min = -60, max = 0, step = 1, width = "100%")),
+                numericInput(ns("temp_low"), "Low limit (\u00b0C):", value = -100, min = -60, max = 0, step = 1, width = "100%")),
               tags$div(style = "border: 1px solid #ddd; padding: 10px; border-radius: 5px; background: #f9f9f9;",
-                numericInput(ns("temp_high"), "High limit (\u00b0C):", value = NULL, min = 20, max = 80, step = 1, width = "100%"))
+                numericInput(ns("temp_high"), "High limit (\u00b0C):", value = 100, min = 20, max = 80, step = 1, width = "100%"))
             ),
 
             actionButton(ns("run_qaqc"), "Run Air Temp QAQC",
@@ -2275,7 +2307,9 @@ module_temp_qc_air_server <- function(id) {
 
     output$station_info <- renderUI({
       data <- selected_data(); req(nrow(data) > 0)
-      n_flags <- if ("OUTLIER_AT" %in% names(data)) sum(as.logical(data$OUTLIER_AT), na.rm = TRUE) else 0L
+      flag_cols <- intersect(c("FLAG_RANGE", "OUTLIER_AT"), names(data))
+      n_flags <- sum(vapply(flag_cols, function(col) sum(as.logical(data[[col]]), na.rm = TRUE), integer(1)))
+      # n_flags <- if ("OUTLIER_AT" %in% names(data)) sum(as.logical(data$OUTLIER_AT), na.rm = TRUE) else 0L
       date_range <- paste(format(min(data$timestamp), "%Y-%m-%d"), "to", format(max(data$timestamp), "%Y-%m-%d"))
       tags$div(style = "padding-top: 8px;",
         tags$p(style = "margin: 0; font-size: 14px;",
@@ -2289,7 +2323,10 @@ module_temp_qc_air_server <- function(id) {
       req(at_qc_result()); data <- selected_data(); req(nrow(data) > 0)
       safe_sum <- function(col) if (col %in% names(data)) sum(as.logical(data[[col]]), na.rm = TRUE) else 0L
       summary_df <- data.frame(Station = data$site_station_code[1], Records = nrow(data),
-        OUTLIER_AT = safe_sum("OUTLIER_AT"), Temp_NA_adj = sum(is.na(data$airtemp_C_adj)), stringsAsFactors = FALSE)
+        FLAG_RANGE = safe_sum("FLAG_RANGE"),
+        OUTLIER_AT = safe_sum("OUTLIER_AT"),
+        Temp_NA_adj = sum(is.na(data$airtemp_C_adj)),
+        stringsAsFactors = FALSE)
       DT::datatable(summary_df, options = list(dom = "t", pageLength = 50, scrollX = TRUE), rownames = FALSE, selection = "none")
     })
 
@@ -2323,11 +2360,20 @@ module_temp_qc_air_server <- function(id) {
         add_trace(y = ~airtemp_C_adj, type = "scattergl", mode = "lines",
               line = list(color = "#E65100", width = 1), name = "Adjusted Air Temp",
               hovertemplate = "Adj: %{y:.1f} \u00b0C<extra></extra>")
-      temp_flags <- data[which(as.logical(data$OUTLIER_AT)), ]
-      if (nrow(temp_flags) > 0)
-        p <- p %>% add_trace(data = temp_flags, x = ~timestamp, y = ~airtemp_C,
+
+
+      outlier_at <- data[which(as.logical(data$OUTLIER_AT)), ]
+      flag_range <- data[which(as.logical(data$FLAG_RANGE)), ]
+
+      if (nrow(outlier_at) > 0)
+        p <- p %>% add_trace(data = outlier_at, x = ~timestamp, y = ~airtemp_C,
           type = "scatter", mode = "markers", marker = list(color = "#D32F2F", size = 5, symbol = "circle"),
           line = list(width = 0), name = "OUTLIER_AT", hovertemplate = "RANGE: %{y:.1f} \u00b0C<extra></extra>")
+      if (nrow(flag_range) > 0)
+        p <- p %>% add_trace(data = flag_range, x = ~timestamp, y = ~airtemp_C,
+           type = "scatter", mode = "markers", marker = list(color = "#FF9800", size = 5, symbol = "triangle-up"),
+           line = list(width = 0), name = "FLAG_RANGE", hovertemplate = "RANGE: %{y:.1f} \u00b0C<extra></extra>")
+
       p %>% layout(title = list(text = paste("Air Temp QAQC \u2014", station), font = list(size = 14)),
         xaxis = list(title = "Date"), yaxis = list(title = "Temperature (\u00b0C)", fixedrange = TRUE),
         hovermode = "x unified", legend = list(orientation = "h", y = -0.15), margin = list(b = 80)) %>%

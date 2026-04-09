@@ -4,7 +4,7 @@
 #
 # Pipeline for HOBO U24 conductivity loggers:
 #   1. Import Data  — bind_hobo_files() for conductivity loggers
-#   2. Convert & QC — add_nearest_baro(), conductivity_temp_compensation(),
+#   2. Convert & QC — add_nearest_baro(), convert_conductivity_spc_uScm(),
 #                     qc_conductivity()
 #
 # Note: Conductivity does not require barometric pressure compensation for
@@ -1459,7 +1459,7 @@ module_cond_convert_ui <- function(id) {
           tags$div(
             style = "background-color: #f0f0f0; padding: 15px; border-radius: 5px; flex: 1;",
             tags$h4("Follow Along in the R Package (waterlogged)", style = "margin-top: 0;"),
-            tags$code("conductivity_temp_compensation()"),
+            tags$code("convert_conductivity_spc_uScm()"),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
                    "Normalises raw conductivity to a reference temperature (25\u00b0C). ",
                    "Can run before or after QAQC \u2014 prefers ",
@@ -1774,7 +1774,7 @@ module_cond_convert_server <- function(id) {
         showNotification("Converting to specific conductance...",
           type = "message", duration = NULL, id = "spc_progress")
 
-        result <- conductivity_temp_compensation(
+        result <- convert_conductivity_spc_uScm(
           input_data = cond
         )
 
@@ -2383,23 +2383,23 @@ module_cond_qc_ui <- function(id) {
         tags$div(
           style = "flex: 0 0 33.333%; max-width: 33.333%; padding: 0 15px; display: flex; flex-direction: column;",
           tags$div(
-            style = "background-color: #e8f5e9; padding: 20px; border-radius: 5px; margin-bottom: 15px;",
+            style = "background-color: #f0f0f0; padding: 20px; border-radius: 5px; margin-bottom: 15px;",
             tags$h4("QAQC Rules", style = "margin-top: 0;"),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
-              tags$li(tags$strong("Spikes"), " \u2014 conductivity change > threshold between readings \u2192 flagged"),
-              tags$li(tags$strong("Ice"), " \u2014 water temp < 0.1\u00b0C \u2192 flagged"),
-              tags$li(tags$strong("Temp range"), " \u2014 outside -2 to 40\u00b0C \u2192 set to NA"),
-              tags$li(tags$strong("Dry sensor"), " \u2014 very low conductivity or air-water temp convergence \u2192 flagged"),
-              tags$li(tags$strong("Near-zero temp"), " \u2014 -1 to 0\u00b0C corrected to 0; \u2264 -1\u00b0C \u2192 NA")
+              tags$li(tags$strong("OUTLIER_CO"), " \u2014 low limit (uScm) < conductivity < high limit (uScm) \u2192 set to NA"),
+              tags$li(tags$strong("OUTLIER_WT"), " \u2014 water temp < -1\u00b0C \u2192 set to NA;", tags$br(), "     -1\u00b0C < water temp < 0\u00b0C \u2192 corrected to 0\u00b0C"),
+              tags$li(tags$strong("FLAG_ICE"), " \u2014 water temp < ice flag threshold (\u00b0C) \u2192 flagged for review"),
+              tags$li(tags$strong("FLAG_DRY"), " \u2014 conductivity < dry flag threshold (uScm) or air-water temperature difference > flag threshold (\u00b0C) \u2192 flagged for review"),
+              tags$li(tags$strong("FLAG_SPIKE"), " \u2014 \u0394 conductivity > spike flag (uScm) \u2192 flagged for review")
             )
           ),
           tags$div(
             style = "background-color: #f0f0f0; padding: 15px; border-radius: 5px; margin-bottom: 15px;",
             tags$h4("Flags vs Edits", style = "margin-top: 0;"),
             tags$p(style = "font-size: 13px;",
-              tags$code("flag_*"), " = suspicious, review needed (data NOT changed)", tags$br(),
-              tags$code("edit_*"), " = data WAS changed (set to NA or corrected)"
+                   tags$code("flag_*"), " = data flagged for review, no automatic adjustments applied", tags$br(),
+                   tags$code("edit_*"), " = data adjusted (set to NA or corrected)"
             )
           ),
           tags$div(
@@ -2425,38 +2425,66 @@ module_cond_qc_ui <- function(id) {
           style = "flex: 0 0 66.667%; max-width: 66.667%; padding: 0 15px; display: flex; min-width: 0;",
           tags$div(
             style = "background-color: #fafafa; padding: 20px; border-radius: 5px; border: 1px solid #e0e0e0; flex: 1; min-width: 0; overflow-x: auto;",
-
-            # QAQC parameters
-            tags$h4("QAQC Parameters"),
-            tags$div(
-              style = "display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 15px;",
-              tags$div(
-                style = "border: 1px solid #ddd; padding: 10px; border-radius: 5px; background: #f9f9f9;",
-                numericInput(ns("temp_low"), "Temp Low (\u00b0C):", value = -2, width = "100%")
-              ),
-              tags$div(
-                style = "border: 1px solid #ddd; padding: 10px; border-radius: 5px; background: #f9f9f9;",
-                numericInput(ns("temp_high"), "Temp High (\u00b0C):", value = 40, width = "100%")
-              ),
-              tags$div(
-                style = "border: 1px solid #ddd; padding: 10px; border-radius: 5px; background: #f9f9f9;",
-                numericInput(ns("spike_thresh"), "Spike (\u00b5S/cm):", value = 200, width = "100%")
-              ),
-              tags$div(
-                style = "border: 1px solid #ddd; padding: 10px; border-radius: 5px; background: #f9f9f9;",
-                numericInput(ns("dry_thresh"), "Dry Thresh (\u00b5S/cm):", value = 10, width = "100%")
-              ),
-              tags$div(
-                style = "border: 1px solid #ddd; padding: 10px; border-radius: 5px; background: #f9f9f9;",
-                numericInput(ns("air_water_diff"), "Air-Water Diff (\u00b0C):", value = 2, width = "100%")
-              )
-            ),
-
             tags$div(
               style = "background-color: #e8f5e9; padding: 10px; border-radius: 5px; border: 2px solid #2e7d32; margin-bottom: 15px;",
               selectInput(ns("station_select"), "Select Station:",
-                choices = NULL, width = "100%")
+                          choices = NULL, width = "100%")
             ),
+            # QAQC parameters
+            tags$h4("QAQC Parameters"),
+            tags$p(style = "font-size: 13px; color: #666; margin-bottom: 10px;",
+                   icon("sliders-h"),
+                   " Adjust the thresholds used by ", tags$code("qc_conductivity()"),
+                   ". Default values are shown."
+            ),
+
+            fluidRow(
+
+              # ---- Conductivity & Temperature side by side ----
+              column(6,
+                     tags$div(
+                       style = "border: 1px solid #ddd; padding: 15px; border-radius: 5px; background: #f9f9f9; height: 100%;",
+                       tags$h4("Conductivity Thresholds", style = "margin-top: 0;"),
+                       numericInput(ns("cond_low"), "Low (\u00b5S/cm):", value = 0, width = "100%"),
+                       numericInput(ns("cond_high"), "High (\u00b5S/cm):", value = 2500, width = "100%")
+                     )
+              ),
+
+              column(6,
+                     tags$div(
+                       style = "border: 1px solid #ddd; padding: 15px; border-radius: 5px; background: #f9f9f9; height: 100%;",
+                       tags$h4("Temperature Thresholds", style = "margin-top: 0;"),
+                       numericInput(ns("temp_low"), "Low (\u00b0C):", value = -2, width = "100%"),
+                       numericInput(ns("temp_high"), "High (\u00b0C):", value = 40, width = "100%")
+                     )
+              ),
+
+              # ---- Spike / Flatline / Dry / Air–Water (2x2) ----
+              column(12,
+                     tags$div(
+                       style = "border: 1px solid #ddd; padding: 15px; border-radius: 5px; background: #f9f9f9; margin-top: 15px;",
+                       tags$h4("Spike, Ice & Dry Thresholds", style = "margin-top: 0;"),
+
+                       fluidRow(
+                         column(6,
+                                numericInput(ns("spike_thresh"), "Spike (\u00b5S/cm):", value = 200, width = "100%")
+                         ),
+                         column(6,
+                                numericInput(ns("ice_thresh"), "Ice temp (\u00b0C):", value = 0.3, width = "100%")
+                         )
+                       ),
+                       fluidRow(
+                         column(6,
+                                numericInput(ns("dry_thresh"), "Dry (\u00b5S/cm):", value = 10, width = "100%")
+                         ),
+                         column(6,
+                                numericInput(ns("air_water_diff"), "Air–Water Diff (\u00b0C):", value = 2, width = "100%")
+                         )
+                       )
+                     )
+              )
+            ),
+
             actionButton(ns("run_qaqc"), "Run Conductivity QAQC",
               class = "btn-primary btn-lg", width = "100%",
               style = "color: #fff; background-color: #2e7d32; border-color: #2e7d32;",
@@ -2966,10 +2994,13 @@ module_cond_qc_server <- function(id) {
         result <- qc_conductivity(
           input_data                    = input_df,
           select_station                = station,
+          cond_high_limit_uScm          = input$cond_high,
+          cond_low_limit_uScm           = input$cond_low,
           temp_low_limit_C              = input$temp_low,
           temp_high_limit_C             = input$temp_high,
           spike_flag_uScm               = input$spike_thresh,
           dry_flag_uScm                 = input$dry_thresh,
+          temp_ice_flag_C               = input$ice_thresh,
           temp_air_water_diff_C         = input$air_water_diff
         )
 

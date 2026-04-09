@@ -30,7 +30,7 @@ page_sidebar_tab_ui <- function(id) {
 
       # ---- Water Level (Pressure) ----
       menuItem(
-        "Water Level (Pressure)",
+        "Water Level",
         icon = icon("water"),
         menuSubItem("Import Data",          tabName = "t_wl_upload"),
         menuSubItem("Convert to Meters", tabName = "t_wl_convert"),
@@ -41,7 +41,7 @@ page_sidebar_tab_ui <- function(id) {
       # ---- Dissolved Oxygen ----
       menuItem(
         "Dissolved Oxygen",
-        icon = icon("lungs"),
+        icon = icon("seedling"),
         menuSubItem("Import Data",            tabName = "t_do_upload"),
         menuSubItem("Convert to % Sat.",    tabName = "t_do_convert"),
         menuSubItem("QC Dissolved Oxygen",  tabName = "t_do_qc")

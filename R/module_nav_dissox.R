@@ -2505,20 +2505,20 @@ module_do_qc_ui <- function(id) {
             tags$h4("QAQC Rules", style = "margin-top: 0;"),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
-              tags$li(tags$strong("DO_ERROR"), " \u2014 -888.88 values \u2192 NA"),
-              tags$li(tags$strong("NEGATIVE_DO"), " \u2014 -1 to 0 \u2192 0; < -1 \u2192 NA"),
-              tags$li(tags$strong("OUTLIER_DO"), " \u2014 above high limit \u2192 NA"),
-              tags$li(tags$strong("NEGATIVE_TEMP"), " \u2014 -1 to 0 \u2192 0; \u2264 -1 \u2192 NA"),
-              tags$li(tags$strong("FLAG_ICE"), " \u2014 temp below ice threshold \u2192 flagged"),
-              tags$li(tags$strong("FLAG_DO_DRY"), " \u2014 12-point window (%sat \u2265 100, air-water temp diff \u2264 2\u00b0C) \u2192 flagged")
+              tags$li(tags$strong("DO_ERROR"), " \u2014 -888.88 values \u2192 set to NA"),
+              tags$li(tags$strong("OUTLIER_DO"), " \u2014 low limit (mg/L) < DO < high limit (mg/L) \u2192 set to NA"),
+              tags$li(tags$strong("OUTLIER_WT"), " \u2014 water temp < -1\u00b0C \u2192 set to NA;", tags$br(),  "     -1\u00b0C < water temp < 0\u00b0C \u2192 corrected to 0\u00b0C"),
+              tags$li(tags$strong("FLAG_RANGE"), " \u2014 low flag (mg/L) < DO < high flag (mg/L) \u2192 flagged for review"),
+              tags$li(tags$strong("FLAG_DRY"), " \u2014 DO > dry flag threshold (mg/L) or air-water temperature difference > flag threshold (\u00b0C) \u2192 flagged for review"),
+              tags$li(tags$strong("FLAG_ICE"), " \u2014 water temp < ice flag threshold (\u00b0C) \u2192 flagged for review")
             )
           ),
           tags$div(
             style = "background-color: #f0f0f0; padding: 15px; border-radius: 5px; margin-bottom: 15px;",
             tags$h4("Flags vs Edits", style = "margin-top: 0;"),
             tags$p(style = "font-size: 13px;",
-              tags$code("flag_*"), " = suspicious, review needed (data NOT changed)", tags$br(),
-              tags$code("edit_*"), " = data WAS changed (set to NA or corrected)"
+                   tags$code("flag_*"), " = data flagged for review, no automatic adjustments applied", tags$br(),
+                   tags$code("edit_*"), " = data adjusted (set to NA or corrected)"
             )
           ),
           tags$div(
@@ -2546,25 +2546,39 @@ module_do_qc_ui <- function(id) {
               selectInput(ns("station_select"), "Select Station:",
                 choices = NULL, width = "100%")
             ),
-            tags$h4("QAQC Thresholds", style = "margin-top: 0;"),
+            tags$h4("QAQC Parameters", style = "margin-top: 0;"),
             tags$p(style = "font-size: 13px; color: #666; margin-bottom: 10px;",
               icon("sliders-h"),
               " Adjust the thresholds used by ", tags$code("qc_dissox()"),
               ". Default values are shown."
             ),
             fluidRow(
-              column(4,
+              column(6,
+                tags$h4("DO Thresholds", style = "margin-top: 0;"),
                 numericInput(ns("threshold_do_high"), "DO high limit (mg/L)",
-                  value = 30, min = 0, max = 100, step = 1)
-              ),
-              column(4,
+                  value = 30, step = 0.5),
                 numericInput(ns("threshold_do_low"), "DO low limit (mg/L)",
-                  value = 0, min = -10, max = 10, step = 0.5)
+                  value = -1, step = 0.5),
+                numericInput(ns("flag_do_low"), "DO low flag (mg/L)",
+                  value = 0, step = 0.5)
               ),
-              column(4,
-                numericInput(ns("threshold_ice"), "Ice threshold (\u00b0C)",
-                  value = 0.3, min = 0, max = 5, step = 0.1)
-              )
+              column(6,
+                     tags$h4("Ice and Dry Thresholds", style = "margin-top: 0;"),
+                     numericInput(ns("threshold_ice"), "Ice threshold (\u00b0C)",
+                                  value = 0.3, min = 0, max = 5, step = 0.1),
+                     numericInput(ns("flag_do_dry"), "DO dry flag (mg/L)",
+                                  value = 20, step = 0.5),
+                     numericInput(ns("air_water_diff"), "Air-Water Diff (\u00b0C)",
+                                  value = 0.3, min = 0, max = 5, step = 0.1)
+              ),
+              column(6,
+                tags$h4("Temperature Thresholds", style = "margin-top: 0;"),
+                numericInput(ns("threshold_temp_high"), "Temp high limit (\u00b0C)",
+                    value = 50, step = 0.1),
+                numericInput(ns("threshold_temp_low"), "Temp low limit (\u00b0C)",
+                    value = -1, step = 0.1)
+              ),
+
             ),
             actionButton(ns("run_qaqc"), "Run DO QAQC",
               class = "btn-primary btn-lg", width = "100%",
@@ -3062,6 +3076,10 @@ module_do_qc_server <- function(id) {
           select_station       = station,
           do_high_limit_mgl    = input$threshold_do_high,
           do_low_limit_mgl     = input$threshold_do_low,
+          do_dry_flag_mgl      = input$flag_do_dry,
+          do_low_flag_mgl      = input$flag_do_low,
+          temp_high_limit_C    = input$threshold_temp_high,
+          temp_low_limit_C     = input$threshold_temp_low,
           temp_ice_flag_C      = input$threshold_ice,
           log_root             = NULL,
           user                 = NULL

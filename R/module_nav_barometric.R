@@ -1043,21 +1043,24 @@ module_baro_qc_ui <- function(id) {
             ),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
-              tags$li(tags$strong("OUTLIER_AP"), " \u2014 pressure outside ",
-                      "range \u2192 adj set to NA"),
-              tags$li(tags$strong("OUTLIER_AT"), " \u2014 temp outside range ",
-                      "\u2192 adj set to NA"),
-              tags$li(tags$strong("FLAG_DISTURBANCE"), " \u2014 sudden pressure jump ",
-                      "\u2192 flagged (value kept)"),
-              tags$li(tags$strong("FLAG_FLATLINE"), " \u2014 consecutive identical ",
-                      "values \u2192 flagged (value kept)")
+              tags$li(tags$strong("OUTLIER_AP"), " \u2014 low limit kPa < air pressure < high limit kPa \u2192 set to NA"),
+              tags$li(tags$strong("OUTLIER_AT"), " \u2014 low limit \u00b0C < air temp < high limit \u00b0C  \u2192 set to NA"),
+              tags$li(tags$strong("FLAG_SPIKE"), " \u2014 \u0394 pressure > spike flag kPa \u2192 flagged for review"),
+              tags$li(tags$strong("FLAG_FLATLINE"), " \u2014 n consecutive identical values \u2192 flagged for review")
             ),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 10px;",
               "Spike and flatline flags mark rows for review but do ",
               tags$strong("not"), " set values to NA."
             )
           ),
-
+          tags$div(
+            style = "background-color: #f0f0f0; padding: 15px; border-radius: 5px; margin-bottom: 15px;",
+            tags$h4("Flags vs Edits", style = "margin-top: 0;"),
+            tags$p(style = "font-size: 13px;",
+                   tags$code("flag_*"), " = data flagged for review, no automatic adjustments applied", tags$br(),
+                   tags$code("edit_*"), " = data adjusted (set to NA or corrected)"
+            )
+          ),
           tags$div(
             style = "background-color: #f0f0f0; padding: 15px; border-radius: 5px; margin-bottom: 15px;",
             tags$h4("Follow Along in the R Package (waterlogged)", style = "margin-top: 0;"),
@@ -1081,7 +1084,7 @@ module_baro_qc_ui <- function(id) {
               tags$li(tags$code("OUTLIER_AT"),
                       " \u2014 ", tags$code("TRUE"), "/", tags$code("FALSE"),
                       " flag for temp outside range"),
-              tags$li(tags$code("FLAG_DISTURBANCE"), ", ",
+              tags$li(tags$code("FLAG_SPIKE"), ", ",
                       tags$code("FLAG_FLATLINE"),
                       " \u2014 ", tags$code("TRUE"), "/", tags$code("FALSE"),
                       " flags for spikes and flatlines")
@@ -1096,21 +1099,25 @@ module_baro_qc_ui <- function(id) {
             style = "background-color: #fafafa; padding: 20px; border-radius: 5px; border: 1px solid #e0e0e0; flex: 1;",
 
             # Station scope selector
-            tags$h4("Stations to Process", style = "margin-top: 0;"),
-            selectizeInput(ns("qaqc_stations"), NULL,
-              choices = NULL, multiple = TRUE,
-              width = "100%",
-              options = list(
-                placeholder = "All stations (default)",
-                plugins = list("remove_button")
+            tags$div(
+              style = "background-color: #e8f5e9; padding: 15px; border-radius: 5px; border: 1px solid #dcdcdc; margin-bottom: 20px;",
+              tags$h4("Select Station", style = "margin-top: 0;"),
+              selectizeInput(ns("qaqc_stations"), NULL,
+                             choices = NULL, multiple = TRUE,
+                             width = "100%",
+                             options = list(
+                               placeholder = "All stations (default)",
+                               plugins = list("remove_button")
+                             )
+              ),
+
+              tags$p(
+                style = "font-size: 12px; color: #666; margin-top: 5px;",
+                "Leave empty to run on all stations. Select specific stations to ",
+                "re-run QAQC with different thresholds — existing results for ",
+                "other stations will be preserved."
               )
             ),
-            tags$p(style = "font-size: 12px; color: #666; margin-top: -5px; margin-bottom: 15px;",
-              "Leave empty to run on all stations. Select specific stations to ",
-              "re-run QAQC with different thresholds \u2014 existing results for ",
-              "other stations will be preserved."
-            ),
-
             fluidRow(
               column(6,
                 tags$h4("Pressure Thresholds", style = "margin-top: 0;"),
@@ -1135,7 +1142,7 @@ module_baro_qc_ui <- function(id) {
                 numericInput(ns("flatline_n"), "Flatline window (consecutive readings):",
                   value = 6, min = 2, max = 50, step = 1)
               ),
-              column(6,
+              column(12,
                 tags$div(
                   style = "margin-top: 30px;",
                   actionButton(ns("run_qaqc"), "Run Barometric QAQC",
@@ -1530,7 +1537,7 @@ module_baro_qc_server <- function(id) {
           Records = dplyr::n(),
           OUTLIER_AP = sum(as.logical(OUTLIER_AP), na.rm = TRUE),
           OUTLIER_AT = sum(as.logical(OUTLIER_AT), na.rm = TRUE),
-          FLAG_DISTURBANCE = sum(as.logical(FLAG_DISTURBANCE), na.rm = TRUE),
+          FLAG_SPIKE = sum(as.logical(FLAG_SPIKE), na.rm = TRUE),
           FLAG_FLATLINE = sum(as.logical(FLAG_FLATLINE), na.rm = TRUE),
           `Pressure NA (adj)` = sum(is.na(airpress_kPa_adj)),
           `Temp NA (adj)` = sum(is.na(airtemp_C_adj)),
@@ -1572,7 +1579,7 @@ module_baro_qc_server <- function(id) {
 
       n_flags <- sum(
         as.logical(data$OUTLIER_AP), as.logical(data$OUTLIER_AT),
-        as.logical(data$FLAG_DISTURBANCE), as.logical(data$FLAG_FLATLINE),
+        as.logical(data$FLAG_SPIKE), as.logical(data$FLAG_FLATLINE),
         na.rm = TRUE
       )
       date_range <- paste(
@@ -1663,26 +1670,17 @@ module_baro_qc_server <- function(id) {
               hovertemplate = "Adj: %{y:.2f} kPa<extra></extra>")
 
       # Pressure flag markers
-      high_flags <- data[which(as.logical(data$OUTLIER_AP) & !is.na(data$airpress_kPa) & data$airpress_kPa > stats::median(data$airpress_kPa, na.rm = TRUE)), ]
-      low_flags  <- data[which(as.logical(data$OUTLIER_AP) & !is.na(data$airpress_kPa) & data$airpress_kPa <= stats::median(data$airpress_kPa, na.rm = TRUE)), ]
-      spike_flags <- data[which(as.logical(data$FLAG_DISTURBANCE)), ]
+      press_flags <- data[which(as.logical(data$OUTLIER_AP)), ]
+      spike_flags <- data[which(as.logical(data$FLAG_SPIKE)), ]
       flat_flags  <- data[which(as.logical(data$FLAG_FLATLINE)), ]
 
-      if (nrow(high_flags) > 0) {
-        p1 <- p1 %>% add_trace(data = high_flags, x = ~timestamp, y = ~airpress_kPa,
+      if (nrow(press_flags) > 0) {
+        p1 <- p1 %>% add_trace(data = press_flags, x = ~timestamp, y = ~airpress_kPa,
           type = "scatter", mode = "markers",
           marker = list(color = "#D32F2F", size = 5, symbol = "circle"),
           line = list(width = 0),
-          name = "High Pressure",
+          name = "Outlier Pressure",
           hovertemplate = "HIGH: %{y:.2f} kPa<extra></extra>")
-      }
-      if (nrow(low_flags) > 0) {
-        p1 <- p1 %>% add_trace(data = low_flags, x = ~timestamp, y = ~airpress_kPa,
-          type = "scatter", mode = "markers",
-          marker = list(color = "#F57C00", size = 5, symbol = "circle"),
-          line = list(width = 0),
-          name = "Low Pressure",
-          hovertemplate = "LOW: %{y:.2f} kPa<extra></extra>")
       }
       if (nrow(spike_flags) > 0) {
         p1 <- p1 %>% add_trace(data = spike_flags, x = ~timestamp, y = ~airpress_kPa,
@@ -1719,7 +1717,7 @@ module_baro_qc_server <- function(id) {
           type = "scatter", mode = "markers",
           marker = list(color = "#FBC02D", size = 5, symbol = "circle"),
           line = list(width = 0),
-          name = "Temp Range",
+          name = "Outlier Air Temp",
           hovertemplate = "TEMP: %{y:.1f} \u00b0C<extra></extra>")
       }
 

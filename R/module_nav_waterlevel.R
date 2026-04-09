@@ -3077,20 +3077,18 @@ module_wl_qaqc_ui <- function(id) {
             tags$h4("QAQC Rules", style = "margin-top: 0;"),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
-              tags$li(tags$strong("NEGATIVE_WL"), " \u2014 negative water level set to 0"),
-              tags$li(tags$strong("LOGGER_ICE"), " \u2014 temp < -1\u00b0C removed"),
-              tags$li(tags$strong("NEGATIVE_WT"), " \u2014 temp -1 to 0\u00b0C set to 0"),
-              tags$li(tags$strong("FLAG_DRY"), " \u2014 water press \u2264 air press + warm"),
-              tags$li(tags$strong("FLAG_ICE"), " \u2014 water temp below ice threshold"),
-              tags$li(tags$strong("FLAG_DISTURBANCE"), " \u2014 step change exceeds disturbance threshold")
+              tags$li(tags$strong("OUTLIER_WT"), " \u2014 water temp < -1\u00b0C \u2192 set to NA;", tags$br(), "     -1\u00b0C < water temp < 0\u00b0C \u2192 corrected to 0\u00b0C"),
+              tags$li(tags$strong("FLAG_ICE"), " \u2014 water temp < ice flag threshold (\u00b0C) \u2192 flagged for review"),
+              tags$li(tags$strong("FLAG_DRY"), " \u2014 water temp > dry flag threshold (\u00b0C) or air-water temperature difference > flag threshold (\u00b0C) \u2192 flagged for review"),
+              tags$li(tags$strong("FLAG_SPIKE"), " \u2014 \u0394 water level > spike flag (m) \u2192 flagged for review")
             )
           ),
           tags$div(
             style = "background-color: #f0f0f0; padding: 15px; border-radius: 5px; margin-bottom: 15px;",
             tags$h4("Flags vs Edits", style = "margin-top: 0;"),
             tags$p(style = "font-size: 13px;",
-              tags$code("flag_*"), " = suspicious, review needed (data NOT changed)", tags$br(),
-              tags$code("edit_*"), " = data WAS changed (set to NA or corrected)"
+                   tags$code("flag_*"), " = data flagged for review, no automatic adjustments applied", tags$br(),
+                   tags$code("edit_*"), " = data adjusted (set to NA or corrected)"
             )
           ),
           tags$div(
@@ -3124,7 +3122,7 @@ module_wl_qaqc_ui <- function(id) {
               selectInput(ns("station_select"), "Select Station:",
                 choices = NULL, width = "100%")
             ),
-            tags$h4("QAQC Thresholds", style = "margin-top: 0;"),
+            tags$h4("QAQC Parameters", style = "margin-top: 0;"),
             tags$p(style = "font-size: 13px; color: #666; margin-bottom: 10px;",
               icon("sliders-h"),
               " Adjust the thresholds used by ", tags$code("qc_waterlevel()"),
@@ -3517,7 +3515,7 @@ module_wl_qaqc_server <- function(id) {
       data <- selected_data()
       req(nrow(data) > 0)
 
-      flag_cols <- c("FLAG_DISTURBANCE", "FLAG_ICE", "OUTLIER_WT", "FLAG_DRY")
+      flag_cols <- c("FLAG_SPIKE", "FLAG_ICE", "OUTLIER_WT", "FLAG_DRY")
       flag_cols <- intersect(flag_cols, names(data))
       n_flags <- sum(vapply(flag_cols, function(col) sum(as.logical(data[[col]]), na.rm = TRUE), integer(1)))
 
@@ -3552,7 +3550,7 @@ module_wl_qaqc_server <- function(id) {
       summary_df <- data.frame(
         Station = data$site_station_code[1],
         Records = nrow(data),
-        FLAG_DISTURBANCE = safe_sum("FLAG_DISTURBANCE"),
+        FLAG_SPIKE = safe_sum("FLAG_SPIKE"),
         FLAG_ICE = safe_sum("FLAG_ICE"),
         OUTLIER_WT = safe_sum("OUTLIER_WT"),
         FLAG_DRY = safe_sum("FLAG_DRY"),
@@ -3729,7 +3727,7 @@ module_wl_qaqc_server <- function(id) {
       req(nrow(data) > 0)
 
       # Collect all flag/edit columns that exist and have TRUE values
-      flag_cols <- c("FLAG_DISTURBANCE", "FLAG_ICE", "OUTLIER_WT", "FLAG_DRY")
+      flag_cols <- c("FLAG_SPIKE", "FLAG_ICE", "OUTLIER_WT", "FLAG_DRY")
       edit_cols <- grep("^edit_", names(data), value = TRUE)
       all_flag_cols <- intersect(c(flag_cols, edit_cols), names(data))
 

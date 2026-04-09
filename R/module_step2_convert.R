@@ -367,7 +367,7 @@ cond_corrected <- wq_drift_correction(
 )
 
 # Temperature compensation to get specific conductance
-cond_final <- conductivity_temp_compensation(
+cond_final <- convert_conductivity_spc_uScm(
   input_data = cond_corrected
 )
 

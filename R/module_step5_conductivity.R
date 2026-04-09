@@ -345,7 +345,7 @@ module_step5_cond_drift_server <- function(id) {
 
 
 # -----------------------------------------------------------------------------
-# 5c  Temperature Compensation  (conductivity_temp_compensation)
+# 5c  Temperature Compensation  (convert_conductivity_spc_uScm)
 # -----------------------------------------------------------------------------
 module_step5_cond_tempcomp_ui <- function(id) {
   ns <- NS(id)
@@ -422,7 +422,7 @@ module_step5_cond_tempcomp_ui <- function(id) {
 
         column(
           width = 8,
-          tags$h4("conductivity_temp_compensation()"),
+          tags$h4("convert_conductivity_spc_uScm()"),
           tags$p(
             "Converts electrical conductivity (EC) to specific conductance (SPC)
             normalized to 25\u00B0C.",
@@ -432,7 +432,7 @@ module_step5_cond_tempcomp_ui <- function(id) {
             class = "clean-print",
             style = "background-color: #f5f5f5; padding: 15px; font-family: monospace; font-size: 12px;",
 "# Calculate specific conductance (run AFTER drift correction)
-cond_qc <- conductivity_temp_compensation(cond_qc)
+cond_qc <- convert_conductivity_spc_uScm(cond_qc)
 
 cat(\"Temperature compensation complete.\")
 cat(\"Raw conductivity range:   \",
@@ -455,7 +455,7 @@ print(sample_rows)"
               style = "margin: 0; font-size: 13px; color: #333;",
               tags$strong("Placeholder:"),
               " The interactive controls and output for running
-              conductivity_temp_compensation() will be wired up in a future update."
+              convert_conductivity_spc_uScm() will be wired up in a future update."
             )
           ),
 
@@ -469,7 +469,7 @@ print(sample_rows)"
               style = "margin: 0; font-size: 12px;",
 "Step 5a:  qc_conductivity()              \u2192  auto QAQC + manual adjustments
 Step 5b:  wq_drift_correction()            \u2192  drift corrected
-Step 5c:  conductivity_temp_compensation() \u2192  specific conductance at 25\u00B0C
+Step 5c:  convert_conductivity_spc_uScm() \u2192  specific conductance at 25\u00B0C
 
 Key columns for analysis:
   spc_uScm_adj      \u2014 fully corrected specific conductance (use this)

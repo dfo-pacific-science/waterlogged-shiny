@@ -1266,29 +1266,13 @@ module_cond_upload_server <- function(id) {
         baro_stations <- unique(baro_df$site_station_code)
 
         # Determine which baro column to use (prefer _adj)
-        baro_press_col <- if ("airpress_kPa_adj" %in% names(baro_df)) "airpress_kPa_adj" else "airpress_kPa"
         baro_temp_col  <- if ("airtemp_C_adj" %in% names(baro_df)) "airtemp_C_adj" else "airtemp_C"
 
-        # Panel 3: Air pressure (kPa)
+        # Panel 4: Air temperature (C)
         p3 <- plot_ly()
         for (stn in baro_stations) {
           stn_data <- dplyr::filter(baro_df, site_station_code == stn)
           p3 <- p3 %>% add_trace(
-            data = stn_data, x = ~timestamp,
-            y = stats::as.formula(paste0("~", baro_press_col)),
-            type = "scattergl", mode = "lines",
-            line = list(width = 1),
-            name = paste(stn, "- Air Press"),
-            legendgroup = paste0("baro_", stn),
-            hovertemplate = paste0(stn, ": %{y:.2f} kPa<extra></extra>")
-          )
-        }
-
-        # Panel 4: Air temperature (C)
-        p4 <- plot_ly()
-        for (stn in baro_stations) {
-          stn_data <- dplyr::filter(baro_df, site_station_code == stn)
-          p4 <- p4 %>% add_trace(
             data = stn_data, x = ~timestamp,
             y = stats::as.formula(paste0("~", baro_temp_col)),
             type = "scattergl", mode = "lines",
@@ -1300,15 +1284,14 @@ module_cond_upload_server <- function(id) {
           )
         }
 
-        subplot(p1, p2, p3, p4, nrows = 4, shareX = TRUE, titleY = TRUE) %>%
+        subplot(p1, p2, p3, nrows = 3, shareX = TRUE, titleY = TRUE) %>%
           layout(
             title = list(text = "Conductivity Data Preview (with Baro)",
                          font = list(size = 14)),
             xaxis4 = list(title = "Date"),
             yaxis  = list(title = "Conductivity (\u00b5S/cm)"),
             yaxis2 = list(title = "Water Temp (\u00b0C)"),
-            yaxis3 = list(title = "Air Press (kPa)"),
-            yaxis4 = list(title = "Air Temp (\u00b0C)"),
+            yaxis3 = list(title = "Air Temp (\u00b0C)"),
             hovermode = "x unified",
             legend = list(orientation = "h", y = -0.08),
             margin = list(b = 80)
@@ -2274,20 +2257,29 @@ module_cond_convert_server <- function(id) {
                        "#6D4C41", "#D81B60", "#1E88E5", "#FDD835", "#546E7A")
 
       # Prefer _adj columns but fall back to raw
-      ec_col <- if ("conduct_uScm_adj" %in% names(df)) "conduct_uScm_adj" else
-                if ("spc_uScm_adj" %in% names(df)) "spc_uScm_adj" else "conduct_uScm"
+      ec_col <- if ("spc_uScm_adj" %in% names(df)) "spc_uScm_adj" else
+                if ("conduct_uScm_adj" %in% names(df)) "conduct_uScm_adj" else "conduct_uScm"
 
       # Panel 1: Conductivity
-      p1 <- plotly::plot_ly() %>%
-        plotly::add_trace(
-          data = df, x = ~timestamp, y = stats::as.formula(paste0("~", ec_col)),
-          type = "scatter", mode = "lines",
-          name = paste0("Conductivity (", ec_col, ")"),
-          line = list(color = "#2e7d32", width = 1.5)
-        ) %>%
-        plotly::layout(yaxis = list(title = "Conductivity (\u00b5S/cm)"))
+      title_label <- if (ec_col == "spc_uScm_adj") "Specific Conductance" else "Conductivity"
 
-      # Panel 2: Baro pressure, colored by contributing station
+      p1 <- plotly::plot_ly() |>
+        plotly::add_trace(
+          data = df,
+          x = ~timestamp,
+          y = stats::as.formula(paste0("~", ec_col)),
+          type = "scatter",
+          mode = "lines",
+          name = paste0(title_label, " (", ec_col, ")"),
+          line = list(color = "#2e7d32", width = 1.5)
+        ) |>
+        plotly::layout(
+          yaxis = list(title = paste0(title_label, " (\u00b5S/cm)"))
+        )
+
+      # Panel 2: Air temperature, colored by contributing station
+      at_col <- if ("airtemp_C_adj" %in% names(df)) "airtemp_C_adj" else "airtemp_C"
+
       p2 <- plotly::plot_ly()
 
       if ("baro_site_stn_code" %in% names(df)) {
@@ -2296,23 +2288,29 @@ module_cond_convert_server <- function(id) {
           stn_data <- dplyr::filter(df, baro_site_stn_code == baro_stns[i])
           if (nrow(stn_data) > 0) {
             p2 <- p2 %>% plotly::add_trace(
-              data = stn_data, x = ~timestamp, y = ~airpress_kPa,
-              type = "scatter", mode = "lines",
-              name = paste0("Baro: ", baro_stns[i]),
+              data = stn_data,
+              x = ~timestamp,
+              y = stats::as.formula(paste0("~", at_col)),
+              type = "scatter",
+              mode = "lines",
+              name = paste0("Air Temp: ", baro_stns[i]),
               line = list(color = baro_colors[((i - 1) %% length(baro_colors)) + 1], width = 1)
             )
           }
         }
       } else {
         p2 <- p2 %>% plotly::add_trace(
-          data = df, x = ~timestamp, y = ~airpress_kPa,
-          type = "scatter", mode = "lines",
-          name = "Baro Pressure",
+          data = df,
+          x = ~timestamp,
+          y = stats::as.formula(paste0("~", at_col)),
+          type = "scatter",
+          mode = "lines",
+          name = "Air Temp",
           line = list(color = "#E53935", width = 1)
         )
       }
 
-      p2 <- p2 %>% plotly::layout(yaxis = list(title = "Baro (kPa)"))
+      p2 <- p2 %>% plotly::layout(yaxis = list(title = "Air Temp (\u00b0C)"))
 
       plotly::subplot(p1, p2, nrows = 2, shareX = TRUE, titleY = TRUE) %>%
         plotly::layout(
@@ -2932,9 +2930,9 @@ module_cond_qc_server <- function(id) {
 
     # ---- Input data reactive (CRITICAL FIX: picks most-processed version) ----
     cond_input_data <- reactive({
-      d <- rv_converted_data$conductivity_converted
-      if (!is.null(d) && nrow(d) > 0) return(d)
       d <- rv_bound_data$conductivity_with_baro
+      if (!is.null(d) && nrow(d) > 0) return(d)
+      d <- rv_converted_data$conductivity_converted
       if (!is.null(d) && nrow(d) > 0) return(d)
       d <- rv_bound_data$conductivity_bound
       if (!is.null(d) && nrow(d) > 0) return(d)

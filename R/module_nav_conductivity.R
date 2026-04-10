@@ -1394,7 +1394,7 @@ module_cond_convert_ui <- function(id) {
         class = "clean-print",
         "Electrical conductivity varies with water temperature, warmer water ",
         "conducts better. Specific conductance (SPC) normalises readings to 25\u00b0C ",
-        "using the ISO 27888 standard, enabling comparison across seasons and sites. ",
+        "using the EN 27888 standard, enabling comparison across seasons and sites. ",
         "A reading of 100 \u00b5S/cm at 10\u00b0C represents different ionic content ",
         "than 100 \u00b5S/cm at 25\u00b0C. SPC removes this ambiguity."
       ),
@@ -2390,7 +2390,7 @@ module_cond_qc_ui <- function(id) {
               tags$li(tags$strong("OUTLIER_CO"), " \u2014 low limit (uScm) < conductivity < high limit (uScm) \u2192 set to NA"),
               tags$li(tags$strong("OUTLIER_WT"), " \u2014 water temp < -1\u00b0C \u2192 set to NA;", tags$br(), "     -1\u00b0C < water temp < 0\u00b0C \u2192 corrected to 0\u00b0C"),
               tags$li(tags$strong("FLAG_ICE"), " \u2014 water temp < ice flag threshold (\u00b0C) \u2192 flagged for review"),
-              tags$li(tags$strong("FLAG_DRY"), " \u2014 conductivity < dry flag threshold (uScm) or air-water temperature difference > flag threshold (\u00b0C) \u2192 flagged for review"),
+              tags$li(tags$strong("FLAG_DRY"), " \u2014 conductivity < dry flag threshold (uScm) and (if available) air-water temperature difference < flag threshold (\u00b0C) \u2192 flagged for review"),
               tags$li(tags$strong("FLAG_SPIKE"), " \u2014 \u0394 conductivity > spike flag (uScm) \u2192 flagged for review")
             )
           ),

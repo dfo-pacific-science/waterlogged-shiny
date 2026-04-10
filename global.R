@@ -11,30 +11,47 @@ library(stringr) # For various text manipulation
 library(DT) # JS DataTables
 library(plotly) # Plotly for interactive plots
 library(leaflet) # For interactive maps
+library(lubridate) # date handling
 
-# Robust timestamp parser: handles "2023-10-19 13:00:00", "2023-10-19 13:00"
-# (no seconds), and "2023-10-19" (date-only midnight rows)
-.parse_timestamp <- function(x) {
+# Robust timestamp parser: handles diverse formats including ISO 8601 ("2023-10-19 13:00:00"),
+# common US/European formats ("10/19/2023 13:00", "19-10-2023"), and date-only entries
+# (e.g., "2023-10-19") which are automatically parsed as midnight UTC.
+.parse_timestamp <- function(x, col_name = "timestamp") {
   if (inherits(x, "POSIXct")) return(x)
+
   x <- as.character(x)
-  # Pad "YYYY-MM-DD HH:MM" to "YYYY-MM-DD HH:MM:SS"
-  hhmm_only <- grepl("^\\d{4}-\\d{2}-\\d{2} \\d{1,2}:\\d{2}$", trimws(x))
-  if (any(hhmm_only, na.rm = TRUE)) {
-    x[hhmm_only] <- paste0(trimws(x[hhmm_only]), ":00")
+  all_blank <- is.na(x) | trimws(x) %in% c("", "NA")
+
+  if (all(all_blank)) {
+    return(as.POSIXct(rep(NA_character_, length(x)), tz = "UTC"))
   }
-  parsed <- as.POSIXct(x, format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
-  na_idx <- is.na(parsed) & !is.na(x) & nchar(trimws(x)) > 0
-  if (any(na_idx)) {
-    parsed[na_idx] <- as.POSIXct(x[na_idx], format = "%Y-%m-%d", tz = "UTC")
+
+  parsed <- suppressWarnings(
+    lubridate::parse_date_time(
+      x,
+      orders = c(
+        "ymd HMS", "ymd HM", "ymd",
+        "mdy HMS", "mdy HM", "mdy",
+        "dmy HMS", "dmy HM", "dmy"
+      ),
+      tz = "UTC",
+      quiet = TRUE
+    )
+  )
+
+  if (all(is.na(parsed[!all_blank]))) {
+    stop(paste0("Could not parse dates in column '", col_name,
+                "'. Please check the format (e.g., YYYY-MM-DD or MM/DD/YYYY HH:MM)."))
   }
+
   parsed
 }
+
 
 # Load package dependencies for waterlogged workflows
 library(dplyr) # tidyverse operations
 library(tidyr) # data reshaping
 library(ggplot2) # plotting
-library(lubridate) # date handling
 library(purrr) # functional programming
 
 # Load waterlogged: use installed package if available, otherwise source

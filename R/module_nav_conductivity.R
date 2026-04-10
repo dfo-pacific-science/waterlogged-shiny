@@ -407,7 +407,8 @@ module_cond_upload_ui <- function(id) {
             ),
             fileInput(ns("baro_qc_file"), NULL,
               accept = ".csv",
-              placeholder = "Choose processed baro CSV...",
+              multiple = TRUE,
+              placeholder = "Choose one or more processed baro CSVs...",
               width = "100%"
             ),
             actionButton(ns("load_baro_btn"), "Load Barometric Data (wait until above section says Upload Complete before pressing this button)",
@@ -913,9 +914,9 @@ module_cond_upload_server <- function(id) {
 
     # ------ Load baro button ------
     observeEvent(input$load_baro_btn, {
-      baro_file <- input$baro_qc_file
+      baro_files <- input$baro_qc_file
 
-      if (is.null(baro_file)) {
+      if (is.null(baro_files)) {
         showNotification("No baro file selected. Please upload a processed baro CSV.",
           type = "error", duration = 5)
         return()
@@ -926,23 +927,31 @@ module_cond_upload_server <- function(id) {
       shinyjs::disable("load_baro_btn")
 
       tryCatch({
-        baro_data <- read.csv(baro_file$datapath, stringsAsFactors = FALSE)
+        # Read and bind all uploaded files
+        baro_list <- lapply(baro_files$datapath, function(path) {
+          read.csv(path, stringsAsFactors = FALSE)
+        })
 
         # Validate required columns
         required_cols <- c("site_station_code", "timestamp",
                            "airpress_kPa", "airpress_kPa_adj",
                            "airtemp_C", "airtemp_C_adj")
-        missing_cols <- setdiff(required_cols, names(baro_data))
+
+        base_cols <- names(baro_list[[1]])
+        missing_cols <- setdiff(required_cols, base_cols)
 
         if (length(missing_cols) > 0) {
           shinyjs::hide("baro_spinner")
           shinyjs::enable("load_baro_btn")
           showNotification(
-            paste("Missing required columns:", paste(missing_cols, collapse = ", ")),
+            paste("Upload failed. Missing required columns:", paste(missing_cols, collapse = ", ")),
             type = "error", duration = 8
           )
           return()
         }
+
+        # Bind validated list
+        baro_data <- dplyr::bind_rows(baro_list)
 
         # Parse timestamps (handles date-only midnight rows like "2023-10-19")
         if (is.character(baro_data$timestamp)) {

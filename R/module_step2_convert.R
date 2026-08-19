@@ -379,7 +379,7 @@ cond_final <- convert_conductivity_spc_uScm(
       tags$div(
         class = "clean-print",
         style = "background-color: #d4edda; padding: 15px; border-radius: 5px; margin-top: 20px;",
-        tags$p(tags$strong("Next Step:"), " Once your conversions look correct, proceed to Step 3 (QAQC)
+        tags$p(tags$strong("Next Step:"), " Once your conversions look correct, proceed to Step 3 (QC)
         to identify and flag data quality issues such as ice formation, dry periods, and sensor errors.",
         style = "margin: 0;")
       )

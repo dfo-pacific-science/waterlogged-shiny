@@ -3,7 +3,7 @@
 # =============================================================================
 #
 # Full pipeline for HOBO U20 water level loggers:
-#   1. Import Data           — bind_hobo_files() + snap timestamps
+#   1. Import Data           — bind_logger_files() + snap timestamps
 #   2. Convert Data Metrics  — add_nearest_baro() + convert_waterlevel_kPa_m()
 #   3. QA Water Level        — qc_waterlevel() + visual review
 #   (Manual adjustments are integrated into QA Water Level)
@@ -277,7 +277,7 @@ module_wl_upload_ui <- function(id) {
               "This step calls the following function from the ",
               tags$code("waterlogged"), " package:"
             ),
-            tags$code("bind_hobo_files()"),
+            tags$code("bind_logger_files()"),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
                    "Parse raw HOBO CSVs, match serial numbers to metadata")
           ),
@@ -362,7 +362,7 @@ module_wl_upload_ui <- function(id) {
             style = "background-color: #f0f0f0; padding: 20px; border-radius: 5px; margin-bottom: 15px; flex: 1;",
             tags$h4("Processed Baro File", style = "margin-top: 0;"),
             tags$p(
-              "This file is the output of the Barometric Pressure QAQC workflow. ",
+              "This file is the output of the Barometric Pressure QC workflow. ",
               "You must run through the ",
               tags$a(
                 href = "#",
@@ -396,9 +396,9 @@ module_wl_upload_ui <- function(id) {
             tags$div(
               style = "background-color: #e8e8e8; padding: 10px; border-radius: 4px; margin-top: 10px;",
               tags$h5("Follow Along in the R package", style = "margin-top: 0; margin-bottom: 5px;"),
-              tags$code("barometric_qaqc_all()"),
+              tags$code("qc_barometric_all()"),
               tags$p(style = "font-size: 12px; color: #666; margin-top: 5px; margin-bottom: 0;",
-                     "Run automated QAQC on baro data (produces the required columns)")
+                     "Run automated QC on baro data (produces the required columns)")
             ),
             tags$p(style = "font-size: 12px; margin-top: 10px;",
               tags$a(
@@ -424,7 +424,7 @@ module_wl_upload_ui <- function(id) {
             style = "background-color: #fafafa; padding: 15px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #e0e0e0;",
             tags$h4("Upload Processed Barometric CSV", style = "margin-top: 0;"),
             tags$p(style = "font-size: 13px; color: #666;",
-              "Upload a processed baro CSV file (output of baro QAQC), or use ",
+              "Upload a processed baro CSV file (output of baro QC), or use ",
               "session data from the Barometric Pressure tab if available."
             ),
             fileInput(ns("baro_qc_file"), NULL,
@@ -973,7 +973,7 @@ module_wl_upload_server <- function(id) {
         shinyjs::disable("bind_btn")
 
         tryCatch({
-          result <- bind_hobo_files(
+          result <- bind_logger_files(
             file_paths = raw_files$datapath,
             metadata = metadata
           )
@@ -3057,7 +3057,7 @@ module_wl_qaqc_ui <- function(id) {
       hr(),
 
       # ================================================================
-      # Section 1: Run Automated QAQC
+      # Section 1: Run Automated QC
       # ================================================================
       tags$div(
         style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
@@ -3069,12 +3069,12 @@ module_wl_qaqc_ui <- function(id) {
 
       tags$div(
         style = "display: flex; flex-wrap: wrap; margin: 0 -15px;",
-        # ---- Left: QAQC explanation (33%) ----
+        # ---- Left: QC explanation (33%) ----
         tags$div(
           style = "flex: 0 0 33.333%; max-width: 33.333%; padding: 0 15px; display: flex; flex-direction: column;",
           tags$div(
             style = "background-color: #f0f0f0; padding: 20px; border-radius: 5px; margin-bottom: 15px;",
-            tags$h4("QAQC Rules", style = "margin-top: 0;"),
+            tags$h4("QC Rules", style = "margin-top: 0;"),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
               tags$li(tags$strong("OUTLIER_WT"), " \u2014 water temp < -1\u00b0C \u2192 set to NA;", tags$br(), "     -1\u00b0C < water temp < 0\u00b0C \u2192 corrected to 0\u00b0C"),
@@ -3096,7 +3096,7 @@ module_wl_qaqc_ui <- function(id) {
             tags$h4("Follow Along in the R Package (waterlogged)", style = "margin-top: 0;"),
             tags$code("qc_waterlevel()"),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
-                   "Automated QAQC with flag and edit columns"),
+                   "Automated QC with flag and edit columns"),
             tags$code("adjust_logger_NA()"),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
                    "Remove data for ice / dry / disturbance periods"),
@@ -3122,7 +3122,7 @@ module_wl_qaqc_ui <- function(id) {
               selectInput(ns("station_select"), "Select Station:",
                 choices = NULL, width = "100%")
             ),
-            tags$h4("QAQC Parameters", style = "margin-top: 0;"),
+            tags$h4("QC Parameters", style = "margin-top: 0;"),
             tags$p(style = "font-size: 13px; color: #666; margin-bottom: 10px;",
               icon("sliders-h"),
               " Adjust the thresholds used by ", tags$code("qc_waterlevel()"),
@@ -3142,13 +3142,13 @@ module_wl_qaqc_ui <- function(id) {
                   value = 0.1, min = 0.01, max = 1, step = 0.01)
               )
             ),
-            actionButton(ns("run_qaqc"), "Run Water Level QAQC",
+            actionButton(ns("run_qaqc"), "Run Water Level QC",
               class = "btn-success btn-lg", width = "100%",
               icon = icon("play"),
               style = "color: #ffffff;"
             ),
 
-            # Flag summary (appears after QAQC runs)
+            # Flag summary (appears after QC runs)
             conditionalPanel(
               condition = "output.show_results",
               ns = ns,
@@ -3162,7 +3162,7 @@ module_wl_qaqc_ui <- function(id) {
         )
       ),
 
-      # ======== Conditional: Results appear after QAQC runs ========
+      # ======== Conditional: Results appear after QC runs ========
       conditionalPanel(
         condition = "output.show_results",
         ns = ns,
@@ -3351,10 +3351,10 @@ module_wl_qaqc_ui <- function(id) {
               style = "background-color: #f0f0f0; padding: 20px; border-radius: 5px; flex: 1;",
               tags$h4("Download Results", style = "margin-top: 0;"),
               tags$p(style = "font-size: 13px;",
-                "Download the QAQC'd water level data as CSV for the ",
+                "Download the QC'd water level data as CSV for the ",
                 tags$strong("selected station"), ". The exported file ",
                 "contains raw columns, adjusted columns, and all edit/flag ",
-                "columns. The QAQC log records every automated and manual ",
+                "columns. The QC log records every automated and manual ",
                 "adjustment applied."
               ),
               tags$p(style = "font-size: 13px; color: #666;",
@@ -3377,7 +3377,7 @@ module_wl_qaqc_ui <- function(id) {
                     style = "width: 100%; color: #ffffff;")
                 ),
                 column(4,
-                  downloadButton(ns("download_log"), "Download QAQC Log",
+                  downloadButton(ns("download_log"), "Download QC Log",
                     class = "btn-info",
                     style = "width: 100%; color: #ffffff;")
                 ),
@@ -3415,7 +3415,7 @@ module_wl_qaqc_server <- function(id) {
 
     # Module-local state
     wl_qc_result    <- reactiveVal(NULL)   # full dataset (all stations)
-    qaqc_log        <- reactiveVal(NULL)   # accumulated QAQC log
+    qaqc_log        <- reactiveVal(NULL)   # accumulated QC log
 
     # Range selection
     selected_ranges <- reactiveVal(list())
@@ -3453,12 +3453,12 @@ module_wl_qaqc_server <- function(id) {
         tags$div(
           style = "color: #155724; background: #d4edda; padding: 12px; border-radius: 5px; margin-bottom: 10px;",
           icon("check-circle"),
-          sprintf(" Ready: %d station(s), %s records available for QAQC", n_stns, n_recs)
+          sprintf(" Ready: %d station(s), %s records available for QC", n_stns, n_recs)
         )
       }
     })
 
-    # ------ Run QAQC ------
+    # ------ Run QC ------
     observeEvent(input$run_qaqc, {
       station <- input$station_select
       req(station)
@@ -3466,7 +3466,7 @@ module_wl_qaqc_server <- function(id) {
       req(converted_data)
 
       tryCatch({
-        showNotification("Running Water Level QAQC...",
+        showNotification("Running Water Level QC...",
           type = "message", duration = NULL, id = "wl_qaqc_progress")
 
         result <- qc_waterlevel(
@@ -3494,12 +3494,12 @@ module_wl_qaqc_server <- function(id) {
         range_history(list())
 
         removeNotification("wl_qaqc_progress")
-        showNotification(sprintf("QAQC complete for %s", station),
+        showNotification(sprintf("QC complete for %s", station),
           type = "message", duration = 5)
 
       }, error = function(e) {
         removeNotification("wl_qaqc_progress")
-        showNotification(paste("QAQC error:", conditionMessage(e)),
+        showNotification(paste("QC error:", conditionMessage(e)),
           type = "error", duration = 8)
       })
     })
@@ -3571,7 +3571,7 @@ module_wl_qaqc_server <- function(id) {
       )
     })
 
-    # ------ QAQC Plot (3-panel time series) ------
+    # ------ QC Plot (3-panel time series) ------
     # JS callback: intercepts drag in Select Range mode
     drag_range_js <- sprintf("
       function(el, x) {
@@ -3667,7 +3667,7 @@ module_wl_qaqc_server <- function(id) {
 
       subplot(p1, p2, p3, p4, nrows = 4, shareX = TRUE, titleY = TRUE) %>%
         layout(
-          title = list(text = paste("Water Level QAQC -", station), font = list(size = 14)),
+          title = list(text = paste("Water Level QC -", station), font = list(size = 14)),
           xaxis = list(title = ""),
           xaxis2 = list(title = ""),
           xaxis3 = list(title = ""),
@@ -4340,7 +4340,7 @@ module_wl_qaqc_server <- function(id) {
       }
     )
 
-    # ------ Download: QAQC Log ------
+    # ------ Download: QC Log ------
     output$download_log <- downloadHandler(
       filename = function() {
         station <- input$station_select
@@ -4659,7 +4659,7 @@ module_wl_datum_ui <- function(id) {
               "want a different datum origin (e.g. a known geodetic elevation)."
             ),
             tags$h4("Follow Along in the R Package", style = "margin-top: 15px;"),
-            tags$code("wl_set_datum()"),
+            tags$code("adjust_waterlevel_datum()"),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
               "Anchors first valid visit at 100.0 m, computes constant offset, ",
               "creates wl_elev_m column"
@@ -4760,7 +4760,7 @@ module_wl_datum_ui <- function(id) {
                 tags$li("All existing stage and flag columns are preserved")
               ),
               tags$p(style = "font-size: 13px; color: #666;",
-                "The QAQC log records the datum offset, anchor visit, and benchmark used."
+                "The QC log records the datum offset, anchor visit, and benchmark used."
               )
             )
           ),
@@ -4771,7 +4771,7 @@ module_wl_datum_ui <- function(id) {
               style = "background-color: #fafafa; padding: 20px; border-radius: 5px; border: 1px solid #e0e0e0;",
               downloadButton(ns("download_datum_csv"), "Download Datum-Adjusted CSV",
                 class = "btn-primary", style = "width: 100%; margin-bottom: 10px; color: #ffffff;"),
-              downloadButton(ns("download_datum_log"), "Download QAQC Log CSV",
+              downloadButton(ns("download_datum_log"), "Download QC Log CSV",
                 class = "btn-default", style = "width: 100%;")
             )
           )
@@ -5078,7 +5078,7 @@ module_wl_datum_server <- function(id) {
         # Capture warnings
         caught_warnings <- character(0)
         result <- withCallingHandlers(
-          wl_set_datum(
+          adjust_waterlevel_datum(
             input_data       = qc_data,
             select_station   = station,
             level_runs       = bm,
@@ -5096,7 +5096,7 @@ module_wl_datum_server <- function(id) {
 
         datum_warnings(caught_warnings)
 
-        # Extract QAQC log
+        # Extract QC log
         log_attr <- attr(result, "qaqc_log")
         datum_log(log_attr)
 
@@ -5158,7 +5158,7 @@ module_wl_datum_server <- function(id) {
           )
 
           # Rebuild benchmark network to get absolute elevations
-          # (mirrors wl_set_datum logic)
+          # (mirrors adjust_waterlevel_datum logic)
           stn_bm <- stn_bm[order(visit_dt), ]
           visit_dt <- sort(visit_dt)
 
@@ -5312,7 +5312,7 @@ module_wl_datum_server <- function(id) {
       if (!is.null(log) && nrow(log) > 0) {
         stn_log <- log[log$station == station, ]
         if (nrow(stn_log) > 0) {
-          cat("QAQC Log Entry:\n")
+          cat("QC Log Entry:\n")
           for (i in seq_len(nrow(stn_log))) {
             cat("  Action:", stn_log$action[i], "\n")
             if ("action_note" %in% names(stn_log)) {
@@ -5399,7 +5399,7 @@ module_wl_datum_server <- function(id) {
       }
     )
 
-    # ------ Download: QAQC Log ------
+    # ------ Download: QC Log ------
     output$download_datum_log <- downloadHandler(
       filename = function() {
         station <- input$station_select

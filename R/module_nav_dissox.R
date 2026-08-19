@@ -362,7 +362,7 @@ module_do_upload_ui <- function(id) {
             tags$div(
               style = "background-color: #e8e8e8; padding: 10px; border-radius: 4px; margin-top: 10px;",
               tags$h5("Follow Along in the R package", style = "margin-top: 0; margin-bottom: 5px;"),
-              tags$code("barometric_qaqc_all()"),
+              tags$code("qc_barometric_all()"),
               tags$p(style = "font-size: 12px; color: #666; margin-top: 5px; margin-bottom: 0;",
                      "Run automated QAQC on baro data (produces the required columns)")
             ),

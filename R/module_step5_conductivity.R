@@ -3,7 +3,7 @@
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# 5a  Conductivity QAQC  (qc_conductivity)
+# 5a  Conductivity QC  (qc_conductivity)
 # -----------------------------------------------------------------------------
 module_step5_cond_qaqc_ui <- function(id) {
   ns <- NS(id)
@@ -12,7 +12,7 @@ module_step5_cond_qaqc_ui <- function(id) {
     shinydashboard::box(
       width = 12,
       tags$h1("Step 5: Conductivity", class = "custom-h1"),
-      tags$h2("5a. Conductivity QAQC", class = "custom-h2"),
+      tags$h2("5a. Conductivity QC", class = "custom-h2"),
 
       tags$div(
         class = "clean-print",
@@ -38,7 +38,7 @@ module_step5_cond_qaqc_ui <- function(id) {
           width = 4,
           tags$div(
             style = "background-color: #fff8e1; padding: 20px; border-radius: 5px; margin-bottom: 20px;",
-            tags$h4("Automatic QAQC rules", style = "margin-top: 0;"),
+            tags$h4("Automatic QC rules", style = "margin-top: 0;"),
             tags$p("qc_conductivity() applies these checks:"),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
@@ -84,13 +84,13 @@ module_step5_cond_qaqc_ui <- function(id) {
           tags$h4("qc_conductivity()"),
           tags$p(
             "Runs automatic quality checks on conductivity data and flags suspicious
-            values. Returns the data frame with QAQC columns added.",
+            values. Returns the data frame with QC columns added.",
             class = "clean-print"
           ),
           tags$pre(
             class = "clean-print",
             style = "background-color: #f5f5f5; padding: 15px; font-family: monospace; font-size: 12px;",
-"# Run automatic QAQC on conductivity data
+"# Run automatic QC on conductivity data
 cond_qc <- qc_conductivity(
   input_data                 = cond_data,
   select_station             = \"TUMT_WE_40\",
@@ -109,7 +109,7 @@ cat(\"Temp out range: \", sum(cond_qc$FLAG_RANGE, na.rm = TRUE))
 cat(\"Dry flagged:    \", sum(cond_qc$FLAG_DRY, na.rm = TRUE))
 
 # Visual review
-plot_qaqc_timeseries(
+plot_qc_timeseries(
   cond_data      = cond_qc,
   select_station = \"TUMT_WE_40\"
 )"
@@ -147,7 +147,7 @@ cond_qc <- adjust_logger_NA(
             tags$p(
               style = "margin: 0; font-size: 13px; color: #333;",
               tags$strong("Placeholder:"),
-              " The interactive QAQC controls (station selector, threshold parameters,
+              " The interactive QC controls (station selector, threshold parameters,
               run button, output plots, and manual adjustment tools) will be wired up
               in a future update."
             )
@@ -467,7 +467,7 @@ print(sample_rows)"
             style = "background-color: #f8f9fa; padding: 20px; border-radius: 5px;",
             tags$pre(
               style = "margin: 0; font-size: 12px;",
-"Step 5a:  qc_conductivity()              \u2192  auto QAQC + manual adjustments
+"Step 5a:  qc_conductivity()              \u2192  auto QC + manual adjustments
 Step 5b:  wq_drift_correction()            \u2192  drift corrected
 Step 5c:  convert_conductivity_spc_uScm() \u2192  specific conductance at 25\u00B0C
 

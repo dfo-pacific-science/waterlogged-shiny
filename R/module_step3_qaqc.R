@@ -1,28 +1,28 @@
-#' Step 3: QAQC Module - UI
+#' Step 3: QC Module - UI
 module_step3_qaqc_ui <- function(id) {
   ns <- NS(id)
 
   tagList(
     shinydashboard::box(
       width = 12,
-      tags$h1("Step 3: QAQC", class = "custom-h1"),
-      tags$h2("Quality Assurance and Quality Control", class = "custom-h2"),
+      tags$h1("Step 3: QC", class = "custom-h1"),
+      tags$h2("Quality Control", class = "custom-h2"),
 
       # Introduction
       tags$div(
         class = "clean-print",
         style = "margin-bottom: 20px;",
         tags$p(
-          "QAQC (Quality Assurance and Quality Control) is a critical step in water data
+          "QC (Quality Control) is a critical step in water data
           processing. From experience with continuous water monitoring data, it is necessary
           to investigate data from each station individually. Visual investigation of time
           series and automated flags allows you to confirm periods where loggers were dry,
           frozen, or disturbed."
         ),
         tags$p(
-          "The waterlogged package provides automated QAQC functions that flag common issues
+          "The waterlogged package provides automated QC functions that flag common issues
           using predefined rules, plus manual adjustment functions for correcting specific
-          problems you identify during visual review. All adjustments are recorded in QAQC
+          problems you identify during visual review. All adjustments are recorded in QC
           columns, creating a transparent audit trail."
         )
       ),
@@ -33,9 +33,9 @@ module_step3_qaqc_ui <- function(id) {
           width = 4,
           tags$div(
             style = "background-color: #e3f2fd; padding: 20px; border-radius: 5px; margin-bottom: 20px;",
-            tags$h4("QAQC Philosophy", style = "margin-top: 0;"),
+            tags$h4("QC Philosophy", style = "margin-top: 0;"),
             tags$p(
-              "The goal of QAQC is to identify data that may not represent true environmental
+              "The goal of QC is to identify data that may not represent true environmental
               conditions, so that it can be flagged, adjusted, or removed. Common issues include:"
             ),
             tags$ul(
@@ -53,7 +53,7 @@ module_step3_qaqc_ui <- function(id) {
             style = "background-color: #fff3cd; padding: 20px; border-radius: 5px; margin-bottom: 20px;",
             tags$h4("Using multiple loggers", style = "margin-top: 0;"),
             tags$p(
-              "Overlaying data from multiple loggers at the same site makes QAQC much easier.
+              "Overlaying data from multiple loggers at the same site makes QC much easier.
               For example, you can compare:"
             ),
             tags$ul(
@@ -71,12 +71,12 @@ module_step3_qaqc_ui <- function(id) {
             style = "background-color: #d4edda; padding: 20px; border-radius: 5px;",
             tags$h4("Documentation", style = "margin-top: 0;"),
             tags$p(
-              "We recommend saving your QAQC R scripts as documentation for future reference
+              "We recommend saving your QC R scripts as documentation for future reference
               and transparency. This creates a reproducible record of all adjustments made
               to the data."
             ),
             tags$p(
-              "Each adjustment function adds QAQC columns to the data with codes explaining
+              "Each adjustment function adds QC columns to the data with codes explaining
               what was changed and why. The original raw values are preserved in separate
               columns."
             )
@@ -86,9 +86,9 @@ module_step3_qaqc_ui <- function(id) {
         # Right column - available functions
         column(
           width = 8,
-          tags$h4("Available QAQC Functions"),
+          tags$h4("Available QC Functions"),
           tags$p(
-            "The package provides QAQC functions for each logger type. Each function
+            "The package provides QC functions for each logger type. Each function
             applies automated rules and produces interactive plots for visual assessment.",
             class = "clean-print"
           ),
@@ -122,16 +122,16 @@ module_step3_qaqc_ui <- function(id) {
       hr(),
 
       # ============================================================
-      # Part A: Water Level QAQC
+      # Part A: Water Level QC
       # ============================================================
-      tags$h3("Part A: Water Level QAQC", class = "custom-h2"),
+      tags$h3("Part A: Water Level QC", class = "custom-h2"),
 
       fluidRow(
         column(
           width = 4,
           tags$div(
             style = "background-color: #e8f5e9; padding: 20px; border-radius: 5px; margin-bottom: 20px;",
-            tags$h4("Automatic QAQC Rules", style = "margin-top: 0;"),
+            tags$h4("Automatic QC Rules", style = "margin-top: 0;"),
             tags$p("The qc_waterlevel() function applies these rules:"),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
@@ -148,7 +148,7 @@ module_step3_qaqc_ui <- function(id) {
           width = 8,
           tags$h4("qc_waterlevel() - Automatic flagging"),
           tags$p(
-            "This function performs preliminary QAQC, automatically identifying and flagging
+            "This function performs preliminary QC, automatically identifying and flagging
             common issues based on the rules shown.",
             class = "clean-print"
           ),
@@ -157,7 +157,7 @@ module_step3_qaqc_ui <- function(id) {
           tags$pre(
             class = "clean-print",
             style = "background-color: #f5f5f5; padding: 15px; font-family: monospace; font-size: 12px;",
-"# Run automatic QAQC on water level data
+"# Run automatic QC on water level data
 station_wl_dat2 <- qc_waterlevel(
   input_data = station_wl_dat,
   select_station = \"ALBR_ST_30\",
@@ -165,10 +165,10 @@ station_wl_dat2 <- qc_waterlevel(
 )
 
 # Returns a list:
-# [[1]] Dataframe with QAQC flags added
+# [[1]] Dataframe with QC flags added
 # [[2]] Interactive plot for visual assessment
 
-# View the interactive QAQC plot
+# View the interactive QC plot
 station_wl_dat2[[2]]"
           )
         )
@@ -185,9 +185,9 @@ station_wl_dat2[[2]]"
         class = "clean-print",
         style = "margin-bottom: 20px;",
         tags$p(
-          "After reviewing the automated QAQC results, you will often identify specific issues
+          "After reviewing the automated QC results, you will often identify specific issues
           that need manual correction. The package provides several functions for common
-          adjustment scenarios. Use your mouse to zoom into the QAQC plots to identify the
+          adjustment scenarios. Use your mouse to zoom into the QC plots to identify the
           exact timestamps for problematic periods."
         )
       ),
@@ -240,7 +240,7 @@ station_wl_dat2[[2]]"
           tags$pre(
             class = "clean-print",
             style = "background-color: #f5f5f5; padding: 15px; font-family: monospace; font-size: 12px;",
-"# First, identify the spike timestamps from the QAQC plot
+"# First, identify the spike timestamps from the QC plot
 # Hover over the plot to see exact timestamps
 
 # Flatten an ice-related spike
@@ -277,16 +277,16 @@ station_wl_dat4 <- adjust_waterlevel_offset(
       hr(),
 
       # ============================================================
-      # Part B: Dissolved Oxygen QAQC
+      # Part B: Dissolved Oxygen QC
       # ============================================================
-      tags$h3("Part B: Dissolved Oxygen QAQC", class = "custom-h2"),
+      tags$h3("Part B: Dissolved Oxygen QC", class = "custom-h2"),
 
       fluidRow(
         column(
           width = 4,
           tags$div(
             style = "background-color: #fce4ec; padding: 20px; border-radius: 5px; margin-bottom: 20px;",
-            tags$h4("Automatic QAQC Rules", style = "margin-top: 0;"),
+            tags$h4("Automatic QC Rules", style = "margin-top: 0;"),
             tags$p("The qc_dissox() function applies these rules:"),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
@@ -301,9 +301,9 @@ station_wl_dat4 <- adjust_waterlevel_offset(
 
           tags$div(
             style = "background-color: #e8f5e9; padding: 20px; border-radius: 5px;",
-            tags$h4("Tips for DO QAQC", style = "margin-top: 0;"),
+            tags$h4("Tips for DO QC", style = "margin-top: 0;"),
             tags$p(
-              "If you have water level data from the same site, include it in the QAQC
+              "If you have water level data from the same site, include it in the QC
               function for better dry/ice detection. Look for periods where:"
             ),
             tags$ul(
@@ -321,7 +321,7 @@ station_wl_dat4 <- adjust_waterlevel_offset(
           width = 8,
           tags$h4("qc_dissox() Function"),
           tags$p(
-            "Similar to water level QAQC, this function performs preliminary quality control
+            "Similar to water level QC, this function performs preliminary quality control
             on dissolved oxygen data and produces interactive plots for visual assessment.",
             class = "clean-print"
           ),
@@ -330,7 +330,7 @@ station_wl_dat4 <- adjust_waterlevel_offset(
           tags$pre(
             class = "clean-print",
             style = "background-color: #f5f5f5; padding: 15px; font-family: monospace; font-size: 12px;",
-"# Run automatic QAQC on dissolved oxygen data
+"# Run automatic QC on dissolved oxygen data
 station_do_dat2 <- qc_dissox(
   input_data = station_do_dat,
   select_station = \"ALBR_ST_30\"
@@ -359,8 +359,8 @@ station_do_dat3 <- adjust_logger_NA(
 
       hr(),
 
-      # QAQC Summary
-      tags$h3("QAQC Flag Legend", class = "custom-h2"),
+      # QC Summary
+      tags$h3("QC Flag Legend", class = "custom-h2"),
       tags$div(
         style = "display: flex; gap: 10px; margin: 20px 0; flex-wrap: wrap;",
         tags$div(style = "padding: 8px 15px; background: #28a745; color: white; border-radius: 5px;", "Good Data"),
@@ -380,9 +380,9 @@ station_do_dat3 <- adjust_logger_NA(
       tags$div(
         class = "clean-print",
         style = "background-color: #d4edda; padding: 15px; border-radius: 5px; margin-top: 20px;",
-        tags$p(tags$strong("Next Step:"), " Once you are satisfied with your QAQC adjustments
+        tags$p(tags$strong("Next Step:"), " Once you are satisfied with your QC adjustments
         and have reviewed all flagged periods, proceed to Step 4 to save your clean data files.
-        The clean data will include all QAQC columns documenting the adjustments made.",
+        The clean data will include all QC columns documenting the adjustments made.",
         style = "margin: 0;")
       )
     ),
@@ -397,7 +397,7 @@ station_do_dat3 <- adjust_logger_NA(
   )
 }
 
-#' Step 3: QAQC Module - Server
+#' Step 3: QC Module - Server
 module_step3_qaqc_server <- function(id) {
   moduleServer(id, function(input, output, session) {
     # Server logic will be implemented in future iterations

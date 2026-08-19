@@ -53,7 +53,7 @@ module_step1_wl_ui <- function(id) {
             tags$h4("What to look for", style = "margin-top: 0;"),
             tags$p(
               "When reviewing water level data, you are looking for periods that may need
-              to be flagged or removed during QAQC. Key issues include:",
+              to be flagged or removed during QC. Key issues include:",
               style = "margin-bottom: 10px;"
             ),
             tags$ul(

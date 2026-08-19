@@ -6,16 +6,16 @@ module_step4_save_ui <- function(id) {
     shinydashboard::box(
       width = 12,
       tags$h1("Step 4: Save Clean Site Data", class = "custom-h1"),
-      tags$h2("Export processed data with QAQC documentation", class = "custom-h2"),
+      tags$h2("Export processed data with QC documentation", class = "custom-h2"),
 
       # Introduction
       tags$div(
         class = "clean-print",
         style = "margin-bottom: 20px;",
         tags$p(
-          "After completing QAQC, you need to save your clean data files for further analysis
+          "After completing QC, you need to save your clean data files for further analysis
           or sharing. The write_clean_data() function prepares your data by keeping only the
-          essential columns while preserving the QAQC documentation that explains what
+          essential columns while preserving the QC documentation that explains what
           adjustments were made and why."
         ),
         tags$p(
@@ -33,12 +33,12 @@ module_step4_save_ui <- function(id) {
             style = "background-color: #e3f2fd; padding: 20px; border-radius: 5px; margin-bottom: 20px;",
             tags$h4("What gets saved?", style = "margin-top: 0;"),
             tags$p(
-              "Clean data files contain the essential processed values plus QAQC metadata.
+              "Clean data files contain the essential processed values plus QC metadata.
               Intermediate columns used during processing (raw values, temporary calculations)
               are dropped to keep the files clean and focused."
             ),
             tags$p(
-              "The QAQC columns are important - they document exactly what adjustments were
+              "The QC columns are important - they document exactly what adjustments were
               made to each data point, creating a transparent audit trail."
             )
           ),
@@ -63,7 +63,7 @@ module_step4_save_ui <- function(id) {
             style = "background-color: #fff3cd; padding: 20px; border-radius: 5px;",
             tags$h4("Documentation tip", style = "margin-top: 0;"),
             tags$p(
-              "We recommend saving your R script with all QAQC function calls alongside
+              "We recommend saving your R script with all QC function calls alongside
               your clean data. This creates a reproducible record of all processing steps
               and allows you or others to re-run the analysis if needed."
             )
@@ -75,7 +75,7 @@ module_step4_save_ui <- function(id) {
           width = 8,
           tags$h4("The write_clean_data() Function"),
           tags$p(
-            "This function streamlines your QAQC'd data by keeping only the essential columns
+            "This function streamlines your QC'd data by keeping only the essential columns
             and saving it in a standardized format.",
             class = "clean-print"
           ),
@@ -94,7 +94,7 @@ module_step4_save_ui <- function(id) {
           tags$tbody(
             tags$tr(
               tags$td(style = "border: 1px solid #ddd; padding: 10px;", tags$code("input_data")),
-              tags$td(style = "border: 1px solid #ddd; padding: 10px;", "Your QAQC'd dataframe for a single station")
+              tags$td(style = "border: 1px solid #ddd; padding: 10px;", "Your QC'd dataframe for a single station")
             ),
             tags$tr(
               tags$td(style = "border: 1px solid #ddd; padding: 10px;", tags$code("logger_type")),
@@ -133,7 +133,7 @@ write_clean_data(
 
       tags$h3("Output File Structure", class = "custom-h2"),
       tags$p(
-        "Clean data files contain the processed values plus QAQC documentation columns.
+        "Clean data files contain the processed values plus QC documentation columns.
         The exact columns depend on the logger type:",
         class = "clean-print"
       ),
@@ -212,7 +212,7 @@ write_clean_data(
         ),
         tags$div(style = "margin: 8px 0;",
           tags$input(type = "checkbox", checked = "checked", style = "margin-right: 10px;"),
-          "Include QAQC metadata columns"
+          "Include QC metadata columns"
         )
       ),
 
@@ -224,7 +224,7 @@ write_clean_data(
         ),
         tags$div(
           style = "display: inline-block; padding: 15px 40px; background: #28a745; color: white; border-radius: 5px; cursor: pointer;",
-          "Generate QAQC Report"
+          "Generate QC Report"
         )
       ),
 

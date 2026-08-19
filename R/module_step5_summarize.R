@@ -1,4 +1,4 @@
-#' Step 5: Summarize Data Module - UI
+#' Step 5: Summarise Data Module - UI
 module_step5_summarize_ui <- function(id) {
   ns <- NS(id)
 
@@ -13,10 +13,13 @@ module_step5_summarize_ui <- function(id) {
         class = "clean-print",
         style = "margin-bottom: 20px;",
         tags$p(
-          "Now that you have clean, QAQC'd data, you can generate summary statistics and
-          visualizations to understand patterns and prepare results for reporting. The
-          get_logger_data() function makes it easy to load and aggregate your processed
-          data at different temporal scales."
+          "Now that you have clean, QC'd data, you can generate summary statistics and
+          visualizations to understand patterns and prepare results for reporting.
+          The function summarise_clean_data() will produce data summaries for clean logger data
+          at a specified temporal scale (e.g. monthly mean of water temperature) for each station. From summarized data,
+          plot_clean_timeseries() will visualize clean data to the aggregate timescale. The
+          get_logger_data() function makes it easy to load processed
+          data from any data processing stage for ease of aggrigating or resuming workflow."
         ),
         tags$p(
           "Summaries are useful for reporting annual or seasonal averages, comparing between
@@ -81,7 +84,7 @@ module_step5_summarize_ui <- function(id) {
           width = 8,
           tags$h4("The get_logger_data() Function"),
           tags$p(
-            "Use this function to retrieve and optionally aggregate your processed data:",
+            "Use this function to retrieve your processed data:",
             class = "clean-print"
           ),
 
@@ -126,22 +129,24 @@ module_step5_summarize_ui <- function(id) {
             class = "clean-print",
             style = "background-color: #f5f5f5; padding: 15px; font-family: monospace; font-size: 12px;",
 "# Get daily summary of water level for all stations
-wl_daily <- get_logger_data(
+wl_hourly <- get_logger_data(
   path_to_data = \"data/waterlevel/2024/clean\",
   metric = \"waterlevel\",
   data_processing = \"clean\",
-  select_station = \"all\",
-  temporal_scale = \"daily\"
+  select_station = \"all\"
 )
+wl_daily <- summarise_clean_data(input_data =wl_hourly, temporal_scale = \"daily\")
 
 # Get monthly summary of dissolved oxygen for one station
-do_monthly <- get_logger_data(
+do_hourly <- get_logger_data(
   path_to_data = \"data/dissolved_oxygen/2024/clean\",
   metric = \"dissolvedoxygen\",
   data_processing = \"clean\",
-  select_station = \"COOK_WE_40\",
-  temporal_scale = \"monthly\"
-)"
+  select_station = \"COOK_WE_40\"
+)
+do_daily <- summarise_clean_data(input_data =do_hourly, temporal_scale = \"monthly\")
+
+"
           )
         )
       ),
@@ -326,7 +331,7 @@ do_monthly <- get_logger_data(
   )
 }
 
-#' Step 5: Summarize Data Module - Server
+#' Step 5: Summarise Data Module - Server
 module_step5_summarize_server <- function(id) {
   moduleServer(id, function(input, output, session) {
     # Server logic will be implemented in future iterations

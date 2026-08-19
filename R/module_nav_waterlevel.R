@@ -3100,13 +3100,13 @@ module_wl_qaqc_ui <- function(id) {
             tags$code("adjust_logger_NA()"),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
                    "Remove data for ice / dry / disturbance periods"),
-            tags$code("adjust_WL_zero()"),
+            tags$code("adjust_waterlevel_zero()"),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
                    "Shift water level by constant offset"),
             tags$code("adjust_waterlevel_spike()"),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
                    "Linear interpolation across spike period"),
-            tags$code("adjust_WL_offset()"),
+            tags$code("adjust_waterlevel_offset()"),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
                    "Correct cable offset from timestamp onward")
           )
@@ -3248,7 +3248,7 @@ module_wl_qaqc_ui <- function(id) {
                 tags$p(style = "font-size: 12px;",
                   "Shift water level by a constant offset (metres). ",
                   "Apply to selected range or entire series. ",
-                  tags$code("adjust_WL_zero()")
+                  tags$code("adjust_waterlevel_zero()")
                 )
               ),
               column(3,
@@ -3264,7 +3264,7 @@ module_wl_qaqc_ui <- function(id) {
                 tags$p(style = "font-size: 12px;",
                   "Correct step change from cable break. Uses one ",
                   "range: start=pre-break, end=post-break reference. ",
-                  tags$code("adjust_WL_offset()")
+                  tags$code("adjust_waterlevel_offset()")
                 )
               )
             )
@@ -4023,7 +4023,7 @@ module_wl_qaqc_server <- function(id) {
       })
     })
 
-    # ------ Button 2: Adjust WL Zero (adjust_WL_zero) ------
+    # ------ Button 2: Adjust WL Zero (adjust_waterlevel_zero) ------
     observeEvent(input$btn_zero, {
       ranges <- selected_ranges()
 
@@ -4074,7 +4074,7 @@ module_wl_qaqc_server <- function(id) {
 
           # Apply to each selected range
           for (r in snapped) {
-            station_data <- adjust_WL_zero(
+            station_data <- adjust_waterlevel_zero(
               input_data      = station_data,
               select_station  = station,
               change_value    = change_val,
@@ -4086,7 +4086,7 @@ module_wl_qaqc_server <- function(id) {
           }
         } else {
           # Apply to entire series
-          station_data <- adjust_WL_zero(
+          station_data <- adjust_waterlevel_zero(
             input_data      = station_data,
             select_station  = station,
             change_value    = change_val,
@@ -4188,7 +4188,7 @@ module_wl_qaqc_server <- function(id) {
       })
     })
 
-    # ------ Button 4: Cable Offset (adjust_WL_offset) ------
+    # ------ Button 4: Cable Offset (adjust_waterlevel_offset) ------
     observeEvent(input$btn_offset, {
       ranges <- selected_ranges()
       if (length(ranges) != 1) {
@@ -4247,7 +4247,7 @@ module_wl_qaqc_server <- function(id) {
         # Snap range endpoints to nearest actual timestamps in data
         snapped <- snap_ranges(ranges, station_data$timestamp)
 
-        station_data <- adjust_WL_offset(
+        station_data <- adjust_waterlevel_offset(
           input_data      = station_data,
           select_station  = station,
           timestamp_start = snapped[[1]][1],

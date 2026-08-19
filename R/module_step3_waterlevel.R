@@ -380,7 +380,7 @@ module_step3_wl_qaqc_ui <- function(id) {
               style = "padding-left: 20px; font-size: 13px;",
               tags$li(tags$code("adjust_logger_NA()"), " \u2014 remove ice/dry periods"),
               tags$li(tags$code("adjust_waterlevel_spike()"), " \u2014 flatten ice spikes"),
-              tags$li(tags$code("adjust_WL_offset()"), " \u2014 correct cable breaks"),
+              tags$li(tags$code("adjust_waterlevel_offset()"), " \u2014 correct cable breaks"),
               tags$li(tags$code("wl_multipoint_correction()"), " \u2014 fix gradual drift")
             )
           )

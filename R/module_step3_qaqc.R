@@ -217,7 +217,7 @@ station_wl_dat2[[2]]"
               a spike because the offset continues."
             ),
             tags$p(
-              "Use ", tags$code("adjust_WL_offset()"), " to correct for sudden
+              "Use ", tags$code("adjust_waterlevel_offset()"), " to correct for sudden
               shifts in the reference level."
             )
           ),
@@ -263,7 +263,7 @@ qc_waterlevel(input_data = station_wl_dat3,
             class = "clean-print",
             style = "background-color: #f5f5f5; padding: 15px; font-family: monospace; font-size: 12px;",
 "# Correct for a sudden shift in water level
-station_wl_dat4 <- adjust_WL_offset(
+station_wl_dat4 <- adjust_waterlevel_offset(
   input_data = station_wl_dat3,
   select_station = \"ALBR_ST_30\",
   timestamp_start = \"2024-10-01 18:00:00\",

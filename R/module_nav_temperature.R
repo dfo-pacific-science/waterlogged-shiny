@@ -11,7 +11,7 @@
 #
 # Sub-tabs:
 #   1. Import Data          — bind_hobo_files() with metric = "watertemp" or "airtemp"
-#   2. Snap Timestamps      — resample_timestamps() to align to regular grid
+#   2. Snap Timestamps      — align_timestamps() to align to regular grid
 #   3. Add Nearest Baro     — OVERLAY ONLY: add_nearest_baro() for air temp
 #                             comparison — does NOT modify temperature data
 #   4. QC Air Temperature   — qc_airtemp() + export
@@ -19,7 +19,7 @@
 #
 # Package functions used:
 #   bind_hobo_files()       — parse raw HOBO CSVs (TidbiT, Pendant)
-#   resample_timestamps()   — snap timestamps to regular interval grid
+#   align_timestamps()   — snap timestamps to regular interval grid
 #   add_nearest_baro()      — join nearest baro air temp (overlay only)
 #   qc_airtemp()            — range-check QAQC for air temperature
 #   qc_watertemp()          — ice/dry/negative-temp QAQC for water temperature
@@ -487,7 +487,7 @@ module_temp_upload_ui <- function(id) {
           tags$div(
             style = "background-color: #f0f0f0; padding: 15px; border-radius: 5px;",
             tags$h4("Follow Along in the R Package (waterlogged)", style = "margin-top: 0;"),
-            tags$code("resample_timestamps()"),
+            tags$code("align_timestamps()"),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
                    "Snap timestamps to regular grid (optional)")
           )
@@ -1202,10 +1202,10 @@ module_temp_upload_server <- function(id) {
 
         station_arg <- if (input$snap_station == "all") NULL else input$snap_station
 
-        # Use appropriate metric label for resample_timestamps
+        # Use appropriate metric label for align_timestamps
         metric_label <- if (metric == "watertemp") "WATERTEMP" else "AIRTEMP"
 
-        result <- resample_timestamps(
+        result <- align_timestamps(
           input_data = df,
           interval = input$snap_interval,
           align = input$snap_align,

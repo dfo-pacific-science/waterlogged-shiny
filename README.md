@@ -68,7 +68,7 @@ shiny::runApp()
 
 **Authors/Developers:** Daniella LoScerbo, Amanda Martens, Julian Gan, Paula Soto
 
-**Project Supervisors:** Douglas Braun, Sean Naman, David Reid, Joel Harding
+**Principle Investigators:** Douglas Braun, Sean Naman, David Reid, Joel Harding
 
 **Technical Support:** Matthew Bayly (MJBA, App Development), Frank Poulsen (Ashlu, Technical Support)
 

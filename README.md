@@ -13,18 +13,19 @@ This application guides you through a sequential workflow for processing your wa
 | Processing Stage | Package Functions |
 |------|----------|
 | Join and Trim Raw Logger Files | `bind_logger_files()` |
-| Add Barometric Data to Logger Files* | `add_nearest_baro()` |
-| Metric Conversion* - Convert logger metrics (i.e. apply barometric compensation) | `convert_waterlevel_kPa_m()`, `convert_do_mgl_percsat()` ,`convert_conductivity_spc_uScm()` |
+| Add Barometric Data to Logger Files \* | `add_nearest_baro()` |
+| Metric Conversion \* - Convert logger metrics (i.e. apply barometric compensation) | `convert_waterlevel_kPa_m()`, `convert_do_mgl_percsat()` ,`convert_conductivity_spc_uScm()` |
 | Automated Quality Control - Remove outliers and flag data for review | `qc_waterlevel()`, `qc_dissox()`, `qc_conductivity()` , `qc_barometric`, `qc_airtemp`, `qc_watertemp` |  
 | Manual Review and Adjustments - Remove or correct outstanding data errors | `adjust_logger_NA` , `adjust_waterlevel_offset`, `adjust_waterlevel_spike`, `adjust_waterlevel_zero`, `adjust_waterlevel_datum`|
 | Export Clean Logger Data - Standardized naming and file organization | `write_clean_data()` |
 | Summarize Data - Produce daily, monthly, yearly summary statistics | `summarise_clean_data()` |
 | Visualize Data - Produce report-ready summary figures | `plot_clean_timeseries()` |
-|------|----------|
-*Indicates optional processing stage (i.e. not applicable for all logger data)
+
+\* Indicates optional processing stage (i.e. not applicable for all logger data)
 
 
 ![Process timeseries data. Apply filters and select ranges to modify.](www/img/app_overview_01.png)
+
 
 ## Supported Loggers
 

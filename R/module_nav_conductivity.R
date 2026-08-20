@@ -3,7 +3,7 @@
 # =============================================================================
 #
 # Pipeline for HOBO U24 conductivity loggers:
-#   1. Import Data  — bind_hobo_files() for conductivity loggers
+#   1. Import Data  — bind_logger_files() for conductivity loggers
 #   2. Convert & QC — add_nearest_baro(), convert_conductivity_spc_uScm(),
 #                     qc_conductivity()
 #
@@ -247,7 +247,7 @@ module_cond_upload_ui <- function(id) {
               "This step calls the following function from the ",
               tags$code("waterlogged"), " package:"
             ),
-            tags$code("bind_hobo_files()"),
+            tags$code("bind_logger_files()"),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
                    "Parse raw HOBO CSVs, auto-select conductivity range, match serial numbers to metadata")
           ),
@@ -1060,7 +1060,7 @@ module_cond_upload_server <- function(id) {
         shinyjs::disable("bind_btn")
 
         tryCatch({
-          result <- bind_hobo_files(
+          result <- bind_logger_files(
             file_paths = raw_files$datapath,
             metadata = metadata
           )

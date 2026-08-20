@@ -718,7 +718,7 @@ module_baro_upload_server <- function(id) {
       # If raw files were uploaded, bind them
       if (!is.null(raw_files)) {
         tryCatch({
-          showNotification("Binding HOBO files...", type = "message",
+          showNotification("Binding logger files...", type = "message",
             duration = NULL, id = "bind_progress")
 
           result <- bind_logger_files(

@@ -3,7 +3,7 @@
 # =============================================================================
 #
 # Pipeline for HOBO U26 dissolved oxygen loggers:
-#   1. Import Data          — bind_hobo_files() + align_timestamps()
+#   1. Import Data          — bind_logger_files() + align_timestamps()
 #   2. Convert to % Sat.    — add_nearest_baro() + convert_do_mgl_percsat()
 #   3. QC Dissolved Oxygen  — dissox_qaqc() + manual adjustments + export
 # =============================================================================
@@ -243,7 +243,7 @@ module_do_upload_ui <- function(id) {
               "This step calls the following function from the ",
               tags$code("waterlogged"), " package:"
             ),
-            tags$code("bind_hobo_files()"),
+            tags$code("bind_logger_files()"),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
                    "Parse raw HOBO CSVs, match serial numbers to metadata")
           ),
@@ -934,7 +934,7 @@ module_do_upload_server <- function(id) {
         shinyjs::disable("bind_btn")
 
         tryCatch({
-          result <- bind_hobo_files(
+          result <- bind_logger_files(
             file_paths = raw_files$datapath,
             metadata = metadata
           )

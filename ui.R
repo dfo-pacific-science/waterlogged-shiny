@@ -4,10 +4,10 @@
 # ------------------------------------------------
 # Setup UI function for Shiny app
 ui <- dashboardPage(
-  title = "Waterlogged: Water Data Processing",
+  title = "waterlogged: Water Data Processing",
   skin = "blue",
   header = dashboardHeader(
-    title = "Waterlogged",
+    title = "waterlogged",
     titleWidth = 280
   ),
 

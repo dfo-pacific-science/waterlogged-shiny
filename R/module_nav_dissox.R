@@ -3,7 +3,7 @@
 # =============================================================================
 #
 # Pipeline for HOBO U26 dissolved oxygen loggers:
-#   1. Import Data          — bind_hobo_files() + resample_timestamps()
+#   1. Import Data          — bind_logger_files() + align_timestamps()
 #   2. Convert to % Sat.    — add_nearest_baro() + convert_do_mgl_percsat()
 #   3. QC Dissolved Oxygen  — dissox_qaqc() + manual adjustments + export
 # =============================================================================
@@ -243,7 +243,7 @@ module_do_upload_ui <- function(id) {
               "This step calls the following function from the ",
               tags$code("waterlogged"), " package:"
             ),
-            tags$code("bind_hobo_files()"),
+            tags$code("bind_logger_files()"),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
                    "Parse raw HOBO CSVs, match serial numbers to metadata")
           ),
@@ -362,7 +362,7 @@ module_do_upload_ui <- function(id) {
             tags$div(
               style = "background-color: #e8e8e8; padding: 10px; border-radius: 4px; margin-top: 10px;",
               tags$h5("Follow Along in the R package", style = "margin-top: 0; margin-bottom: 5px;"),
-              tags$code("barometric_qaqc_all()"),
+              tags$code("qc_barometric_all()"),
               tags$p(style = "font-size: 12px; color: #666; margin-top: 5px; margin-bottom: 0;",
                      "Run automated QAQC on baro data (produces the required columns)")
             ),
@@ -454,7 +454,7 @@ module_do_upload_ui <- function(id) {
           tags$div(
             style = "background-color: #f0f0f0; padding: 15px; border-radius: 5px;",
             tags$h4("Follow Along in the R Package (waterlogged)", style = "margin-top: 0;"),
-            tags$code("resample_timestamps()"),
+            tags$code("align_timestamps()"),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
                    "Snap timestamps to regular grid (optional)")
           )
@@ -934,7 +934,7 @@ module_do_upload_server <- function(id) {
         shinyjs::disable("bind_btn")
 
         tryCatch({
-          result <- bind_hobo_files(
+          result <- bind_logger_files(
             file_paths = raw_files$datapath,
             metadata = metadata
           )
@@ -1055,7 +1055,7 @@ module_do_upload_server <- function(id) {
 
         station_arg <- if (input$snap_station == "all") NULL else input$snap_station
 
-        result <- resample_timestamps(
+        result <- align_timestamps(
           input_data = df,
           interval = input$snap_interval,
           align = input$snap_align,

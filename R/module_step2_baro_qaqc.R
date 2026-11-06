@@ -1,11 +1,11 @@
-#' Step 2: Barometric QAQC Module - UI
+#' Step 2: Barometric QC Module - UI
 module_step2_baro_qaqc_ui <- function(id) {
   ns <- NS(id)
 
   tagList(
     shinydashboard::box(
       width = 12,
-      tags$h1("Step 2: Barometric QAQC", class = "custom-h1"),
+      tags$h1("Step 2: Barometric QC", class = "custom-h1"),
       tags$h2("Clean barometric data before water level compensation", class = "custom-h2"),
 
       # Introduction
@@ -19,7 +19,7 @@ module_step2_baro_qaqc_ui <- function(id) {
           downstream water level and DO calculations."
         ),
         tags$p(
-          "This step applies automated QAQC checks to all barometric stations at once.
+          "This step applies automated QC checks to all barometric stations at once.
           Flagged readings are replaced with NA in the adjusted columns (airpress_kPa_adj,
           airtemp_C_adj), while the original raw values are preserved. The edit flag columns
           (OUTLIER_AP, OUTLIER_AT, FLAG_DISTURBANCE, FLAG_FLATLINE) record which check flagged each reading."
@@ -28,8 +28,8 @@ module_step2_baro_qaqc_ui <- function(id) {
 
       hr(),
 
-      # Section A: QAQC Parameters
-      tags$h3("QAQC Parameters", class = "custom-h2"),
+      # Section A: QC Parameters
+      tags$h3("QC Parameters", class = "custom-h2"),
       fluidRow(
         column(
           width = 4,
@@ -37,7 +37,7 @@ module_step2_baro_qaqc_ui <- function(id) {
             style = "background-color: #f8f9fa; padding: 20px; border-radius: 5px;",
             tags$h4("About the thresholds", style = "margin-top: 0;"),
             tags$p(
-              "The QAQC process applies five checks to each barometric station. Readings
+              "The QC process applies five checks to each barometric station. Readings
               that fail any check are flagged and their adjusted values set to NA."
             ),
             tags$ul(
@@ -95,7 +95,7 @@ module_step2_baro_qaqc_ui <- function(id) {
                 width = 6,
                 tags$div(
                   style = "margin-top: 30px;",
-                  actionButton(ns("run_qaqc"), "Run Barometric QAQC",
+                  actionButton(ns("run_qaqc"), "Run Barometric QC",
                     class = "btn-primary btn-lg", width = "100%",
                     icon = icon("play")
                   ),
@@ -112,12 +112,12 @@ module_step2_baro_qaqc_ui <- function(id) {
 
       hr(),
 
-      # Section B: Results (visible only after QAQC runs)
+      # Section B: Results (visible only after QC runs)
       conditionalPanel(
         condition = "output.show_results",
         ns = ns,
 
-        tags$h3("QAQC Results", class = "custom-h2"),
+        tags$h3("QC Results", class = "custom-h2"),
 
         # Flag Summary Table
         tags$h4("Flag Summary by Station"),
@@ -201,11 +201,11 @@ module_step2_baro_qaqc_ui <- function(id) {
   )
 }
 
-#' Step 2: Barometric QAQC Module - Server
+#' Step 2: Barometric QC Module - Server
 module_step2_baro_qaqc_server <- function(id) {
   moduleServer(id, function(input, output, session) {
 
-    # Local reactive to store QAQC result for display
+    # Local reactive to store QC result for display
     baro_qaqc_result <- reactiveVal(NULL)
 
     # Reactive flag to drive conditionalPanel visibility
@@ -245,7 +245,7 @@ module_step2_baro_qaqc_server <- function(id) {
       }
     })
 
-    # Main QAQC action
+    # Main QC action
     observeEvent(input$run_qaqc, {
       baro_list <- rv_raw_data$baro_data
       metadata <- rv_raw_data$metadata
@@ -266,10 +266,10 @@ module_step2_baro_qaqc_server <- function(id) {
       baro_combined <- dplyr::bind_rows(baro_list)
 
       tryCatch({
-        showNotification("Running barometric QAQC...", type = "message",
+        showNotification("Running barometric QC...", type = "message",
           duration = NULL, id = "baro_qaqc_progress")
 
-        result <- barometric_qaqc_all(
+        result <- qc_barometric_all(
           baro_data           = baro_combined,
           metadata            = metadata,
           path_to_output_folder = NULL,
@@ -290,12 +290,12 @@ module_step2_baro_qaqc_server <- function(id) {
         # watching output$show_results (reacts to baro_qaqc_result)
 
         removeNotification("baro_qaqc_progress")
-        showNotification("Barometric QAQC complete!", type = "message", duration = 3)
+        showNotification("Barometric QC complete!", type = "message", duration = 3)
 
       }, error = function(e) {
         removeNotification("baro_qaqc_progress")
         showNotification(
-          paste("QAQC Error:", conditionMessage(e)),
+          paste("QC Error:", conditionMessage(e)),
           type = "error", duration = 8
         )
       })
@@ -373,7 +373,7 @@ module_step2_baro_qaqc_server <- function(id) {
       )
     })
 
-    # QAQC before/after plot
+    # QC before/after plot
     output$baro_qaqc_plot <- renderPlotly({
       data <- selected_station_data()
       req(nrow(data) > 0)
@@ -451,7 +451,7 @@ module_step2_baro_qaqc_server <- function(id) {
       subplot(p1, p2, nrows = 2, shareX = TRUE, titleY = TRUE) %>%
         layout(
           title = list(
-            text = paste("Barometric QAQC -", station),
+            text = paste("Barometric QC -", station),
             font = list(size = 14)
           ),
           xaxis = list(title = "", tickangle = 0, nticks = 8),

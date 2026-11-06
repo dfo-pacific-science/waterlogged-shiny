@@ -3,8 +3,8 @@
 # =============================================================================
 #
 # Pipeline for HOBO U20 barometric pressure loggers (deployed in air):
-#   1. Import Data     — bind_hobo_files() + resample_timestamps()
-#   2. QC Barometric   — barometric_qaqc_all() + adjust_logger_NA() + export
+#   1. Import Data     — bind_logger_files() + align_timestamps()
+#   2. QC Barometric   — qc_barometric_all() + adjust_logger_NA() + export
 #
 # Pre-loaded with demo data from inst/extdata/ (ALBR_ST_30, DARL_ST_30).
 #
@@ -237,7 +237,7 @@ module_baro_upload_ui <- function(id) {
               "This step calls the following function from the ",
               tags$code("waterlogged"), " package:"
             ),
-            tags$code("bind_hobo_files()"),
+            tags$code("bind_logger_files()"),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
                    "Parse raw HOBO CSVs, match serial numbers to metadata")
           ),
@@ -325,7 +325,7 @@ module_baro_upload_ui <- function(id) {
           tags$div(
             style = "background-color: #f0f0f0; padding: 15px; border-radius: 5px;",
             tags$h4("Follow Along in the R Package (waterlogged)", style = "margin-top: 0;"),
-            tags$code("resample_timestamps()"),
+            tags$code("align_timestamps()"),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
                    "Snap timestamps to regular grid (optional)")
           )
@@ -384,7 +384,7 @@ module_baro_upload_ui <- function(id) {
         "Visually inspect the time series plots and summary statistics below ",
         "to look for anomalies such as spikes, flatlines, or gaps in the data. ",
         "Any quality issues identified here will be addressed in the next step ",
-        "using automated QAQC rules and manual adjustments. When you are ready, ",
+        "using automated QC rules and manual adjustments. When you are ready, ",
         "proceed to ", tags$strong("QC Barometric"), " in the sidebar."
       ),
 
@@ -718,10 +718,10 @@ module_baro_upload_server <- function(id) {
       # If raw files were uploaded, bind them
       if (!is.null(raw_files)) {
         tryCatch({
-          showNotification("Binding HOBO files...", type = "message",
+          showNotification("Binding logger files...", type = "message",
             duration = NULL, id = "bind_progress")
 
-          result <- bind_hobo_files(
+          result <- bind_logger_files(
             file_paths = raw_files$datapath,
             metadata = metadata
           )
@@ -851,7 +851,7 @@ module_baro_upload_server <- function(id) {
 
         station_arg <- if (input$snap_station == "all") NULL else input$snap_station
 
-        result <- resample_timestamps(
+        result <- align_timestamps(
           input_data = df,
           interval = input$snap_interval,
           align = input$snap_align,
@@ -1004,7 +1004,7 @@ module_baro_qc_ui <- function(id) {
 
       tags$p(
         class = "clean-print",
-        "This page has two stages. First, run the ", tags$strong("Automated QAQC"),
+        "This page has two stages. First, run the ", tags$strong("Automated QC"),
         " to apply range checks, spike detection, and flatline detection to all ",
         "barometric stations at once. Flagged readings are set to NA in the ",
         "adjusted columns while raw data is preserved. Then, in the ",
@@ -1020,26 +1020,26 @@ module_baro_qc_ui <- function(id) {
       hr(),
 
       # ================================================================
-      # Section 1: Run QAQC
+      # Section 1: Run QC
       # ================================================================
       tags$div(
         style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
         tags$span(
           style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
-          "Run Automated QAQC"
+          "Run Automated QC"
         )
       ),
 
       tags$div(
         style = "display: flex; flex-wrap: wrap; margin: 0 -15px;",
-        # ---- Left: QAQC explanation ----
+        # ---- Left: QC explanation ----
         tags$div(
           style = "flex: 0 0 33.333%; max-width: 33.333%; padding: 0 15px; display: flex; flex-direction: column;",
           tags$div(
             style = "background-color: #f0f0f0; padding: 20px; border-radius: 5px; margin-bottom: 15px;",
-            tags$h4("QAQC Rules", style = "margin-top: 0;"),
+            tags$h4("QC Rules", style = "margin-top: 0;"),
             tags$p(style = "font-size: 13px;",
-              "The automated QAQC applies the following checks to each station:"
+              "The automated QC applies the following checks to each station:"
             ),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
@@ -1064,9 +1064,9 @@ module_baro_qc_ui <- function(id) {
           tags$div(
             style = "background-color: #f0f0f0; padding: 15px; border-radius: 5px; margin-bottom: 15px;",
             tags$h4("Follow Along in the R Package (waterlogged)", style = "margin-top: 0;"),
-            tags$code("barometric_qaqc_all()"),
+            tags$code("qc_barometric_all()"),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
-                   "Runs all QAQC checks on every barometric station at once")
+                   "Runs all QC checks on every barometric station at once")
           ),
 
           tags$div(
@@ -1092,7 +1092,7 @@ module_baro_qc_ui <- function(id) {
           )
         ),
 
-        # ---- Right: QAQC parameters & run button ----
+        # ---- Right: QC parameters & run button ----
         tags$div(
           style = "flex: 0 0 66.667%; max-width: 66.667%; padding: 0 15px; display: flex;",
           tags$div(
@@ -1114,7 +1114,7 @@ module_baro_qc_ui <- function(id) {
               tags$p(
                 style = "font-size: 12px; color: #666; margin-top: 5px;",
                 "Leave empty to run on all stations. Select specific stations to ",
-                "re-run QAQC with different thresholds — existing results for ",
+                "re-run QC with different thresholds — existing results for ",
                 "other stations will be preserved."
               )
             ),
@@ -1145,7 +1145,7 @@ module_baro_qc_ui <- function(id) {
               column(12,
                 tags$div(
                   style = "margin-top: 30px;",
-                  actionButton(ns("run_qaqc"), "Run Barometric QAQC",
+                  actionButton(ns("run_qaqc"), "Run Barometric QC",
                     class = "btn-success btn-lg", width = "100%",
                     icon = icon("play"),
                     style = "color: #ffffff;"
@@ -1157,19 +1157,19 @@ module_baro_qc_ui <- function(id) {
         )
       ),
 
-      # ======== Conditional: Results appear after QAQC runs ========
+      # ======== Conditional: Results appear after QC runs ========
       conditionalPanel(
         condition = "output.show_results",
         ns = ns,
 
         # ================================================================
-        # Section 2: QAQC Results
+        # Section 2: QC Results
         # ================================================================
         tags$div(
           style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
           tags$span(
             style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
-            "QAQC Results"
+            "QC Results"
           )
         ),
 
@@ -1212,7 +1212,7 @@ module_baro_qc_ui <- function(id) {
             column(8, uiOutput(ns("station_info")))
           ),
 
-          # QAQC plot
+          # QC plot
           tags$div(style = "margin-top: 15px;",
             plotlyOutput(ns("qaqc_plot"), height = "550px") %>% withSpinner()
           ),
@@ -1249,7 +1249,7 @@ module_baro_qc_ui <- function(id) {
                 width = 6,
                 tags$h4("Remove Bad Periods", style = "margin-top: 0;"),
                 tags$p(style = "font-size: 13px;",
-                  "If the automated QAQC missed a bad period, switch to ",
+                  "If the automated QC missed a bad period, switch to ",
                   tags$strong("Select Range"), " mode above and drag across the ",
                   "plot to highlight the period to remove. You can select multiple ",
                   "ranges, then click ", tags$strong("Remove Selected Periods"),
@@ -1320,10 +1320,10 @@ module_baro_qc_ui <- function(id) {
               style = "background-color: #f0f0f0; padding: 20px; border-radius: 5px; flex: 1;",
               tags$h4("Download Results", style = "margin-top: 0;"),
               tags$p(style = "font-size: 13px;",
-                "Download the QAQC'd barometric data as CSV. The exported file ",
+                "Download the QC'd barometric data as CSV. The exported file ",
                 "contains data for ", tags$strong("all stations"), " combined, ",
                 "including raw columns, adjusted columns, and all edit flags. The ",
-                "QAQC log records a summary of every check applied."
+                "QC log records a summary of every check applied."
               ),
               tags$p(style = "font-size: 13px; color: #666;",
                 "Note: the summary statistics above show one station at a time, ",
@@ -1349,7 +1349,7 @@ module_baro_qc_ui <- function(id) {
                     style = "width: 100%; color: #ffffff;")
                 ),
                 column(4,
-                  downloadButton(ns("download_log"), "Download QAQC Log",
+                  downloadButton(ns("download_log"), "Download QC Log",
                     class = "btn-info",
                     style = "width: 100%; color: #ffffff;")
                 ),
@@ -1402,7 +1402,7 @@ module_baro_qc_server <- function(id) {
     rv_bound_data <- session$userData$rv_bound_data
     rv_qaqc_data <- session$userData$rv_qaqc_data
 
-    # Local reactive for QAQC result and log
+    # Local reactive for QC result and log
     baro_qc_result <- reactiveVal(NULL)
     qaqc_log <- reactiveVal(NULL)
 
@@ -1410,7 +1410,7 @@ module_baro_qc_server <- function(id) {
     output$show_results <- reactive({ !is.null(baro_qc_result()) })
     outputOptions(output, "show_results", suspendWhenHidden = FALSE)
 
-    # ------ Populate QAQC station selector from bound data ------
+    # ------ Populate QC station selector from bound data ------
     observe({
       df <- rv_bound_data$baro_bound
       if (!is.null(df) && nrow(df) > 0) {
@@ -1440,7 +1440,7 @@ module_baro_qc_server <- function(id) {
       }
     })
 
-    # ------ Run QAQC ------
+    # ------ Run QC ------
     observeEvent(input$run_qaqc, {
       baro_data <- rv_bound_data$baro_bound
       metadata <- rv_raw_data$metadata
@@ -1478,10 +1478,10 @@ module_baro_qc_server <- function(id) {
         n_stns <- length(if (run_subset) selected_stns
           else unique(baro_data$site_station_code))
         showNotification(
-          sprintf("Running barometric QAQC on %d station(s)...", n_stns),
+          sprintf("Running barometric QC on %d station(s)...", n_stns),
           type = "message", duration = NULL, id = "qaqc_progress")
 
-        result <- barometric_qaqc_all(
+        result <- qc_barometric_all(
           baro_data           = baro_data,
           metadata            = metadata,
           path_to_output_folder = NULL,
@@ -1509,9 +1509,9 @@ module_baro_qc_server <- function(id) {
 
         removeNotification("qaqc_progress")
         msg <- if (run_subset) {
-          sprintf("Barometric QAQC complete for %s!", paste(selected_stns, collapse = ", "))
+          sprintf("Barometric QC complete for %s!", paste(selected_stns, collapse = ", "))
         } else {
-          "Barometric QAQC complete for all stations!"
+          "Barometric QC complete for all stations!"
         }
         showNotification(msg, type = "message", duration = 3)
 
@@ -1521,7 +1521,7 @@ module_baro_qc_server <- function(id) {
 
       }, error = function(e) {
         removeNotification("qaqc_progress")
-        showNotification(paste("QAQC Error:", conditionMessage(e)),
+        showNotification(paste("QC Error:", conditionMessage(e)),
           type = "error", duration = 8)
       })
     })
@@ -1599,7 +1599,7 @@ module_baro_qc_server <- function(id) {
       )
     })
 
-    # ------ QAQC Plot ------
+    # ------ QC Plot ------
     # JS callback: intercepts drag in Select Range mode, resets zoom instantly
     # in the browser, and sends the captured range to Shiny.
     drag_range_js <- sprintf("
@@ -1723,7 +1723,7 @@ module_baro_qc_server <- function(id) {
 
       subplot(p1, p2, nrows = 2, shareX = TRUE, titleY = TRUE) %>%
         layout(
-          title = list(text = paste("Barometric QAQC -", station), font = list(size = 14)),
+          title = list(text = paste("Barometric QC -", station), font = list(size = 14)),
           xaxis = list(title = ""),
           xaxis2 = list(title = "Date"),
           yaxis = list(title = "Pressure (kPa)", fixedrange = TRUE),
@@ -2029,7 +2029,7 @@ module_baro_qc_server <- function(id) {
       }
     )
 
-    # ------ Download: QAQC Log ------
+    # ------ Download: QC Log ------
     output$download_log <- downloadHandler(
       filename = function() {
         paste0("baro_qaqc_log_", format(Sys.Date(), "%Y%m%d"), ".csv")

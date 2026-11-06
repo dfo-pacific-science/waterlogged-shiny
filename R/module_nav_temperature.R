@@ -10,19 +10,19 @@
 # respective metric workflows: Water Level, Dissolved Oxygen, etc.).
 #
 # Sub-tabs:
-#   1. Import Data          — bind_hobo_files() with metric = "watertemp" or "airtemp"
-#   2. Snap Timestamps      — resample_timestamps() to align to regular grid
+#   1. Import Data          — bind_logger_files() with metric = "watertemp" or "airtemp"
+#   2. Snap Timestamps      — align_timestamps() to align to regular grid
 #   3. Add Nearest Baro     — OVERLAY ONLY: add_nearest_baro() for air temp
 #                             comparison — does NOT modify temperature data
 #   4. QC Air Temperature   — qc_airtemp() + export
 #   5. QC Water Temperature — qc_watertemp() + export
 #
 # Package functions used:
-#   bind_hobo_files()       — parse raw HOBO CSVs (TidbiT, Pendant)
-#   resample_timestamps()   — snap timestamps to regular interval grid
+#   bind_logger_files()       — parse raw HOBO CSVs (TidbiT, Pendant)
+#   align_timestamps()   — snap timestamps to regular interval grid
 #   add_nearest_baro()      — join nearest baro air temp (overlay only)
-#   qc_airtemp()            — range-check QAQC for air temperature
-#   qc_watertemp()          — ice/dry/negative-temp QAQC for water temperature
+#   qc_airtemp()            — range-check QC for air temperature
+#   qc_watertemp()          — ice/dry/negative-temp QC for water temperature
 #   adjust_logger_NA()      — manual removal of bad data windows
 #   write_clean_data()      — export v1.0 CSV (metric = "watertemp" or "airtemp")
 #
@@ -63,7 +63,7 @@ module_temp_upload_ui <- function(id) {
             "channel (\u00b0C). The metadata file determines whether each logger is ",
             "classified as ", tags$code("watertemp"), " (deployed in water) or ",
             tags$code("airtemp"), " (deployed in air). Because ",
-            tags$code("bind_hobo_files()"), " processes one metric type per call, ",
+            tags$code("bind_logger_files()"), " processes one metric type per call, ",
             "water and air temperature files are imported separately."
           ),
           tags$div(
@@ -274,7 +274,7 @@ module_temp_upload_ui <- function(id) {
           tags$div(
             style = "background-color: #f0f0f0; padding: 15px; border-radius: 5px; margin-bottom: 15px;",
             tags$h4("Follow Along in the R Package (waterlogged)", style = "margin-top: 0;"),
-            tags$code("bind_hobo_files()"),
+            tags$code("bind_logger_files()"),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
                    "Parse raw HOBO CSVs, match serial numbers to metadata")
           ),
@@ -394,7 +394,7 @@ module_temp_upload_ui <- function(id) {
           tags$div(
             style = "background-color: #f0f0f0; padding: 15px; border-radius: 5px; margin-bottom: 15px;",
             tags$h4("Follow Along in the R Package (waterlogged)", style = "margin-top: 0;"),
-            tags$code("bind_hobo_files()"),
+            tags$code("bind_logger_files()"),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
                    "Parse raw HOBO CSVs, match serial numbers to metadata")
           ),
@@ -487,7 +487,7 @@ module_temp_upload_ui <- function(id) {
           tags$div(
             style = "background-color: #f0f0f0; padding: 15px; border-radius: 5px;",
             tags$h4("Follow Along in the R Package (waterlogged)", style = "margin-top: 0;"),
-            tags$code("resample_timestamps()"),
+            tags$code("align_timestamps()"),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
                    "Snap timestamps to regular grid (optional)")
           )
@@ -553,7 +553,7 @@ module_temp_upload_ui <- function(id) {
         "Visually inspect the time series plots and summary statistics below ",
         "to look for anomalies such as spikes, flatlines, or gaps in the data. ",
         "Any quality issues identified here will be addressed in the QC steps ",
-        "using automated QAQC rules and manual adjustments."
+        "using automated QC rules and manual adjustments."
       ),
 
       # ---- Import Summary (full width) ----
@@ -937,7 +937,7 @@ module_temp_upload_server <- function(id) {
       shinyjs::disable("wt_bind_btn")
 
       tryCatch({
-        result <- bind_hobo_files(
+        result <- bind_logger_files(
           file_paths = raw_files$datapath,
           metadata = metadata
         )
@@ -1005,7 +1005,7 @@ module_temp_upload_server <- function(id) {
       shinyjs::disable("at_bind_btn")
 
       tryCatch({
-        result <- bind_hobo_files(
+        result <- bind_logger_files(
           file_paths = raw_files$datapath,
           metadata = metadata
         )
@@ -1202,10 +1202,10 @@ module_temp_upload_server <- function(id) {
 
         station_arg <- if (input$snap_station == "all") NULL else input$snap_station
 
-        # Use appropriate metric label for resample_timestamps
+        # Use appropriate metric label for align_timestamps
         metric_label <- if (metric == "watertemp") "WATERTEMP" else "AIRTEMP"
 
-        result <- resample_timestamps(
+        result <- align_timestamps(
           input_data = df,
           interval = input$snap_interval,
           align = input$snap_align,
@@ -1461,24 +1461,24 @@ module_temp_qc_water_ui <- function(id) {
 
 
       # ================================================================
-      # Section 1: Run Automated QAQC
+      # Section 1: Run Automated QC
       # ================================================================
       tags$div(
         style = "border-top: 2px solid #00796b; margin: 25px 0 20px 0; position: relative;",
         tags$span(
           style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #00796b; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
-          "Run Automated QAQC"
+          "Run Automated QC"
         )
       ),
 
       tags$div(
         style = "display: flex; flex-wrap: wrap; margin: 0 -15px;",
-        # ---- Left: QAQC explanation (33%) ----
+        # ---- Left: QC explanation (33%) ----
         tags$div(
           style = "flex: 0 0 33.333%; max-width: 33.333%; padding: 0 15px; display: flex; flex-direction: column;",
           tags$div(
             style = "background-color: #f0f0f0; padding: 20px; border-radius: 5px; margin-bottom: 15px;",
-            tags$h4("QAQC Rules", style = "margin-top: 0;"),
+            tags$h4("QC Rules", style = "margin-top: 0;"),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
               tags$li(tags$strong("OUTLIER_WT"), " \u2014 water temp < -1\u00b0C \u2192 set to NA;", tags$br(),"     -1\u00b0C < water temp < 0\u00b0C \u2192 corrected to 0\u00b0C"),
@@ -1517,8 +1517,8 @@ module_temp_qc_water_ui <- function(id) {
               selectInput(ns("station_select"), "Select Station:",
                 choices = NULL, width = "100%")
             ),
-            # QAQC parameters
-            tags$h4("QAQC Parameters"),
+            # QC parameters
+            tags$h4("QC Parameters"),
             tags$p(style = "font-size: 13px; color: #666; margin-bottom: 10px;",
                    icon("sliders-h"),
                    " Adjust the thresholds used by ", tags$code("qc_watertemp()"),
@@ -1553,7 +1553,7 @@ module_temp_qc_water_ui <- function(id) {
               )
             ),
 
-            actionButton(ns("run_qaqc"), "Run Water Temp QAQC",
+            actionButton(ns("run_qaqc"), "Run Water Temp QC",
               class = "btn-primary btn-lg", width = "100%",
               style = "color: #fff; background-color: #00796b; border-color: #00796b;",
               icon = icon("play")
@@ -1685,7 +1685,7 @@ module_temp_qc_water_ui <- function(id) {
               style = "background-color: #f0f0f0; padding: 20px; border-radius: 5px; flex: 1;",
               tags$h4("Download Results", style = "margin-top: 0;"),
               tags$p(style = "font-size: 13px;",
-                "Download the QAQC'd water temperature data as CSV for the ",
+                "Download the QC'd water temperature data as CSV for the ",
                 tags$strong("selected station"), "."
               )
             )
@@ -1701,7 +1701,7 @@ module_temp_qc_water_ui <- function(id) {
                     style = "width: 100%; color: #ffffff; background-color: #00796b; border-color: #00796b;")
                 ),
                 column(4,
-                  downloadButton(ns("download_log"), "Download QAQC Log",
+                  downloadButton(ns("download_log"), "Download QC Log",
                     class = "btn-info",
                     style = "width: 100%; color: #ffffff;")
                 ),
@@ -1782,7 +1782,7 @@ module_temp_qc_water_server <- function(id) {
       req(input_df)
 
       tryCatch({
-        showNotification("Running water temperature QAQC...",
+        showNotification("Running water temperature QC...",
           type = "message", duration = NULL, id = "wt_qc_progress")
 
         result <- qc_watertemp(
@@ -1809,12 +1809,12 @@ module_temp_qc_water_server <- function(id) {
 
         removeNotification("wt_qc_progress")
         showNotification(
-          sprintf("Water temp QAQC complete for %s", station),
+          sprintf("Water temp QC complete for %s", station),
           type = "message", duration = 5)
 
       }, error = function(e) {
         removeNotification("wt_qc_progress")
-        showNotification(paste("QAQC error:", conditionMessage(e)),
+        showNotification(paste("QC error:", conditionMessage(e)),
           type = "error", duration = 8)
       })
     })
@@ -1914,7 +1914,7 @@ module_temp_qc_water_server <- function(id) {
           line = list(width = 0), name = "OUTLIER_WT", hovertemplate = "OUTLIER: %{y:.1f} \u00b0C<extra></extra>")
 
       p %>% layout(
-        title = list(text = paste("Water Temp QAQC \u2014", station), font = list(size = 14)),
+        title = list(text = paste("Water Temp QC \u2014", station), font = list(size = 14)),
         xaxis = list(title = "Date"), yaxis = list(title = "Temperature (\u00b0C)", fixedrange = TRUE),
         hovermode = "x unified", legend = list(orientation = "h", y = -0.15), margin = list(b = 80)
       ) %>% htmlwidgets::onRender(drag_range_js)
@@ -2103,7 +2103,7 @@ module_temp_qc_air_ui <- function(id) {
         style = "border-top: 2px solid #00796b; margin: 25px 0 20px 0; position: relative;",
         tags$span(
           style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #00796b; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
-          "Run Automated QAQC"
+          "Run Automated QC"
         )
       ),
 
@@ -2113,7 +2113,7 @@ module_temp_qc_air_ui <- function(id) {
           style = "flex: 0 0 33.333%; max-width: 33.333%; padding: 0 15px; display: flex; flex-direction: column;",
           tags$div(
             style = "background-color: #f0f0f0; padding: 20px; border-radius: 5px; margin-bottom: 15px;",
-            tags$h4("QAQC Rules", style = "margin-top: 0;"),
+            tags$h4("QC Rules", style = "margin-top: 0;"),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
               tags$li(tags$strong("FLAG_RANGE"), " \u2014 low flag \u00b0C < air temp < high flag \u00b0C  \u2192 flagged for review"),
@@ -2148,8 +2148,8 @@ module_temp_qc_air_ui <- function(id) {
               style = "background-color: #e0f2f1; padding: 10px; border-radius: 5px; border: 2px solid #00796b; margin-bottom: 15px;",
               selectInput(ns("station_select"), "Select Station:", choices = NULL, width = "100%")
             ),
-            # QAQC parameters
-            tags$h4("QAQC Parameters"),
+            # QC parameters
+            tags$h4("QC Parameters"),
             tags$p(style = "font-size: 13px; color: #666; margin-bottom: 10px;",
                    icon("sliders-h"),
                    " Adjust the thresholds used by ", tags$code("qc_airtemp()"),
@@ -2167,7 +2167,7 @@ module_temp_qc_air_ui <- function(id) {
                 numericInput(ns("temp_high"), "High limit (\u00b0C):", value = 100, min = 20, max = 80, step = 1, width = "100%"))
             ),
 
-            actionButton(ns("run_qaqc"), "Run Air Temp QAQC",
+            actionButton(ns("run_qaqc"), "Run Air Temp QC",
               class = "btn-primary btn-lg", width = "100%",
               style = "color: #fff; background-color: #00796b; border-color: #00796b;",
               icon = icon("play")),
@@ -2218,13 +2218,13 @@ module_temp_qc_air_ui <- function(id) {
           tags$div(style = "flex: 0 0 33.333%; max-width: 33.333%; padding: 0 15px; display: flex;",
             tags$div(style = "background-color: #f0f0f0; padding: 20px; border-radius: 5px; flex: 1;",
               tags$h4("Download Results", style = "margin-top: 0;"),
-              tags$p(style = "font-size: 13px;", "Download the QAQC'd air temperature data as CSV for the ", tags$strong("selected station"), "."))),
+              tags$p(style = "font-size: 13px;", "Download the QC'd air temperature data as CSV for the ", tags$strong("selected station"), "."))),
           tags$div(style = "flex: 0 0 66.667%; max-width: 66.667%; padding: 0 15px; display: flex;",
             tags$div(style = "background-color: #fafafa; padding: 20px; border-radius: 5px; border: 1px solid #e0e0e0; flex: 1;",
               fluidRow(
                 column(4, downloadButton(ns("download_csv"), "Download Clean CSV", class = "btn-primary",
                   style = "width: 100%; color: #ffffff; background-color: #00796b; border-color: #00796b;")),
-                column(4, downloadButton(ns("download_log"), "Download QAQC Log", class = "btn-info", style = "width: 100%; color: #ffffff;")),
+                column(4, downloadButton(ns("download_log"), "Download QC Log", class = "btn-info", style = "width: 100%; color: #ffffff;")),
                 column(4, downloadButton(ns("download_metadata"), "Download Metadata", class = "btn-default", style = "width: 100%;"))))))
       )
     ),
@@ -2280,7 +2280,7 @@ module_temp_qc_air_server <- function(id) {
     observeEvent(input$run_qaqc, {
       station <- input$station_select; req(station); input_df <- at_input_data(); req(input_df)
       tryCatch({
-        showNotification("Running air temperature QAQC...", type = "message", duration = NULL, id = "at_qc_progress")
+        showNotification("Running air temperature QC...", type = "message", duration = NULL, id = "at_qc_progress")
         result <- qc_airtemp(input_data = input_df,
                              select_station = station,
                              temp_low_limit_C = input$temp_low,
@@ -2293,10 +2293,10 @@ module_temp_qc_air_server <- function(id) {
         at_qc_result(full_data); rv_qaqc_data$qc_airtemp <- full_data
         selected_ranges(list()); range_history(list())
         removeNotification("at_qc_progress")
-        showNotification(sprintf("Air temp QAQC complete for %s", station), type = "message", duration = 5)
+        showNotification(sprintf("Air temp QC complete for %s", station), type = "message", duration = 5)
       }, error = function(e) {
         removeNotification("at_qc_progress")
-        showNotification(paste("QAQC error:", conditionMessage(e)), type = "error", duration = 8)
+        showNotification(paste("QC error:", conditionMessage(e)), type = "error", duration = 8)
       })
     })
 
@@ -2374,7 +2374,7 @@ module_temp_qc_air_server <- function(id) {
            type = "scatter", mode = "markers", marker = list(color = "#FF9800", size = 5, symbol = "triangle-up"),
            line = list(width = 0), name = "FLAG_RANGE", hovertemplate = "RANGE: %{y:.1f} \u00b0C<extra></extra>")
 
-      p %>% layout(title = list(text = paste("Air Temp QAQC \u2014", station), font = list(size = 14)),
+      p %>% layout(title = list(text = paste("Air Temp QC \u2014", station), font = list(size = 14)),
         xaxis = list(title = "Date"), yaxis = list(title = "Temperature (\u00b0C)", fixedrange = TRUE),
         hovermode = "x unified", legend = list(orientation = "h", y = -0.15), margin = list(b = 80)) %>%
         htmlwidgets::onRender(drag_range_js)

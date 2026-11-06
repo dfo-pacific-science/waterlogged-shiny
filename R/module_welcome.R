@@ -199,7 +199,7 @@ module_welcome_ui <- function(id) {
               tags$div(style = "background: #f8f9fa; padding: 12px; border-radius: 6px;",
                 tags$span(style = "color: #888; font-size: 12px;", "Data Binding"),
                 tags$br(),
-                tags$code(style = "color: #e74c3c;", "bind_hobo_files()")
+                tags$code(style = "color: #e74c3c;", "bind_logger_files()")
               ),
               tags$div(style = "background: #f8f9fa; padding: 12px; border-radius: 6px;",
                 tags$span(style = "color: #888; font-size: 12px;", "Barometric Compensation"),

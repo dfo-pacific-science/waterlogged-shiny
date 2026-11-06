@@ -42,7 +42,7 @@ module_step3_wl_baro_ui <- function(id) {
               tags$li("Selects up to 3 nearest baro stations (within 30 km by default)"),
               tags$li("If multiple baro stations overlap in time, calibrates them against
                       the closest one and combines them to fill gaps"),
-              tags$li("Prefers the QAQC-adjusted values (airpress_kPa_adj) when available")
+              tags$li("Prefers the QC-adjusted values (airpress_kPa_adj) when available")
             )
           ),
 
@@ -83,8 +83,8 @@ module_step3_wl_baro_ui <- function(id) {
             style = "background-color: #f5f5f5; padding: 15px; font-family: monospace; font-size: 12px;",
 "# Attach barometric data to water level readings
 wl_with_baro <- add_nearest_baro(
-  input_data          = level_data,       # water level data from bind_hobo_files()
-  baro_data           = baro_qc,          # QAQC'd baro data from Step 2
+  input_data          = level_data,       # water level data from bind_logger_files()
+  baro_data           = baro_qc,          # QC'd baro data from Step 2
   metric              = \"water level\",    # tells function what we're processing
   baro_site_selection = \"auto\",           # auto-select nearest baro station
   metadata_path       = metadata_file     # for coordinate lookup
@@ -281,7 +281,7 @@ cat(\"Water level range:\",
         style = "background-color: #d4edda; padding: 15px; border-radius: 5px; margin-top: 20px;",
         tags$p(
           tags$strong("Next:"),
-          " Proceed to ", tags$strong("Water Level QAQC"), " to run automatic quality
+          " Proceed to ", tags$strong("Water Level QC"), " to run automatic quality
           checks on the converted data.",
           style = "margin: 0;"
         )
@@ -306,7 +306,7 @@ module_step3_wl_convert_server <- function(id) {
 
 
 # -----------------------------------------------------------------------------
-# 3c  Water Level QAQC  (qc_waterlevel)
+# 3c  Water Level QC  (qc_waterlevel)
 # -----------------------------------------------------------------------------
 module_step3_wl_qaqc_ui <- function(id) {
   ns <- NS(id)
@@ -315,7 +315,7 @@ module_step3_wl_qaqc_ui <- function(id) {
     shinydashboard::box(
       width = 12,
       tags$h1("Step 3: Water Level", class = "custom-h1"),
-      tags$h2("3c. Water Level QAQC", class = "custom-h2"),
+      tags$h2("3c. Water Level QC", class = "custom-h2"),
 
       tags$div(
         class = "clean-print",
@@ -341,12 +341,12 @@ module_step3_wl_qaqc_ui <- function(id) {
       hr(),
 
       fluidRow(
-        # Left column - QAQC rules
+        # Left column - QC rules
         column(
           width = 4,
           tags$div(
             style = "background-color: #e8f5e9; padding: 20px; border-radius: 5px; margin-bottom: 20px;",
-            tags$h4("Automatic QAQC rules", style = "margin-top: 0;"),
+            tags$h4("Automatic QC rules", style = "margin-top: 0;"),
             tags$p("qc_waterlevel() applies these checks:"),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
@@ -380,7 +380,7 @@ module_step3_wl_qaqc_ui <- function(id) {
               style = "padding-left: 20px; font-size: 13px;",
               tags$li(tags$code("adjust_logger_NA()"), " \u2014 remove ice/dry periods"),
               tags$li(tags$code("adjust_waterlevel_spike()"), " \u2014 flatten ice spikes"),
-              tags$li(tags$code("adjust_WL_offset()"), " \u2014 correct cable breaks"),
+              tags$li(tags$code("adjust_waterlevel_offset()"), " \u2014 correct cable breaks"),
               tags$li(tags$code("wl_multipoint_correction()"), " \u2014 fix gradual drift")
             )
           )
@@ -391,14 +391,14 @@ module_step3_wl_qaqc_ui <- function(id) {
           width = 8,
           tags$h4("qc_waterlevel()"),
           tags$p(
-            "Performs preliminary QAQC, automatically identifying and flagging common
-            issues. Returns the data frame with QAQC columns added.",
+            "Performs preliminary QC, automatically identifying and flagging common
+            issues. Returns the data frame with QC columns added.",
             class = "clean-print"
           ),
           tags$pre(
             class = "clean-print",
             style = "background-color: #f5f5f5; padding: 15px; font-family: monospace; font-size: 12px;",
-"# Run automatic QAQC on the converted water level data
+"# Run automatic QC on the converted water level data
 wl_qc <- qc_waterlevel(
   input_data     = site_wl,
   select_station = \"ALBR_ST_30\"
@@ -411,11 +411,11 @@ cat(\"Disturbance:      \", sum(wl_qc$FLAG_DISTURBANCE, na.rm = TRUE))
 cat(\"Dry flagged:      \", sum(wl_qc$FLAG_DRY, na.rm = TRUE))
 cat(\"Temp outlier:     \", sum(wl_qc$OUTLIER_WT, na.rm = TRUE))
 
-# The QAQC log is stored as an attribute
+# The QC log is stored as an attribute
 qaqc_log <- attr(wl_qc, \"qaqc_log\")
 
 # Visual review with interactive plot
-plot_qaqc_timeseries(
+plot_qc_timeseries(
   wl_data        = wl_qc,
   baro_data      = baro_qc,
   select_station = \"ALBR_ST_30\"
@@ -448,7 +448,7 @@ wl_qc <- adjust_waterlevel_spike(
           ),
 
           # Flag legend
-          tags$h4("QAQC Flag Legend"),
+          tags$h4("QC Flag Legend"),
           tags$div(
             style = "display: flex; gap: 10px; margin: 15px 0; flex-wrap: wrap;",
             tags$div(style = "padding: 8px 15px; background: #28a745; color: white; border-radius: 5px;", "Good Data"),
@@ -463,7 +463,7 @@ wl_qc <- adjust_waterlevel_spike(
             tags$p(
               style = "margin: 0; font-size: 13px; color: #333;",
               tags$strong("Placeholder:"),
-              " The interactive QAQC controls (station selector, threshold parameters,
+              " The interactive QC controls (station selector, threshold parameters,
               run button, output plots, and manual adjustment tools) will be wired up
               in a future update."
             )

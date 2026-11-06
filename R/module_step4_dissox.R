@@ -90,8 +90,8 @@ module_step4_do_baro_ui <- function(id) {
             style = "background-color: #f5f5f5; padding: 15px; font-family: monospace; font-size: 12px;",
 "# Attach barometric data to dissolved oxygen readings
 do_with_baro <- add_nearest_baro(
-  input_data          = do_data,         # DO data from bind_hobo_files()
-  baro_data           = baro_qc,         # QAQC'd baro data from Step 2
+  input_data          = do_data,         # DO data from bind_logger_files()
+  baro_data           = baro_qc,         # QC'd baro data from Step 2
   metric              = \"DO\",            # tells function we're processing DO
   baro_site_selection = \"DARL_ST_30\",    # or use \"auto\" for auto-selection
   metadata_path       = metadata_file    # for coordinate lookup
@@ -256,7 +256,7 @@ head(do_data[, c(\"timestamp\", \"do_mgl\", \"watertemp_C\",
         style = "background-color: #d4edda; padding: 15px; border-radius: 5px; margin-top: 20px;",
         tags$p(
           tags$strong("Next:"),
-          " Proceed to ", tags$strong("DO QAQC"), " to run automatic quality
+          " Proceed to ", tags$strong("DO QC"), " to run automatic quality
           checks on the dissolved oxygen data.",
           style = "margin: 0;"
         )
@@ -281,7 +281,7 @@ module_step4_do_convert_server <- function(id) {
 
 
 # -----------------------------------------------------------------------------
-# 4c  DO QAQC  (qc_dissox)
+# 4c  DO QC  (qc_dissox)
 # -----------------------------------------------------------------------------
 module_step4_do_qaqc_ui <- function(id) {
   ns <- NS(id)
@@ -290,7 +290,7 @@ module_step4_do_qaqc_ui <- function(id) {
     shinydashboard::box(
       width = 12,
       tags$h1("Step 4: Dissolved Oxygen", class = "custom-h1"),
-      tags$h2("4c. Dissolved Oxygen QAQC", class = "custom-h2"),
+      tags$h2("4c. Dissolved Oxygen QC", class = "custom-h2"),
 
       tags$div(
         class = "clean-print",
@@ -318,7 +318,7 @@ module_step4_do_qaqc_ui <- function(id) {
           width = 4,
           tags$div(
             style = "background-color: #fce4ec; padding: 20px; border-radius: 5px; margin-bottom: 20px;",
-            tags$h4("Automatic QAQC rules", style = "margin-top: 0;"),
+            tags$h4("Automatic QC rules", style = "margin-top: 0;"),
             tags$p("qc_dissox() applies these checks:"),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
@@ -347,7 +347,7 @@ module_step4_do_qaqc_ui <- function(id) {
 
           tags$div(
             style = "background-color: #e8f5e9; padding: 20px; border-radius: 5px;",
-            tags$h4("Tips for DO QAQC", style = "margin-top: 0;"),
+            tags$h4("Tips for DO QC", style = "margin-top: 0;"),
             tags$p("Look for periods where:"),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
@@ -373,7 +373,7 @@ module_step4_do_qaqc_ui <- function(id) {
           tags$pre(
             class = "clean-print",
             style = "background-color: #f5f5f5; padding: 15px; font-family: monospace; font-size: 12px;",
-"# Run automatic QAQC on dissolved oxygen data
+"# Run automatic QC on dissolved oxygen data
 do_qc <- qc_dissox(
   input_data     = do_data,
   select_station = \"COOK_WE_40\"
@@ -388,7 +388,7 @@ cat(\"Dry flagged:     \", sum(do_qc$FLAG_DRY, na.rm = TRUE))
 cat(\"Range flagged:   \", sum(do_qc$FLAG_RANGE, na.rm = TRUE))
 
 # Visual review
-plot_qaqc_timeseries(
+plot_qc_timeseries(
   do_data        = do_qc,
   baro_data      = baro_qc,
   select_station = \"COOK_WE_40\"
@@ -428,7 +428,7 @@ do_qc <- adjust_logger_NA(
             tags$p(
               style = "margin: 0; font-size: 13px; color: #333;",
               tags$strong("Placeholder:"),
-              " The interactive QAQC controls (station selector, run button,
+              " The interactive QC controls (station selector, run button,
               output plots, and manual adjustment tools) will be wired up
               in a future update."
             )
@@ -608,7 +608,7 @@ print(drift_log)"
           style = "margin: 0; font-size: 12px;",
 "Step 4a:  add_nearest_baro()       \u2192  DO + baro attached
 Step 4b:  convert_do_mgl_percsat() \u2192  adds do_percsat column
-Step 4c:  qc_dissox()            \u2192  auto QAQC + manual adjustments
+Step 4c:  qc_dissox()            \u2192  auto QC + manual adjustments
 Step 4d:  wq_drift_correction()    \u2192  drift corrected
 
 Key columns for analysis:

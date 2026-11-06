@@ -787,7 +787,7 @@ module_upload_data_server <- function(id) {
       write.csv(metadata, meta_path, row.names = FALSE)
 
       tryCatch({
-        result <- bind_hobo_files(baro_dir, metadata_path = meta_path)
+        result <- bind_logger_files(baro_dir, metadata_path = meta_path)
         bound_df <- result[[1]]
         bound_df$timestamp <- .parse_timestamp(bound_df$timestamp)
         station_list <- split(bound_df, bound_df$site_station_code)
@@ -814,7 +814,7 @@ module_upload_data_server <- function(id) {
       write.csv(metadata, meta_path, row.names = FALSE)
 
       tryCatch({
-        result <- bind_hobo_files(wl_dir, metadata_path = meta_path)
+        result <- bind_logger_files(wl_dir, metadata_path = meta_path)
         bound_df <- result[[1]]
         bound_df$timestamp <- .parse_timestamp(bound_df$timestamp)
         station_list <- split(bound_df, bound_df$site_station_code)
@@ -841,7 +841,7 @@ module_upload_data_server <- function(id) {
       write.csv(metadata, meta_path, row.names = FALSE)
 
       tryCatch({
-        result <- bind_hobo_files(do_dir, metadata_path = meta_path)
+        result <- bind_logger_files(do_dir, metadata_path = meta_path)
         bound_df <- result[[1]]
         bound_df$timestamp <- .parse_timestamp(bound_df$timestamp)
         station_list <- split(bound_df, bound_df$site_station_code)
@@ -868,7 +868,7 @@ module_upload_data_server <- function(id) {
       write.csv(metadata, meta_path, row.names = FALSE)
 
       tryCatch({
-        result <- bind_hobo_files(cond_dir, metadata_path = meta_path)
+        result <- bind_logger_files(cond_dir, metadata_path = meta_path)
         bound_df <- result[[1]]
         bound_df$timestamp <- .parse_timestamp(bound_df$timestamp)
         station_list <- split(bound_df, bound_df$site_station_code)

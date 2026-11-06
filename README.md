@@ -1,23 +1,31 @@
-# Waterlogged Shiny Application
+# waterlogged Shiny Application
 
-**Water Level & Water Quality Data Processing**
+**Standardized and efficient processing of environmental data from continuous data loggers**
 
-Waterlogged is a data processing application for water data from continuous water data loggers. The goal of waterlogged is to streamline the process from raw data to clean data, document QAQC processing via R scripts, and do so without relying on proprietary software.
+waterlogged is a data processing application for water data from continuous water data loggers. The goal of waterlogged is to make aquatic environmental data processing more streamlined, standardized and accessible to a wide range of users.
 
 This version of the package was built for data from Onset HOBO barometric pressure (U20), dissolved oxygen (U26), conductivity (U24), and TidbiT loggers.
 
 ## Workflow Overview
 
-This application guides you through a step-by-step workflow for processing your water logger data:
+This application guides you through a sequential workflow for processing your water logger data:
 
-1. **Upload Data** — Download and upload raw data from HOBO loggers
-2. **Step 1: Bind Logger Data** — Combine data from multiple logger files for each station
-3. **Step 2: Convert Metrics** — Convert raw measurements to usable metrics (water level, dissolved oxygen)
-4. **Step 3: QAQC** — Quality assurance and quality control checks
-5. **Step 4: Save Data** — Export clean site data
-6. **Step 5: Summarize** — Generate summary statistics and visualizations
+| Processing Stage | Package Functions |
+|------|----------|
+| Join and Trim Raw Logger Files | `bind_logger_files()` |
+| Add Barometric Data to Logger Files \* | `add_nearest_baro()` |
+| Metric Conversion \* - Convert logger metrics (i.e. apply barometric compensation) | `convert_waterlevel_kPa_m()`, `convert_do_mgl_percsat()` ,`convert_conductivity_spc_uScm()` |
+| Automated Quality Control - Remove outliers and flag data for review | `qc_waterlevel()`, `qc_dissox()`, `qc_conductivity()` , `qc_barometric`, `qc_airtemp`, `qc_watertemp` |  
+| Manual Review and Adjustments - Remove or correct outstanding data errors | `adjust_logger_NA` , `adjust_waterlevel_offset`, `adjust_waterlevel_spike`, `adjust_waterlevel_zero`, `adjust_waterlevel_datum`|
+| Export Clean Logger Data - Standardized naming and file organization | `write_clean_data()` |
+| Summarize Data - Produce daily, monthly, yearly summary statistics | `summarise_clean_data()` |
+| Visualize Data - Produce report-ready summary figures | `plot_clean_timeseries()` |
+
+\* Indicates optional processing stage (i.e. not applicable for all logger data)
+
 
 ![Process timeseries data. Apply filters and select ranges to modify.](www/img/app_overview_01.png)
+
 
 ## Supported Loggers
 
@@ -28,17 +36,6 @@ This application guides you through a step-by-step workflow for processing your 
 | HOBO U26 | Dissolved Oxygen |
 | HOBO U24 | Conductivity |
 | HOBO TidbiT | Temperature |
-
-## Key Functions
-
-| Step | Function |
-|------|----------|
-| Data Binding | `bind_hobo_files()` |
-| Barometric Compensation | `add_nearest_baro()` |
-| Water Level Conversion | `convert_waterlevel_kPa_m()` |
-| DO Conversion | `convert_do_mgl_percsat()` |
-| QAQC | `qc_waterlevel()`, `qc_dissox()`, `qc_conductivity()` |
-| Data Export | `write_clean_data()` |
 
 ## Documentation & Tutorials
 
@@ -70,8 +67,15 @@ shiny::runApp()
 
 **Department of Fisheries and Oceans, Canada**
 
-**Lead Authors/Developers:** Daniella Lo, Amanda Martens, Julian Gan
+**Authors/Developers:** Daniella LoScerbo, Amanda Martens, Julian Gan, Paula Soto
 
-**R Package Contributions:** Paula Soto
+**Principle Investigators:** Douglas Braun, Sean Naman, David Reid, Joel Harding
 
 **Technical Support:** Matthew Bayly (MJBA, App Development), Frank Poulsen (Ashlu, Technical Support)
+
+The correct citation for this Shiny App and associated R package:
+
+LoScerbo, D., Martens, A., Gan, J., Soto, P., Reid, D., Harding, J., Naman, S., 
+Braun, D. 2026. waterlogged: an R package for standardized and efficient 
+processing of environmental data from continuous data loggers. Can. Tech. Rep. 
+Fish. Aquat. Sci. 3807: vi + 119 p. 

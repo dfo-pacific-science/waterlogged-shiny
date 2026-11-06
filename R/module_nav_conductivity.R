@@ -3,7 +3,7 @@
 # =============================================================================
 #
 # Pipeline for HOBO U24 conductivity loggers:
-#   1. Import Data  — bind_hobo_files() for conductivity loggers
+#   1. Import Data  — bind_logger_files() for conductivity loggers
 #   2. Convert & QC — add_nearest_baro(), convert_conductivity_spc_uScm(),
 #                     qc_conductivity()
 #
@@ -247,7 +247,7 @@ module_cond_upload_ui <- function(id) {
               "This step calls the following function from the ",
               tags$code("waterlogged"), " package:"
             ),
-            tags$code("bind_hobo_files()"),
+            tags$code("bind_logger_files()"),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
                    "Parse raw HOBO CSVs, auto-select conductivity range, match serial numbers to metadata")
           ),
@@ -340,7 +340,7 @@ module_cond_upload_ui <- function(id) {
               "air-water temperature difference is small)."
             ),
             tags$p(
-              "This file is the output of the Barometric Pressure QAQC workflow. ",
+              "This file is the output of the Barometric Pressure QC workflow. ",
               "You must run through the ",
               tags$a(
                 href = "#",
@@ -376,7 +376,7 @@ module_cond_upload_ui <- function(id) {
               tags$h5("Follow Along in the R package", style = "margin-top: 0; margin-bottom: 5px;"),
               tags$code("barometric_qaqc_all()"),
               tags$p(style = "font-size: 12px; color: #666; margin-top: 5px; margin-bottom: 0;",
-                     "Run automated QAQC on baro data (produces the required columns)")
+                     "Run automated QC on baro data (produces the required columns)")
             ),
             tags$p(style = "font-size: 12px; margin-top: 10px;",
               tags$a(
@@ -402,7 +402,7 @@ module_cond_upload_ui <- function(id) {
             style = "background-color: #fafafa; padding: 15px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #e0e0e0;",
             tags$h4("Upload Processed Barometric CSV", style = "margin-top: 0;"),
             tags$p(style = "font-size: 13px; color: #666;",
-              "Upload a processed baro CSV file (output of baro QAQC), or use ",
+              "Upload a processed baro CSV file (output of baro QC), or use ",
               "session data from the Barometric Pressure tab if available."
             ),
             fileInput(ns("baro_qc_file"), NULL,
@@ -467,7 +467,7 @@ module_cond_upload_ui <- function(id) {
           tags$div(
             style = "background-color: #f0f0f0; padding: 15px; border-radius: 5px;",
             tags$h4("Follow Along in the R Package (waterlogged)", style = "margin-top: 0;"),
-            tags$code("resample_timestamps()"),
+            tags$code("align_timestamps()"),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
                    "Snap timestamps to regular grid (optional)")
           )
@@ -581,7 +581,7 @@ module_cond_upload_ui <- function(id) {
             style = "color: #2e7d32; font-weight: bold;",
             "Convert to Spec. Cond."
           ),
-          " to optionally add barometric data, convert to specific conductance, and run QAQC."
+          " to optionally add barometric data, convert to specific conductance, and run QC."
         )
       )
     ),
@@ -1060,7 +1060,7 @@ module_cond_upload_server <- function(id) {
         shinyjs::disable("bind_btn")
 
         tryCatch({
-          result <- bind_hobo_files(
+          result <- bind_logger_files(
             file_paths = raw_files$datapath,
             metadata = metadata
           )
@@ -1181,7 +1181,7 @@ module_cond_upload_server <- function(id) {
 
         station_arg <- if (input$snap_station == "all") NULL else input$snap_station
 
-        result <- resample_timestamps(
+        result <- align_timestamps(
           input_data = df,
           interval = input$snap_interval,
           align = input$snap_align,
@@ -1454,7 +1454,7 @@ module_cond_convert_ui <- function(id) {
             tags$code("convert_conductivity_spc_uScm()"),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
                    "Normalises raw conductivity to a reference temperature (25\u00b0C). ",
-                   "Can run before or after QAQC \u2014 prefers ",
+                   "Can run before or after QC \u2014 prefers ",
                    tags$code("*_adj"), " columns but falls back to raw.")
           )
         ),
@@ -2364,7 +2364,7 @@ module_cond_qc_ui <- function(id) {
         tags$code("spconduct_uScm_adj"), ") is available (i.e. temperature ",
         "compensation has been applied in the previous step), the final visual ",
         "review plots and exports will use specific conductivity rather than raw ",
-        "conductivity. Specific conductivity is the preferred metric for QAQC ",
+        "conductivity. Specific conductivity is the preferred metric for QC ",
         "review as it removes temperature effects and provides a more stable ",
         "signal for identifying sensor drift and anomalies."
       ),
@@ -2374,24 +2374,24 @@ module_cond_qc_ui <- function(id) {
       hr(),
 
       # ================================================================
-      # Section 1: Run Automated QAQC
+      # Section 1: Run Automated QC
       # ================================================================
       tags$div(
         style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
         tags$span(
           style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
-          "Run Automated QAQC"
+          "Run Automated QC"
         )
       ),
 
       tags$div(
         style = "display: flex; flex-wrap: wrap; margin: 0 -15px;",
-        # ---- Left: QAQC explanation (33%) ----
+        # ---- Left: QC explanation (33%) ----
         tags$div(
           style = "flex: 0 0 33.333%; max-width: 33.333%; padding: 0 15px; display: flex; flex-direction: column;",
           tags$div(
             style = "background-color: #f0f0f0; padding: 20px; border-radius: 5px; margin-bottom: 15px;",
-            tags$h4("QAQC Rules", style = "margin-top: 0;"),
+            tags$h4("QC Rules", style = "margin-top: 0;"),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
               tags$li(tags$strong("OUTLIER_CO"), " \u2014 low limit (uScm) < conductivity < high limit (uScm) \u2192 set to NA"),
@@ -2437,8 +2437,8 @@ module_cond_qc_ui <- function(id) {
               selectInput(ns("station_select"), "Select Station:",
                           choices = NULL, width = "100%")
             ),
-            # QAQC parameters
-            tags$h4("QAQC Parameters"),
+            # QC parameters
+            tags$h4("QC Parameters"),
             tags$p(style = "font-size: 13px; color: #666; margin-bottom: 10px;",
                    icon("sliders-h"),
                    " Adjust the thresholds used by ", tags$code("qc_conductivity()"),
@@ -2492,13 +2492,13 @@ module_cond_qc_ui <- function(id) {
               )
             ),
 
-            actionButton(ns("run_qaqc"), "Run Conductivity QAQC",
+            actionButton(ns("run_qaqc"), "Run Conductivity QC",
               class = "btn-primary btn-lg", width = "100%",
               style = "color: #fff; background-color: #2e7d32; border-color: #2e7d32;",
               icon = icon("play")
             ),
 
-            # Flag summary (appears after QAQC runs)
+            # Flag summary (appears after QC runs)
             conditionalPanel(
               condition = "output.show_results",
               ns = ns,
@@ -2512,7 +2512,7 @@ module_cond_qc_ui <- function(id) {
         )
       ),
 
-      # ======== Conditional: Results appear after QAQC runs ========
+      # ======== Conditional: Results appear after QC runs ========
       conditionalPanel(
         condition = "output.show_results",
         ns = ns,
@@ -2872,10 +2872,10 @@ module_cond_qc_ui <- function(id) {
               style = "background-color: #f0f0f0; padding: 20px; border-radius: 5px; flex: 1;",
               tags$h4("Download Results", style = "margin-top: 0;"),
               tags$p(style = "font-size: 13px;",
-                "Download the QAQC'd conductivity data as CSV for the ",
+                "Download the QC'd conductivity data as CSV for the ",
                 tags$strong("selected station"), ". The exported file ",
                 "contains raw columns, adjusted columns, and all edit/flag ",
-                "columns. The QAQC log records every automated and manual ",
+                "columns. The QC log records every automated and manual ",
                 "adjustment applied."
               ),
               tags$p(style = "font-size: 13px; color: #666;",
@@ -2897,7 +2897,7 @@ module_cond_qc_ui <- function(id) {
                     style = "width: 100%; color: #ffffff; background-color: #2e7d32; border-color: #2e7d32;")
                 ),
                 column(4,
-                  downloadButton(ns("download_log"), "Download QAQC Log",
+                  downloadButton(ns("download_log"), "Download QC Log",
                     class = "btn-info",
                     style = "width: 100%; color: #ffffff;")
                 ),
@@ -2976,7 +2976,7 @@ module_cond_qc_server <- function(id) {
         n_recs <- format(nrow(df), big.mark = ",")
         has_spc <- "spc_uScm_adj" %in% names(df)
         has_baro <- "airtemp_C" %in% names(df)
-        status_parts <- sprintf(" Ready: %d station(s), %s records available for QAQC", n_stns, n_recs)
+        status_parts <- sprintf(" Ready: %d station(s), %s records available for QC", n_stns, n_recs)
         if (has_spc) status_parts <- paste0(status_parts, " | SPC computed")
         if (has_baro) status_parts <- paste0(status_parts, " | Air temp available (improved dry detection)")
         tags$div(
@@ -2987,7 +2987,7 @@ module_cond_qc_server <- function(id) {
       }
     })
 
-    # ---- Run QAQC (FIX: use cond_input_data + merge pattern) ----
+    # ---- Run QC (FIX: use cond_input_data + merge pattern) ----
     observeEvent(input$run_qaqc, {
       station <- input$station_select
       req(station)
@@ -2995,7 +2995,7 @@ module_cond_qc_server <- function(id) {
       req(input_df)
 
       tryCatch({
-        showNotification("Running conductivity QAQC...",
+        showNotification("Running conductivity QC...",
           type = "message", duration = NULL, id = "cond_qc_progress")
 
         result <- qc_conductivity(
@@ -3026,12 +3026,12 @@ module_cond_qc_server <- function(id) {
 
         removeNotification("cond_qc_progress")
         showNotification(
-          sprintf("Conductivity QAQC complete for %s", station),
+          sprintf("Conductivity QC complete for %s", station),
           type = "message", duration = 5)
 
       }, error = function(e) {
         removeNotification("cond_qc_progress")
-        showNotification(paste("QAQC error:", conditionMessage(e)),
+        showNotification(paste("QC error:", conditionMessage(e)),
           type = "error", duration = 8)
       })
     })
@@ -3268,7 +3268,7 @@ module_cond_qc_server <- function(id) {
       })
     })
 
-    # ---- QAQC Plot (3-4 panel time series) ----
+    # ---- QC Plot (3-4 panel time series) ----
     drag_range_js <- sprintf("
       function(el, x) {
         var _resetting = false;
@@ -3422,7 +3422,7 @@ module_cond_qc_server <- function(id) {
 
       layout_args <- list(
         p = p,
-        title = list(text = paste("Conductivity QAQC \u2014", station), font = list(size = 14)),
+        title = list(text = paste("Conductivity QC \u2014", station), font = list(size = 14)),
         xaxis = list(title = ""),
         yaxis = list(title = yaxis_titles[1], fixedrange = TRUE),
         yaxis2 = list(title = yaxis_titles[2], fixedrange = TRUE),
@@ -3855,7 +3855,7 @@ module_cond_qc_server <- function(id) {
       }
     )
 
-    # ---- Download: QAQC Log ----
+    # ---- Download: QC Log ----
     output$download_log <- downloadHandler(
       filename = function() {
         station <- input$station_select

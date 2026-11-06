@@ -3135,7 +3135,7 @@ module_wl_qaqc_ui <- function(id) {
               ),
               column(4,
                 numericInput(ns("threshold_dry"), "Dry temp threshold (\u00b0C)",
-                  value = 19, min = 0, max = 40, step = 1)
+                  value = 25, min = 0, max = 40, step = 1)
               ),
               column(4,
                 numericInput(ns("threshold_disturb"), "Disturbance threshold (m)",

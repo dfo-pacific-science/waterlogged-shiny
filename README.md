@@ -4,7 +4,7 @@
 
 waterlogged is a data processing application for water data from continuous water data loggers. The goal of waterlogged is to make aquatic environmental data processing more streamlined, standardized and accessible to a wide range of users.
 
-This version of the package was built for data from Onset HOBO barometric pressure (U20), dissolved oxygen (U26), conductivity (U24), and TidbiT loggers.
+This version of the application was built for data from Onset HOBO barometric pressure (U20), dissolved oxygen (U26), conductivity (U24), and TidbiT loggers.
 
 ## Workflow Overview
 
@@ -67,15 +67,15 @@ shiny::runApp()
 
 **Department of Fisheries and Oceans, Canada**
 
-**Authors/Developers:** Daniella LoScerbo, Amanda Martens, Julian Gan, Paula Soto
+**Package Authors & Developers:** Daniella LoScerbo, Amanda Martens, Julian Gan, Paula Soto
 
 **Principle Investigators:** Douglas Braun, Sean Naman, David Reid, Joel Harding
 
-**Technical Support:** Matthew Bayly (MJBA, App Development), Frank Poulsen (Ashlu, Technical Support)
+**App Developers & Technical Support:** Matthew Bayly (MJBA, App Development), Frank Poulsen (Ashlu, Technical Support)
 
 The correct citation for this Shiny App and associated R package:
 
 LoScerbo, D., Martens, A., Gan, J., Soto, P., Reid, D., Harding, J., Naman, S., 
 Braun, D. 2026. waterlogged: an R package for standardized and efficient 
 processing of environmental data from continuous data loggers. Can. Tech. Rep. 
-Fish. Aquat. Sci. 3807: vi + 119 p. 
+Fish. Aquat. Sci. 3807: xiv + 120 p. 

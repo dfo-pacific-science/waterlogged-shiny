@@ -1544,7 +1544,7 @@ module_temp_qc_water_ui <- function(id) {
               tags$div(
                 style = "border: 1px solid #ddd; padding: 10px; border-radius: 5px; background: #f9f9f9;",
                 numericInput(ns("high_dry_C"), "Dry flag threshold (\u00b0C):",
-                  value = 19, min = 10, max = 40, step = 1, width = "100%")
+                  value = 25, min = 10, max = 40, step = 1, width = "100%")
               ),
               tags$div(
                 style = "border: 1px solid #ddd; padding: 10px; border-radius: 5px; background: #f9f9f9;",

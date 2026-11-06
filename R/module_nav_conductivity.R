@@ -2461,8 +2461,8 @@ module_cond_qc_ui <- function(id) {
                      tags$div(
                        style = "border: 1px solid #ddd; padding: 15px; border-radius: 5px; background: #f9f9f9; height: 100%;",
                        tags$h4("Temperature Thresholds", style = "margin-top: 0;"),
-                       numericInput(ns("temp_low"), "Low (\u00b0C):", value = -2, width = "100%"),
-                       numericInput(ns("temp_high"), "High (\u00b0C):", value = 40, width = "100%")
+                       numericInput(ns("temp_low"), "Low (\u00b0C):", value = -1, width = "100%"),
+                       numericInput(ns("temp_high"), "High (\u00b0C):", value = 50, width = "100%")
                      )
               ),
 

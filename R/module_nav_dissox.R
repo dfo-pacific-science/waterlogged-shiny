@@ -2569,7 +2569,7 @@ module_do_qc_ui <- function(id) {
                      numericInput(ns("flag_do_dry"), "DO dry flag (mg/L)",
                                   value = 20, step = 0.5),
                      numericInput(ns("air_water_diff"), "Air-Water Diff (\u00b0C)",
-                                  value = 0.3, min = 0, max = 5, step = 0.1)
+                                  value = 2, min = 0, max = 5, step = 0.1)
               ),
               column(6,
                 tags$h4("Temperature Thresholds", style = "margin-top: 0;"),

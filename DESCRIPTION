@@ -36,3 +36,5 @@ Imports:
     rlang,
     tibble,
     leaflet
+Remotes: 
+    dfo-pacific-science/waterlogged

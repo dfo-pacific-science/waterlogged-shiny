@@ -52,41 +52,30 @@ module_temp_upload_ui <- function(id) {
         style = "display: flex; flex-wrap: wrap; align-items: flex-start;",
         # ---- Left: header text (2/3 width) ----
         tags$div(
-          style = "flex: 0 0 66.667%; max-width: 66.667%; padding-right: 20px;",
-          tags$h1("Import Temperature Logger Data", class = "custom-h1"),
-          tags$h2("Upload raw HOBO TidbiT / Pendant CSV files for water and air temperature",
+          style = "flex: 0 0 100%; max-width: 100%; padding-right: 20px;",
+          tags$h1("Prepare Raw Temperature Data", class = "custom-h1"),
+          tags$h2("Import raw CSV files from water or air temperature loggers",
                   class = "custom-h2"),
           tags$p(
             class = "clean-print",
-            "Import raw HOBO CSV files from standalone temperature loggers ",
-            "(TidbiT V2, Pendant). These loggers record a single temperature ",
-            "channel (\u00b0C). The metadata file determines whether each logger is ",
-            "classified as ", tags$code("watertemp"), " (deployed in water) or ",
-            tags$code("airtemp"), " (deployed in air). Because ",
-            tags$code("bind_logger_files()"), " processes one metric type per call, ",
-            "water and air temperature files are imported separately."
+            "When processing environmental data, often there will be multiple data files, either files from multiple loggers/monitoring station or files downloaded from a single logger at different times. These files need to be bound together to create a continuous data set for each monitoring station. ",
+            "In the case loggers were activated prior to deployment or were removed before downloading, the data will need to be trimmed to the deployment and removal dates. ",
+            tags$code("bind_logger_files()"), " will load CSV files , match the serial number in the raw logger file with the station name and serial number in the ",
+            tags$code("metadata") ," file, remove data recorded before the deployment and after the removal timestamps, and bind data files from the same station. "
+
           ),
           tags$div(
             class = "clean-print",
             style = "background-color: #e3f2fd; padding: 15px; border-radius: 5px; margin-top: 15px;",
             tags$p(style = "margin: 0;",
               icon("info-circle"),
-              " This tab handles ", tags$strong("standalone temperature loggers only"),
-              ". Temperature channels embedded in other logger types (water level, ",
+              " This tab handles data from ", tags$strong("loggers that record temperature as the primary metric"),
+              ". Temperature data recorded as a secondary metric in other logger types (e.g. water level, ",
               "dissolved oxygen, conductivity) are processed within their respective ",
               "metric workflows."
             )
           )
         ),
-        # ---- Right: logger image (1/3 width) ----
-        tags$div(
-          style = "flex: 0 0 33.333%; max-width: 33.333%; text-align: center; padding-top: 10px;",
-          tags$img(
-            src = "img/toprightpic_temperature.png",
-            style = "max-width: 100%; height: auto;",
-            alt = "HOBO TidbiT and Pendant temperature loggers"
-          )
-        )
       ),
 
       hr(),
@@ -100,9 +89,9 @@ module_temp_upload_ui <- function(id) {
       # Row 1: Metadata & Station Locations
       # ================================================================
       tags$div(
-        style = "border-top: 2px solid #00796b; margin: 25px 0 20px 0; position: relative;",
+        style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
         tags$span(
-          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #00796b; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
           "Metadata & Station Locations"
         )
       ),
@@ -132,13 +121,11 @@ module_temp_upload_ui <- function(id) {
                       " Also accepts ", tags$code("YYYY-MM-DD HH:MM"), ".",
                       " ", tags$code("timestamp_remove"), " may be ", tags$code("NA"),
                       " for loggers still deployed."),
-              tags$li(tags$code("model"), " \u2014 logger model (e.g. TidbiT_V2, Pendant)"),
               tags$li(tags$code("sn"), " \u2014 logger serial number"),
               tags$li(tags$code("metric"), " \u2014 ",
                       tags$strong("must"), " be ", tags$code("\"watertemp\""), " or ",
                       tags$code("\"airtemp\""),
                       " \u2014 this determines how the logger data is classified and processed"),
-              tags$li(tags$code("status"), " \u2014 deployment status"),
               tags$li(tags$code("latitude"), " / ", tags$code("longitude"),
                       " \u2014 decimal degrees",
                       " (e.g. ", tags$code("49.2827"), ", ", tags$code("-123.1207"), ")")
@@ -153,7 +140,7 @@ module_temp_upload_ui <- function(id) {
                 download = "sample_metadata.csv",
                 icon("download"),
                 " Download sample metadata template",
-                style = "color: #00796b;"
+                style = "color: #233d4d;"
               )
             )
           )
@@ -211,9 +198,9 @@ module_temp_upload_ui <- function(id) {
       # Row 2: Raw Logger Data — Water Temperature
       # ================================================================
       tags$div(
-        style = "border-top: 2px solid #00796b; margin: 25px 0 20px 0; position: relative;",
+        style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
         tags$span(
-          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #00796b; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
           "Raw Logger Data \u2014 Water Temperature"
         )
       ),
@@ -225,46 +212,39 @@ module_temp_upload_ui <- function(id) {
           style = "flex: 0 0 66.667%; max-width: 66.667%; padding: 0 15px;",
           tags$div(
             style = "background-color: #f0f0f0; padding: 20px; border-radius: 5px; margin-bottom: 15px;",
-            tags$h4("How to Import Water Temperature Files", style = "margin-top: 0;"),
+            tags$h4("How to Import Raw Water Temperature Files", style = "margin-top: 0;"),
             tags$p(
-              "Upload the raw CSV files exported from HOBOware for your ",
-              "water temperature loggers (TidbiT V2 or Pendant deployed in water). ",
-              "You can select multiple files at once across stations and site visits. ",
-              "The CSV must contain a ", tags$code("Date Time"), " column in ",
-              "HOBOware's default export format: ",
-              tags$code("MM/DD/YYYY HH:MM:SS AM/PM"),
-              " (e.g. ", tags$code("06/01/2025 02:30:00 PM"), ")."
+              "Raw data files from loggers must be saved as CSV files to be read by ", tags$code("waterlogged"), ". If raw data files are initially downloaded as a proprietary file type (e.g., .hobo) refer to the logger user manual for instructions on how to export your data in CSV format. For data files from HOBO loggers we recommend using the ‘Bulk Export’ tool available on the Pro version of HOBOware to save time and reduce variability in timestamp formatting that can occur when exporting individual .hobo files as CSV files. Raw data files exported from HOBOware are arranged by default where the first row contains the name of the logger (either automatically generated as the serial number from the logger or rewritten by the user), a second row which contains headers for timestamps (Date Time) in the format of ‘MM/DD/YYYY HH:MM’, each metric and unit recorded by the logger (e.g., 'Temp, C' is the header for a HOBO TidbiT logger), and various Coupler action columns. "
             ),
             tags$ol(
               style = "padding-left: 20px; font-size: 13px;",
               tags$li("Ensure metadata is loaded (above) with ", tags$code("metric = \"watertemp\""),
                       " rows so logger serial numbers can be matched."),
-              tags$li("Select one or more raw HOBO CSV files from water temp loggers."),
-              tags$li("Click ", tags$strong("Bind Water Temp Files"), " to parse ",
-                      "and combine the data.")
+              tags$li("Browse to select one or more raw CSV files from water temp loggers."),
+              tags$li("Click ", tags$strong("Bind Water Temp Files"), " to combine the data.")
             ),
             tags$p(style = "font-size: 12px; margin-top: 10px;",
-              icon("download"), " Download sample raw HOBO water temp files:",
+              icon("download"), " Download sample raw water temp files:",
               tags$br(),
               tags$a(
-                href = "WT_NT_LEMI_ST_20_20712099_20230414.csv",
-                download = "WT_NT_LEMI_ST_20_20712099_20230414.csv",
-                style = "color: #00796b; font-size: 12px;",
-                "WT_NT_LEMI_ST_20_20712099_20230414.csv"
+                href = "watertemp1.csv",
+                download = "watertemp1.csv",
+                style = "color: #233d4d; font-size: 12px;",
+                "watertemp1.csv"
               ),
               tags$br(),
               tags$a(
-                href = "WT_NT_LEMI_ST_20_20712099_20231017.csv",
-                download = "WT_NT_LEMI_ST_20_20712099_20231017.csv",
-                style = "color: #00796b; font-size: 12px;",
-                "WT_NT_LEMI_ST_20_20712099_20231017.csv"
+                href = "watertemp2.csv",
+                download = "watertemp2.csv",
+                style = "color: #233d4d; font-size: 12px;",
+                "watertemp2.csv"
               )
             ),
             tags$p(style = "font-size: 13px; margin-top: 10px;",
               tags$a(
                 href = "#", `data-toggle` = "modal",
                 `data-target` = "#hoboware_export_modal",
-                style = "color: #00796b;",
+                style = "color: #233d4d;",
                 icon("question-circle"),
                 " How to export CSV files from HOBOware"
               )
@@ -276,7 +256,7 @@ module_temp_upload_ui <- function(id) {
             tags$h4("Follow Along in the R Package (waterlogged)", style = "margin-top: 0;"),
             tags$code("bind_logger_files()"),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
-                   "Parse raw HOBO CSVs, match serial numbers to metadata")
+                   "Load raw HOBO CSVs, match serial numbers to metadata, trim files to deployment period in metadata")
           ),
 
           tags$div(
@@ -305,7 +285,7 @@ module_temp_upload_ui <- function(id) {
             style = "background-color: #fafafa; padding: 15px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #e0e0e0; flex: 1;",
             tags$h4("Raw Water Temp Logger Files", style = "margin-top: 0;"),
             tags$p(style = "font-size: 13px; color: #666;",
-              "Upload one or more raw HOBO TidbiT / Pendant CSV files ",
+              "Upload one or more raw CSV files ",
               "from loggers deployed in water."
             ),
             fileInput(ns("wt_raw_files"), NULL,
@@ -324,9 +304,9 @@ module_temp_upload_ui <- function(id) {
               id = ns("wt_bind_spinner"),
               style = "display: none; text-align: center; padding: 15px; margin-top: 10px; background-color: #e0f2f1; border-radius: 5px;",
               tags$div(
-                style = "display: inline-block; width: 24px; height: 24px; border: 3px solid #80cbc4; border-top: 3px solid #00796b; border-radius: 50%; animation: temp-spin 0.8s linear infinite; vertical-align: middle;"
+                style = "display: inline-block; width: 24px; height: 24px; border: 3px solid #80cbc4; border-top: 3px solid #233d4d; border-radius: 50%; animation: temp-spin 0.8s linear infinite; vertical-align: middle;"
               ),
-              tags$span(style = "margin-left: 10px; color: #00796b; font-weight: bold;",
+              tags$span(style = "margin-left: 10px; color: #233d4d; font-weight: bold;",
                 "Processing... binding water temp files")
             ),
             uiOutput(ns("wt_bind_summary"))
@@ -338,9 +318,9 @@ module_temp_upload_ui <- function(id) {
       # Row 3: Raw Logger Data — Air Temperature
       # ================================================================
       tags$div(
-        style = "border-top: 2px solid #00796b; margin: 25px 0 20px 0; position: relative;",
+        style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
         tags$span(
-          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #00796b; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
           "Raw Logger Data \u2014 Air Temperature"
         )
       ),
@@ -354,37 +334,44 @@ module_temp_upload_ui <- function(id) {
             style = "background-color: #f0f0f0; padding: 20px; border-radius: 5px; margin-bottom: 15px;",
             tags$h4("How to Import Air Temperature Files", style = "margin-top: 0;"),
             tags$p(
-              "Upload the raw CSV files exported from HOBOware for your ",
-              "air temperature loggers (TidbiT V2 or Pendant deployed in air). ",
-              "You can select multiple files at once across stations and site visits. ",
-              "The CSV must contain a ", tags$code("Date Time"), " column in ",
-              "HOBOware's default export format: ",
-              tags$code("MM/DD/YYYY HH:MM:SS AM/PM"),
-              " (e.g. ", tags$code("06/01/2025 02:30:00 PM"), ")."
+              "Raw data files from loggers must be saved as CSV files to be read by ", tags$code("waterlogged"), ". If raw data files are initially downloaded as a proprietary file type (e.g., .hobo) refer to the logger user manual for instructions on how to export your data in CSV format. For data files from HOBO loggers we recommend using the ‘Bulk Export’ tool available on the Pro version of HOBOware to save time and reduce variability in timestamp formatting that can occur when exporting individual .hobo files as CSV files. Raw data files exported from HOBOware are arranged by default where the first row contains the name of the logger (either automatically generated as the serial number from the logger or rewritten by the user), a second row which contains headers for timestamps (Date Time) in the format of ‘MM/DD/YYYY HH:MM’, each metric and unit recorded by the logger (e.g., 'Temp, C' is the header for a HOBO TidbiT logger), and various Coupler action columns. "
             ),
             tags$ol(
               style = "padding-left: 20px; font-size: 13px;",
               tags$li("Ensure metadata is loaded (above) with ", tags$code("metric = \"airtemp\""),
                       " rows so logger serial numbers can be matched."),
-              tags$li("Select one or more raw HOBO CSV files from air temp loggers."),
-              tags$li("Click ", tags$strong("Bind Air Temp Files"), " to parse ",
-                      "and combine the data.")
+              tags$li("Browse to select one or more raw CSV files from air temp loggers."),
+              tags$li("Click ", tags$strong("Bind Air Temp Files"), " to combine the data.")
             ),
             tags$p(style = "font-size: 12px; margin-top: 10px;",
-              icon("download"), " Download sample raw HOBO air temp file:",
+              icon("download"), " Download sample raw air temp files:",
               tags$br(),
               tags$a(
-                href = "WT_HAGG_ST_30_20764236_20230411.csv",
-                download = "WT_HAGG_ST_30_20764236_20230411.csv",
-                style = "color: #00796b; font-size: 12px;",
-                "WT_HAGG_ST_30_20764236_20230411.csv"
+                href = "airtemp-1.csv",
+                download = "airtemp-1.csv",
+                style = "color: #233d4d; font-size: 12px;",
+                "airtemp-1.csv"
+              ),
+              tags$br(),
+              tags$a(
+                href = "airtemp-2.csv",
+                download = "airtemp-2.csv",
+                style = "color: #233d4d; font-size: 12px;",
+                "airtemp-2.csv"
+              ),
+              tags$br(),
+              tags$a(
+                href = "airtemp-3.csv",
+                download = "airtemp-3.csv",
+                style = "color: #233d4d; font-size: 12px;",
+                "airtemp-3.csv"
               )
             ),
             tags$p(style = "font-size: 13px; margin-top: 10px;",
               tags$a(
                 href = "#", `data-toggle` = "modal",
                 `data-target` = "#hoboware_export_modal",
-                style = "color: #00796b;",
+                style = "color: #233d4d;",
                 icon("question-circle"),
                 " How to export CSV files from HOBOware"
               )
@@ -396,7 +383,7 @@ module_temp_upload_ui <- function(id) {
             tags$h4("Follow Along in the R Package (waterlogged)", style = "margin-top: 0;"),
             tags$code("bind_logger_files()"),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
-                   "Parse raw HOBO CSVs, match serial numbers to metadata")
+                   "Load raw HOBO CSVs, match serial numbers to metadata, trim files to deployment period in metadata")
           ),
 
           tags$div(
@@ -425,7 +412,7 @@ module_temp_upload_ui <- function(id) {
             style = "background-color: #fafafa; padding: 15px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #e0e0e0; flex: 1;",
             tags$h4("Raw Air Temp Logger Files", style = "margin-top: 0;"),
             tags$p(style = "font-size: 13px; color: #666;",
-              "Upload one or more raw HOBO TidbiT / Pendant CSV files ",
+              "Upload one or more raw CSV files ",
               "from loggers deployed in air."
             ),
             fileInput(ns("at_raw_files"), NULL,
@@ -444,9 +431,9 @@ module_temp_upload_ui <- function(id) {
               id = ns("at_bind_spinner"),
               style = "display: none; text-align: center; padding: 15px; margin-top: 10px; background-color: #e0f2f1; border-radius: 5px;",
               tags$div(
-                style = "display: inline-block; width: 24px; height: 24px; border: 3px solid #80cbc4; border-top: 3px solid #00796b; border-radius: 50%; animation: temp-spin 0.8s linear infinite; vertical-align: middle;"
+                style = "display: inline-block; width: 24px; height: 24px; border: 3px solid #80cbc4; border-top: 3px solid #233d4d; border-radius: 50%; animation: temp-spin 0.8s linear infinite; vertical-align: middle;"
               ),
-              tags$span(style = "margin-left: 10px; color: #00796b; font-weight: bold;",
+              tags$span(style = "margin-left: 10px; color: #233d4d; font-weight: bold;",
                 "Processing... binding air temp files")
             ),
             uiOutput(ns("at_bind_summary"))
@@ -458,9 +445,9 @@ module_temp_upload_ui <- function(id) {
       # Row 4: Snap Timestamps
       # ================================================================
       tags$div(
-        style = "border-top: 2px solid #00796b; margin: 25px 0 20px 0; position: relative;",
+        style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
         tags$span(
-          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #00796b; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
           "Snap Timestamps"
         )
       ),
@@ -541,9 +528,9 @@ module_temp_upload_ui <- function(id) {
       # Row 5: Review Raw Series
       # ================================================================
       tags$div(
-        style = "border-top: 2px solid #00796b; margin: 25px 0 20px 0; position: relative;",
+        style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
         tags$span(
-          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #00796b; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
           "Review Raw Series"
         )
       ),
@@ -568,9 +555,9 @@ module_temp_upload_ui <- function(id) {
 
       # ---- (Optional) Filter Data by Date Range ----
       tags$div(
-        style = "border-top: 2px solid #00796b; margin: 25px 0 20px 0; position: relative;",
+        style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
         tags$span(
-          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #00796b; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
           "(Optional) Filter Data by Date Range"
         )
       ),
@@ -589,7 +576,7 @@ module_temp_upload_ui <- function(id) {
           style = "margin-top: 25px;",
           actionButton(ns("apply_filter"), "Apply Filter",
                        class = "btn-primary", icon = icon("filter"),
-                       style = "color: #fff; background-color: #00796b; border-color: #00796b;")
+                       style = "color: #fff; background-color: #233d4d; border-color: #233d4d;")
         ))
       ),
 
@@ -604,14 +591,14 @@ module_temp_upload_ui <- function(id) {
           tags$a(
             href = "#",
             onclick = "$(\"a[href='#shiny-tab-t_temp_qc_air']\").tab('show'); return false;",
-            style = "color: #00796b; font-weight: bold;",
+            style = "color: #233d4d; font-weight: bold;",
             "QC Air Temperature"
           ),
           " / ",
           tags$a(
             href = "#",
             onclick = "$(\"a[href='#shiny-tab-t_temp_qc_water']\").tab('show'); return false;",
-            style = "color: #00796b; font-weight: bold;",
+            style = "color: #233d4d; font-weight: bold;",
             "QC Water Temperature"
           ),
           "."
@@ -1464,9 +1451,9 @@ module_temp_qc_water_ui <- function(id) {
       # Section 1: Run Automated QC
       # ================================================================
       tags$div(
-        style = "border-top: 2px solid #00796b; margin: 25px 0 20px 0; position: relative;",
+        style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
         tags$span(
-          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #00796b; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
           "Run Automated QC"
         )
       ),
@@ -1513,7 +1500,7 @@ module_temp_qc_water_ui <- function(id) {
             style = "background-color: #fafafa; padding: 20px; border-radius: 5px; border: 1px solid #e0e0e0; flex: 1; min-width: 0; overflow-x: auto;",
 
             tags$div(
-              style = "background-color: #e0f2f1; padding: 10px; border-radius: 5px; border: 2px solid #00796b; margin-bottom: 15px;",
+              style = "background-color: #e0f2f1; padding: 10px; border-radius: 5px; border: 2px solid #233d4d; margin-bottom: 15px;",
               selectInput(ns("station_select"), "Select Station:",
                 choices = NULL, width = "100%")
             ),
@@ -1555,7 +1542,7 @@ module_temp_qc_water_ui <- function(id) {
 
             actionButton(ns("run_qaqc"), "Run Water Temp QC",
               class = "btn-primary btn-lg", width = "100%",
-              style = "color: #fff; background-color: #00796b; border-color: #00796b;",
+              style = "color: #fff; background-color: #233d4d; border-color: #233d4d;",
               icon = icon("play")
             ),
 
@@ -1577,9 +1564,9 @@ module_temp_qc_water_ui <- function(id) {
         ns = ns,
 
         tags$div(
-          style = "border-top: 2px solid #00796b; margin: 25px 0 20px 0; position: relative;",
+          style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
           tags$span(
-            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #00796b; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
             "Manual Adjustments"
           )
         ),
@@ -1631,20 +1618,20 @@ module_temp_qc_water_ui <- function(id) {
             style = "margin-top: 20px; padding: 15px; background-color: #f0f0f0; border-radius: 5px;",
             fluidRow(
               column(4,
-                tags$h5("Ice", style = "margin-top: 0; color: #00796b;"),
+                tags$h5("Ice", style = "margin-top: 0; color: #233d4d;"),
                 tags$p(style = "font-size: 12px;",
                   "Sensor frozen or encased in ice. Sets water temperature to NA."
                 )
               ),
               column(4,
-                tags$h5("Dry", style = "margin-top: 0; color: #00796b;"),
+                tags$h5("Dry", style = "margin-top: 0; color: #233d4d;"),
                 tags$p(style = "font-size: 12px;",
                   "Sensor out of water. Temperature readings may be air temperature ",
                   "rather than water temperature."
                 )
               ),
               column(4,
-                tags$h5("Disturbance", style = "margin-top: 0; color: #00796b;"),
+                tags$h5("Disturbance", style = "margin-top: 0; color: #233d4d;"),
                 tags$p(style = "font-size: 12px;",
                   "Logger moved, disturbed, or otherwise unreliable."
                 )
@@ -1654,9 +1641,9 @@ module_temp_qc_water_ui <- function(id) {
         ),
 
         tags$div(
-          style = "border-top: 2px solid #00796b; margin: 25px 0 20px 0; position: relative;",
+          style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
           tags$span(
-            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #00796b; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
             "Station Summary Statistics"
           )
         ),
@@ -1670,9 +1657,9 @@ module_temp_qc_water_ui <- function(id) {
         ),
 
         tags$div(
-          style = "border-top: 2px solid #00796b; margin: 25px 0 20px 0; position: relative;",
+          style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
           tags$span(
-            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #00796b; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
             "Export Clean Data"
           )
         ),
@@ -1698,7 +1685,7 @@ module_temp_qc_water_ui <- function(id) {
                 column(4,
                   downloadButton(ns("download_csv"), "Download Clean CSV",
                     class = "btn-primary",
-                    style = "width: 100%; color: #ffffff; background-color: #00796b; border-color: #00796b;")
+                    style = "width: 100%; color: #ffffff; background-color: #233d4d; border-color: #233d4d;")
                 ),
                 column(4,
                   downloadButton(ns("download_log"), "Download QC Log",
@@ -1982,7 +1969,7 @@ module_temp_qc_water_server <- function(id) {
       n <- length(selected_ranges())
       if (input$plot_mode == "select") {
         if (n == 0) tags$span(style = "font-size: 13px; color: #666;", "Drag across the plot to select a period")
-        else tags$span(style = "font-size: 13px; color: #00796b; font-weight: bold;", sprintf("%d range%s selected", n, if (n > 1) "s" else ""))
+        else tags$span(style = "font-size: 13px; color: #233d4d; font-weight: bold;", sprintf("%d range%s selected", n, if (n > 1) "s" else ""))
       }
     })
 
@@ -2033,9 +2020,9 @@ module_temp_qc_water_server <- function(id) {
     output$summary_station_label <- renderUI({
       stn <- input$station_select; req(stn); data <- selected_data(); req(nrow(data) > 0)
       date_range <- paste(format(min(data$timestamp), "%Y-%m-%d"), "to", format(max(data$timestamp), "%Y-%m-%d"))
-      tags$div(style = "background-color: #e0f2f1; padding: 12px; border-radius: 5px; border: 2px solid #00796b; margin-bottom: 15px;",
+      tags$div(style = "background-color: #e0f2f1; padding: 12px; border-radius: 5px; border: 2px solid #233d4d; margin-bottom: 15px;",
         tags$p(style = "margin: 0; font-size: 14px;", "Showing summary statistics for station: ",
-          tags$strong(stn, style = "color: #00796b;"),
+          tags$strong(stn, style = "color: #233d4d;"),
           tags$span(style = "color: #555; margin-left: 10px;", sprintf("(%s records, %s)", format(nrow(data), big.mark = ","), date_range))))
     })
 
@@ -2100,9 +2087,9 @@ module_temp_qc_air_ui <- function(id) {
       hr(),
 
       tags$div(
-        style = "border-top: 2px solid #00796b; margin: 25px 0 20px 0; position: relative;",
+        style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
         tags$span(
-          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #00796b; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
           "Run Automated QC"
         )
       ),
@@ -2145,7 +2132,7 @@ module_temp_qc_air_ui <- function(id) {
             style = "background-color: #fafafa; padding: 20px; border-radius: 5px; border: 1px solid #e0e0e0; flex: 1; min-width: 0; overflow-x: auto;",
 
             tags$div(
-              style = "background-color: #e0f2f1; padding: 10px; border-radius: 5px; border: 2px solid #00796b; margin-bottom: 15px;",
+              style = "background-color: #e0f2f1; padding: 10px; border-radius: 5px; border: 2px solid #233d4d; margin-bottom: 15px;",
               selectInput(ns("station_select"), "Select Station:", choices = NULL, width = "100%")
             ),
             # QC parameters
@@ -2169,7 +2156,7 @@ module_temp_qc_air_ui <- function(id) {
 
             actionButton(ns("run_qaqc"), "Run Air Temp QC",
               class = "btn-primary btn-lg", width = "100%",
-              style = "color: #fff; background-color: #00796b; border-color: #00796b;",
+              style = "color: #fff; background-color: #233d4d; border-color: #233d4d;",
               icon = icon("play")),
 
             conditionalPanel(condition = "output.show_results", ns = ns,
@@ -2182,8 +2169,8 @@ module_temp_qc_air_ui <- function(id) {
       conditionalPanel(
         condition = "output.show_results", ns = ns,
 
-        tags$div(style = "border-top: 2px solid #00796b; margin: 25px 0 20px 0; position: relative;",
-          tags$span(style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #00796b; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;", "Manual Adjustments")),
+        tags$div(style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
+          tags$span(style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;", "Manual Adjustments")),
 
         tags$p(class = "clean-print", "Use the plot below to review flagged data. Switch to ",
           tags$strong("Select Range"), " mode and drag across the time series to highlight periods that need removal."),
@@ -2201,19 +2188,19 @@ module_temp_qc_air_ui <- function(id) {
               actionButton(ns("apply_ranges"), "Remove Selected", class = "btn-warning btn-sm", icon = icon("eraser"), style = "color: #fff;")),
             uiOutput(ns("range_status"))),
           tags$div(style = "margin-top: 20px; padding: 15px; background-color: #f0f0f0; border-radius: 5px;",
-            tags$h5("Disturbance", style = "margin-top: 0; color: #00796b;"),
+            tags$h5("Disturbance", style = "margin-top: 0; color: #233d4d;"),
             tags$p(style = "font-size: 12px;", "Logger moved, disturbed, or otherwise unreliable. Sets air temperature to NA for the selected period."))
         ),
 
-        tags$div(style = "border-top: 2px solid #00796b; margin: 25px 0 20px 0; position: relative;",
-          tags$span(style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #00796b; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;", "Station Summary Statistics")),
+        tags$div(style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
+          tags$span(style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;", "Station Summary Statistics")),
         uiOutput(ns("summary_station_label")),
         tags$div(style = "background-color: #f0f0f0; padding: 15px; border-radius: 5px; margin-bottom: 15px;",
           tags$h4("Temperature Summary (raw vs adjusted)", style = "margin-top: 0;"),
           verbatimTextOutput(ns("temp_summary"))),
 
-        tags$div(style = "border-top: 2px solid #00796b; margin: 25px 0 20px 0; position: relative;",
-          tags$span(style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #00796b; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;", "Export Clean Data")),
+        tags$div(style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
+          tags$span(style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;", "Export Clean Data")),
         tags$div(style = "display: flex; flex-wrap: wrap; margin: 0 -15px;",
           tags$div(style = "flex: 0 0 33.333%; max-width: 33.333%; padding: 0 15px; display: flex;",
             tags$div(style = "background-color: #f0f0f0; padding: 20px; border-radius: 5px; flex: 1;",
@@ -2223,7 +2210,7 @@ module_temp_qc_air_ui <- function(id) {
             tags$div(style = "background-color: #fafafa; padding: 20px; border-radius: 5px; border: 1px solid #e0e0e0; flex: 1;",
               fluidRow(
                 column(4, downloadButton(ns("download_csv"), "Download Clean CSV", class = "btn-primary",
-                  style = "width: 100%; color: #ffffff; background-color: #00796b; border-color: #00796b;")),
+                  style = "width: 100%; color: #ffffff; background-color: #233d4d; border-color: #233d4d;")),
                 column(4, downloadButton(ns("download_log"), "Download QC Log", class = "btn-info", style = "width: 100%; color: #ffffff;")),
                 column(4, downloadButton(ns("download_metadata"), "Download Metadata", class = "btn-default", style = "width: 100%;"))))))
       )
@@ -2442,7 +2429,7 @@ module_temp_qc_air_server <- function(id) {
       n <- length(selected_ranges())
       if (input$plot_mode == "select") {
         if (n == 0) tags$span(style = "font-size: 13px; color: #666;", "Drag across the plot to select a period")
-        else tags$span(style = "font-size: 13px; color: #00796b; font-weight: bold;", sprintf("%d range%s selected", n, if (n > 1) "s" else ""))
+        else tags$span(style = "font-size: 13px; color: #233d4d; font-weight: bold;", sprintf("%d range%s selected", n, if (n > 1) "s" else ""))
       }
     })
 
@@ -2495,9 +2482,9 @@ module_temp_qc_air_server <- function(id) {
     output$summary_station_label <- renderUI({
       stn <- input$station_select; req(stn); data <- selected_data(); req(nrow(data) > 0)
       date_range <- paste(format(min(data$timestamp), "%Y-%m-%d"), "to", format(max(data$timestamp), "%Y-%m-%d"))
-      tags$div(style = "background-color: #e0f2f1; padding: 12px; border-radius: 5px; border: 2px solid #00796b; margin-bottom: 15px;",
+      tags$div(style = "background-color: #e0f2f1; padding: 12px; border-radius: 5px; border: 2px solid #233d4d; margin-bottom: 15px;",
         tags$p(style = "margin: 0; font-size: 14px;", "Showing summary statistics for station: ",
-          tags$strong(stn, style = "color: #00796b;"),
+          tags$strong(stn, style = "color: #233d4d;"),
           tags$span(style = "color: #555; margin-left: 10px;", sprintf("(%s records, %s)", format(nrow(data), big.mark = ","), date_range))))
     })
 

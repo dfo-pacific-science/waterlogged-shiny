@@ -1,10 +1,10 @@
 body, p, div, label {
-    font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", 
+    font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue",
     Helvetica, Arial, "Lucida Grande", sans-serif;
 }
 
 .main-header .logo {
-    font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", 
+    font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue",
     Helvetica, Arial, "Lucida Grande", sans-serif;
     font-weight: bold;
 }
@@ -18,18 +18,18 @@ body, p, div, label {
     margin-right: 15px;
     color: #6A747B;
   }
-  
+
   .img-fit {
     text-align: center;
     max-width: 850px;
   }
 
   .custom-h1 {
-    color: #8A939A
+    color: #233d4d
   }
-  
+
   .custom-h2 {
-    color: #00AFDB
+    color: #8A939A
   }
 
   .content-wrapper {

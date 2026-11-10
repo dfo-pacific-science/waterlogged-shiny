@@ -249,8 +249,8 @@ module_welcome_ui <- function(id) {
 
             fluidRow(
               column(
-                width = 4,
-                tags$h4("Package Authors & Developers", style = "color: #233d4d; font-size: 14px; margin-bottom: 10px;"),
+                width = 3,
+                tags$h4("Package Authors:", style = "color: #233d4d; font-size: 14px; margin-bottom: 10px;"),
                 tags$div(style = "font-size: 13px; line-height: 1.8;",
                   tags$div("Daniella LoScerbo"),
                   tags$div("Amanda Martens"),
@@ -259,18 +259,25 @@ module_welcome_ui <- function(id) {
                 )
               ),
               column(
-                width = 4,
+                width = 3,
                 tags$h4("Principle Investigators:", style = "color: #233d4d; font-size: 14px; margin-bottom: 10px;"),
                 tags$div(style = "font-size: 13px; line-height: 1.8;",
                          tags$div("Douglas Braun"),
                          tags$div("Sean Naman"),
-                         tags$div("David Reid"),
                          tags$div("Joel Harding")
                 )
               ),
               column(
-                width = 4,
-                tags$h4("App Developers & Technical Support", style = "color: #233d4d; font-size: 14px; margin-bottom: 10px;"),
+                width = 3,
+                tags$h4("Reviewers:", style = "color: #233d4d; font-size: 14px; margin-bottom: 10px;"),
+                tags$div(style = "font-size: 13px; line-height: 1.8;",
+                         tags$div("David Reid"),
+                         tags$div("Sarah Hnytka")
+                )
+              ),
+              column(
+                width = 3,
+                tags$h4("App Developers, Technical Support:", style = "color: #233d4d; font-size: 14px; margin-bottom: 10px;"),
                 tags$div(style = "font-size: 13px; line-height: 1.8;",
                   tags$div("Matthew Bayly (MJBA)"),
                   tags$div("Frank Poulsen (Ashlu)")

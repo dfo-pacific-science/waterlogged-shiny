@@ -2731,6 +2731,7 @@
         "RemoteHost": "api.github.com",
         "RemoteRepo": "waterlogged",
         "RemoteUsername": "dfo-pacific-science",
+        "RemotePkgRef": "dfo-pacific-science/waterlogged",
         "RemoteRef": "HEAD",
         "RemoteSha": "d4a4dce8686f7f38a0357e0585506469dd7b305b",
         "GithubRepo": "waterlogged",
@@ -2738,10 +2739,10 @@
         "GithubRef": "HEAD",
         "GithubSHA1": "d4a4dce8686f7f38a0357e0585506469dd7b305b",
         "NeedsCompilation": "no",
-        "Packaged": "2026-11-10 16:19:15 UTC; LOSCERBOD",
+        "Packaged": "2026-11-10 18:32:57 UTC; LOSCERBOD",
         "Author": "Daniella LoScerbo [aut, cre] (<https://orcid.org/0000-0001-7832-4994>),\n  Amanda Martens [aut],\n  Julian Gan [aut],\n  Doug Braun [fnd]",
         "Maintainer": "Daniella LoScerbo <daniella.loscerbo@dfo-mpo.gc.ca>",
-        "Built": "R 4.4.2; ; 2026-11-10 16:19:57 UTC; windows"
+        "Built": "R 4.4.2; ; 2026-11-10 18:33:23 UTC; windows"
       }
     },
     "withr": {

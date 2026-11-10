@@ -49,25 +49,11 @@ library(lubridate) # date handling
 
 
 # Load package dependencies for waterlogged workflows
+library(waterlogged)
 library(dplyr) # tidyverse operations
 library(tidyr) # data reshaping
 library(ggplot2) # plotting
 library(purrr) # functional programming
-
-# Load waterlogged: use installed package if available, otherwise source
-# from embedded copy (for shinyapps.io where the private repo is not accessible).
-# To install locally: devtools::install("./waterlogged/")
-if (requireNamespace("waterlogged", quietly = TRUE)) {
-  library(waterlogged)
-} else {
-  message("waterlogged package not installed - sourcing from embedded copy...")
-  for (.f in sort(list.files("waterlogged/R", full.names = TRUE, pattern = "\\.R$"))) {
-    source(.f, local = globalenv())
-  }
-  rm(.f)
-}
-
-
 
 
 # Turn off scientific notation

@@ -27,7 +27,8 @@ module_setup_reactives <- function(session = NA) {
 
   # Populate with demo data from global.R so app works immediately
   # Combine main metadata with temperature metadata (no overlap expected)
-  rv_raw_data$metadata <- rbind(demo_metadata, demo_temp_metadata)
+ # rv_raw_data$metadata <- rbind(demo_metadata, demo_temp_metadata)
+   rv_raw_data$metadata <- demo_metadata
   rv_raw_data$wl_metadata <- demo_metadata
   rv_raw_data$baro_data <- demo_baro_list
   rv_raw_data$waterlevel_data <- demo_waterlevel_list

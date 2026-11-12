@@ -101,7 +101,7 @@ for (nm in names(demo_conductivity_list)) {
 }
 
 # Load temperature metadata
-demo_temp_metadata <- read.csv("inst/extdata/water_temperature/metadata_wt.csv")
+#demo_temp_metadata <- read.csv("inst/extdata/water_temperature/metadata_wt.csv")
 
 # Supplementary data
 demo_stage_readings <- read.csv("inst/extdata/stage_readings.csv")

@@ -68,8 +68,10 @@ demo_sites <- unique(demo_metadata[, c("site_station_code", "latitude", "longitu
 
 # Load barometric data for multiple stations
 demo_baro_list <- list(
-  "ALBR_ST_30" = read.csv("inst/extdata/baro_ALBR_ST_30.csv"),
-  "DARL_ST_30" = read.csv("inst/extdata/baro_DARL_ST_30.csv")
+  "SLUG_ST_01" = read.csv("inst/extdata/SLUG_ST_01_BARO_20240101_20241009_v0.1.csv"),
+  "FROG_WE_01" = read.csv("inst/extdata/FROG_WE_01_BARO_20240101_20241015_v0.1.csv"),
+  "BUGS_WE_01" = read.csv("inst/extdata/BUGS_WE_01_BARO_20240101_20241015_v0.1.csv")
+
 )
 # Parse timestamps
 for (nm in names(demo_baro_list)) {

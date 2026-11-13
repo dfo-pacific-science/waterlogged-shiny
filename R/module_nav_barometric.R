@@ -23,31 +23,26 @@ module_baro_upload_ui <- function(id) {
   tagList(
     shinydashboard::box(
       width = 12,
-      tags$h1("Import Barometric Pressure Data", class = "custom-h1"),
-      tags$h2("Upload raw HOBO U20 barometric logger files and align timestamps",
+      tags$h1("Prepare Raw Barometric Pressure Data", class = "custom-h1"),
+      tags$h2("Import raw CSV files from barometric loggers",
               class = "custom-h2"),
 
       tags$p(
         class = "clean-print",
-        "Import raw HOBO CSV files from barometric pressure loggers ",
-        "(HOBO U20 deployed in air). These loggers record atmospheric ",
-        "pressure (kPa) and air temperature (\u00b0C). Clean barometric data ",
-        "is required before processing water level or dissolved oxygen data. ",
-        "The HOBO U20 is a dual-channel logger (pressure + temperature). ",
-        "When deployed in air, it measures atmospheric pressure. It is the ",
-        "same hardware as the water level loggers, distinguished by ",
-        "deployment context (air vs water). Typical pressure range: ",
-        "85\u2013105 kPa."
+        "When processing environmental data, often there will be multiple data files, either files from multiple loggers/monitoring station or files downloaded from a single logger at different times. These files need to be bound together to create a continuous data set for each monitoring station. ",
+        "In the case loggers were activated prior to deployment or were removed before downloading, the data will need to be trimmed to the deployment and removal dates. ",
+        tags$code("bind_logger_files()"), " will load CSV files , match the serial number in the raw logger file with the station name and serial number in the ",
+        tags$code("metadata") ," file, remove data recorded before the deployment and after the removal timestamps, and bind data files from the same station. "
       ),
 
       tags$div(
         class = "clean-print",
         style = "background-color: #fff3cd; padding: 15px; border-radius: 5px; margin: 15px 0;",
         tags$p(style = "margin: 0;",
-          tags$strong("Important:"), " Barometric data feeds into ",
-          tags$strong("water level"), " (pressure compensation) and ",
-          tags$strong("dissolved oxygen"), " (% saturation). Process and QC ",
-          "barometric data before those workflows."
+          tags$strong("Important:"), " Barometric data is required to convert",
+          tags$strong("water pressure (kPa) into water level (m)"), " and ",
+          tags$strong("dissolved oxygen (mg/L) into percent air saturation (% air sat.)"), ". If these conversions are required, upload and process ",
+          "barometric data here before starting those workflows."
         )
       ),
 
@@ -62,9 +57,9 @@ module_baro_upload_ui <- function(id) {
       # Row 1: Metadata & Station Locations
       # ================================================================
       tags$div(
-        style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+        style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
         tags$span(
-          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
           "Metadata & Station Locations"
         )
       ),
@@ -87,21 +82,20 @@ module_baro_upload_ui <- function(id) {
             ),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
-              tags$li(tags$code("site_station_code"), " \u2014 station identifier"),
+              tags$li(tags$code("site_station_code"), " \u2014 unique station identifier for the location where the logger was installed"),
               tags$li(tags$code("timestamp_deploy"), " / ", tags$code("timestamp_remove"),
                       " \u2014 date-time in ", tags$code("MM/DD/YYYY HH:MM"), " format",
                       " (e.g. ", tags$code("05/15/2025 14:30"), ").",
                       " Also accepts ", tags$code("YYYY-MM-DD HH:MM"), ".",
                       " ", tags$code("timestamp_remove"), " may be ", tags$code("NA"),
                       " for loggers still deployed."),
-              tags$li(tags$code("model"), " \u2014 logger model (e.g. HOBO_U20)"),
               tags$li(tags$code("sn"), " \u2014 logger serial number"),
-              tags$li(tags$code("metric"), " \u2014 ",
-                      tags$strong("must"), " be ", tags$code("\"barometric\""),
+              tags$li(tags$code("model"), " \u2014 the model of the data logger (e.g. HOBO_U20)"),
+              tags$li(tags$code("metric"), " \u2014 the primary metric of measurement of the logger, ",
+                      tags$strong("must"), " be ", tags$code("\"barometric\""), " for barometric pressure logger data",
                       " \u2014 this determines how the logger data is classified and processed"),
-              tags$li(tags$code("status"), " \u2014 deployment status"),
               tags$li(tags$code("latitude"), " / ", tags$code("longitude"),
-                      " \u2014 decimal degrees",
+                      " \u2014 coordinates of the station where the logger was installed in decimal degrees",
                       " (e.g. ", tags$code("49.2827"), ", ", tags$code("-123.1207"), ")")
             ),
             tags$p(style = "font-size: 13px; color: #666;",
@@ -110,11 +104,11 @@ module_baro_upload_ui <- function(id) {
             ),
             tags$p(style = "font-size: 12px; margin-top: 10px;",
               tags$a(
-                href = "sample_metadata.csv",
-                download = "sample_metadata.csv",
+                href = "metadata.csv",
+                download = "metadata.csv",
                 icon("download"),
                 " Download sample metadata template",
-                style = "color: #1565c0;"
+                style = "color: #233d4d;"
               )
             )
           )
@@ -172,9 +166,9 @@ module_baro_upload_ui <- function(id) {
       # Row 2: Raw Logger Data
       # ================================================================
       tags$div(
-        style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+        style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
         tags$span(
-          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
           "Raw Barometric Logger Data"
         )
       ),
@@ -186,20 +180,16 @@ module_baro_upload_ui <- function(id) {
           style = "flex: 0 0 66.667%; max-width: 66.667%; padding: 0 15px;",
           tags$div(
             style = "background-color: #f0f0f0; padding: 20px; border-radius: 5px; margin-bottom: 15px;",
-            tags$h4("How to Import", style = "margin-top: 0;"),
+            tags$h4("How to Import Raw Barometric Logger Files", style = "margin-top: 0;"),
             tags$p(
-              "Upload the raw CSV files exported from HOBOware for your ",
-              "barometric loggers. You can select multiple files at once. ",
-              "The CSV must contain a ", tags$code("Date Time"), " column in ",
-              "HOBOware's default export format: ",
-              tags$code("MM/DD/YYYY HH:MM:SS AM/PM"),
-              " (e.g. ", tags$code("06/01/2025 02:30:00 PM"), ")."
+              "Raw data files from loggers must be saved as CSV files to be read by ", tags$code("waterlogged"), ". If raw data files are initially downloaded as a proprietary file type (e.g., .hobo) refer to the logger user manual for instructions on how to export your data in CSV format. For data files from HOBO loggers we recommend using the ‘Bulk Export’ tool available on the Pro version of HOBOware to save time and reduce variability in timestamp formatting that can occur when exporting individual .hobo files as CSV files. Raw data files exported from HOBOware are arranged by default where the first row contains the name of the logger (either automatically generated as the serial number from the logger or rewritten by the user), a second row which contains headers for timestamps (Date Time) in the format of ‘MM/DD/YYYY HH:MM’, each metric and unit recorded by the logger (e.g., 'Temp, C' is the header for a HOBO TidbiT logger), and various Coupler action columns. ",
+              "You can select multiple files at once."
             ),
             tags$ol(
               style = "padding-left: 20px; font-size: 13px;",
               tags$li("Ensure metadata is loaded (above) so logger serial ",
-                      "numbers can be matched to stations."),
-              tags$li("Select one or more raw HOBO U20 CSV files."),
+                      "numbers found in raw data can be matched to station identifiers ."),
+              tags$li("Select one or more raw CSV files."),
               tags$li("Click ", tags$strong("Bind & Import Files"), " to parse ",
                       "and combine the data."),
               tags$li("Optionally use ", tags$strong("Snap Timestamps"), " to ",
@@ -215,7 +205,7 @@ module_baro_upload_ui <- function(id) {
               tags$a(
                 href = "demo_baro_files.zip",
                 download = "demo_baro_files.zip",
-                style = "color: #1565c0;",
+                style = "color: #233d4d;",
                 "Download sample barometric files (.zip)"
               )
             ),
@@ -223,7 +213,7 @@ module_baro_upload_ui <- function(id) {
               tags$a(
                 href = "#", `data-toggle` = "modal",
                 `data-target` = "#hoboware_export_modal",
-                style = "color: #1565c0;",
+                style = "color: #233d4d;",
                 icon("question-circle"),
                 " How to export CSV files from HOBOware"
               )
@@ -239,7 +229,7 @@ module_baro_upload_ui <- function(id) {
             ),
             tags$code("bind_logger_files()"),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
-                   "Parse raw HOBO CSVs, match serial numbers to metadata")
+                   "Load raw CSVs, match serial numbers to metadata, trim files to deployment period in metadata")
           ),
 
           tags$div(
@@ -248,7 +238,7 @@ module_baro_upload_ui <- function(id) {
             tags$ul(
               style = "padding-left: 20px; font-size: 13px; margin-bottom: 0;",
               tags$li(tags$code("site_station_code"), " \u2014 station ID",
-                      " (e.g. ", tags$code("ALBR_ST_30"), ")"),
+                      " (e.g. ", tags$code("SLUG_ST_01"), ")"),
               tags$li(tags$code("timestamp"), " \u2014 date-time in ",
                       tags$code("YYYY-MM-DD HH:MM:SS"), " format",
                       " (e.g. ", tags$code("2025-06-01 14:30:00"), ")"),
@@ -272,13 +262,13 @@ module_baro_upload_ui <- function(id) {
             style = "background-color: #fafafa; padding: 15px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #e0e0e0; flex: 1;",
             tags$h4("Raw Baro Logger Files", style = "margin-top: 0;"),
             tags$p(style = "font-size: 13px; color: #666;",
-              "Upload one or more raw HOBO U20 CSV files, or use the ",
+              "Upload one or more raw CSV files, or use the ",
               "pre-loaded sample data."
             ),
             fileInput(ns("raw_files"), NULL,
               accept = ".csv",
               multiple = TRUE,
-              placeholder = "Choose HOBO U20 CSV files...",
+              placeholder = "Choose CSV files...",
               width = "100%"
             ),
             actionButton(ns("bind_btn"), "Bind & Import Files",
@@ -296,9 +286,9 @@ module_baro_upload_ui <- function(id) {
       # Row 3: Snap Timestamps
       # ================================================================
       tags$div(
-        style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+        style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
         tags$span(
-          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
           "Snap Timestamps"
         )
       ),
@@ -372,9 +362,9 @@ module_baro_upload_ui <- function(id) {
       # Row 4: Review Raw Series
       # ================================================================
       tags$div(
-        style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+        style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
         tags$span(
-          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
           "Review Raw Series"
         )
       ),
@@ -382,8 +372,8 @@ module_baro_upload_ui <- function(id) {
       tags$p(
         class = "clean-print",
         "Visually inspect the time series plots and summary statistics below ",
-        "to look for anomalies such as spikes, flatlines, or gaps in the data. ",
-        "Any quality issues identified here will be addressed in the next step ",
+        "to ensure raw data was imported properly and matched correctly with metadata. Check that all expected stations and time periods are present, and for unexpected gaps in the data. ",
+        "Outlier removal and data flag production will be done in the next step ",
         "using automated QC rules and manual adjustments. When you are ready, ",
         "proceed to ", tags$strong("QC Barometric"), " in the sidebar."
       ),
@@ -400,9 +390,9 @@ module_baro_upload_ui <- function(id) {
 
       # ---- (Optional) Filter Data by Date Range ----
       tags$div(
-        style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+        style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
         tags$span(
-          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
           "(Optional) Filter Data by Date Range"
         )
       ),
@@ -421,7 +411,7 @@ module_baro_upload_ui <- function(id) {
           style = "margin-top: 25px;",
           actionButton(ns("apply_filter"), "Apply Filter",
                        class = "btn-primary", icon = icon("filter"),
-                       style = "color: #fff; background-color: #1565c0; border-color: #1565c0;")
+                       style = "color: #fff; background-color: #233d4d; border-color: #233d4d;")
         ))
       ),
 
@@ -436,7 +426,7 @@ module_baro_upload_ui <- function(id) {
           tags$a(
             href = "#",
             onclick = "$(\"a[href='#shiny-tab-t_baro_qc']\").tab('show'); return false;",
-            style = "color: #1565c0; font-weight: bold;",
+            style = "color: #233d4d; font-weight: bold;",
             "QC Barometric"
           ),
           " to run automated quality control."
@@ -516,7 +506,7 @@ module_baro_upload_server <- function(id) {
         addCircleMarkers(
           lng = ~longitude, lat = ~latitude,
           radius = 7, weight = 2,
-          color = "#fff", fillColor = "#1565C0", fillOpacity = 0.9,
+          color = "#fff", fillColor = "#233d4d", fillOpacity = 0.9,
           label = ~site_station_code,
           popup = ~paste0(
             "<strong>", site_station_code, "</strong><br>",
@@ -978,7 +968,7 @@ module_baro_upload_server <- function(id) {
         to_date   <- input$filter_to
         n <- nrow(rv_bound_data$baro_bound)
         tags$div(
-          style = "color: #155724; background: #d4edda; padding: 10px; border-radius: 5px; margin-top: 10px;",
+          style = "color: #155724; background: #a1c181; padding: 10px; border-radius: 5px; margin-top: 10px;",
           icon("check-circle"),
           sprintf(" Filter applied: %s to %s. %s records remaining.",
                   format(from_date), format(to_date), format(n, big.mark = ","))
@@ -1004,15 +994,9 @@ module_baro_qc_ui <- function(id) {
 
       tags$p(
         class = "clean-print",
-        "This page has two stages. First, run the ", tags$strong("Automated QC"),
-        " to apply range checks, spike detection, and flatline detection to all ",
-        "barometric stations at once. Flagged readings are set to NA in the ",
-        "adjusted columns while raw data is preserved. Then, in the ",
-        tags$strong("Station Detail & Manual Adjustments"), " section, review each ",
-        "station's time series and use the Select Range tool to manually remove ",
-        "any additional bad periods that the automated checks missed. Finally, ",
-        "export the clean data."
-      ),
+        tags$code("qc_barometric()"), " will remove air pressure and temperature outliers and flag data that indicates sudden pressure spikes or erroneous readings. All data adjustments made in QC functions are recorded in a QC log file exported as a CSV file for each station. ",
+        "All measurement devices have different levels of accuracy, operating limits, and stability. Outlier limits should be set based on the operating limits of the data logger, while flagging thresholds should be set based on the environmental range expected in the deployment location. The most common issue in processing barometric pressure data is dealing with sudden spikes or drops in pressure due to disturbance to the logger."
+         ),
 
       # ---- Data readiness status ----
       uiOutput(ns("qaqc_status")),
@@ -1023,9 +1007,9 @@ module_baro_qc_ui <- function(id) {
       # Section 1: Run QC
       # ================================================================
       tags$div(
-        style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+        style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
         tags$span(
-          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
           "Run Automated QC"
         )
       ),
@@ -1100,7 +1084,7 @@ module_baro_qc_ui <- function(id) {
 
             # Station scope selector
             tags$div(
-              style = "background-color: #e8f5e9; padding: 15px; border-radius: 5px; border: 1px solid #dcdcdc; margin-bottom: 20px;",
+              style = "background-color: #e0f2f1; padding: 10px; border-radius: 5px; border: 2px solid #233d4d; margin-bottom: 15px;",
               tags$h4("Select Station", style = "margin-top: 0;"),
               selectizeInput(ns("qaqc_stations"), NULL,
                              choices = NULL, multiple = TRUE,
@@ -1148,7 +1132,7 @@ module_baro_qc_ui <- function(id) {
                   actionButton(ns("run_qaqc"), "Run Barometric QC",
                     class = "btn-success btn-lg", width = "100%",
                     icon = icon("play"),
-                    style = "color: #ffffff;"
+                    style = "color: #ffffff; background-color: #233d4d; border-color: #233d4d;"
                   )
                 )
               )
@@ -1166,9 +1150,9 @@ module_baro_qc_ui <- function(id) {
         # Section 2: QC Results
         # ================================================================
         tags$div(
-          style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+          style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
           tags$span(
-            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
             "QC Results"
           )
         ),
@@ -1189,9 +1173,9 @@ module_baro_qc_ui <- function(id) {
         # Section 3: Station Detail & Manual Adjustments
         # ================================================================
         tags$div(
-          style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+          style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
           tags$span(
-            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
             "Station Detail & Manual Adjustments"
           )
         ),
@@ -1204,7 +1188,7 @@ module_baro_qc_ui <- function(id) {
           fluidRow(
             column(4,
               tags$div(
-                style = "background-color: #e3f2fd; padding: 10px; border-radius: 5px; border: 2px solid #1565c0;",
+                style = "background-color:  #e0f2f1; padding: 10px; border-radius: 5px; border: 2px solid #233d4d;",
                 selectInput(ns("station_select"), "Select Station:",
                   choices = NULL, width = "100%")
               )
@@ -1247,9 +1231,9 @@ module_baro_qc_ui <- function(id) {
             fluidRow(
               column(
                 width = 6,
-                tags$h4("Remove Bad Periods", style = "margin-top: 0;"),
+                tags$h4("Remove Erroneous Data", style = "margin-top: 0;"),
                 tags$p(style = "font-size: 13px;",
-                  "If the automated QC missed a bad period, switch to ",
+                  "If the automated QC flagged or missed erroneous data, switch to ",
                   tags$strong("Select Range"), " mode above and drag across the ",
                   "plot to highlight the period to remove. You can select multiple ",
                   "ranges, then click ", tags$strong("Remove Selected Periods"),
@@ -1272,9 +1256,9 @@ module_baro_qc_ui <- function(id) {
         # Section 4: Station Summary Statistics
         # ================================================================
         tags$div(
-          style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+          style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
           tags$span(
-            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
             "Station Summary Statistics"
           )
         ),
@@ -1304,9 +1288,9 @@ module_baro_qc_ui <- function(id) {
         # Section 5: Export Clean Data
         # ================================================================
         tags$div(
-          style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+          style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
           tags$span(
-            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
             "Export Clean Data"
           )
         ),
@@ -1346,12 +1330,12 @@ module_baro_qc_ui <- function(id) {
                 column(4,
                   downloadButton(ns("download_csv"), "Download Clean CSV",
                     class = "btn-primary",
-                    style = "width: 100%; color: #ffffff;")
+                    style = "width: 100%; color: #ffffff; background-color: #233d4d; border-color: #233d4d;")
                 ),
                 column(4,
                   downloadButton(ns("download_log"), "Download QC Log",
                     class = "btn-info",
-                    style = "width: 100%; color: #ffffff;")
+                    style = "width: 100%; color: #ffffff; background-color: #619b8a; border-color: #619b8a;")
                 ),
                 column(4,
                   downloadButton(ns("download_metadata"), "Download Metadata",
@@ -1372,14 +1356,14 @@ module_baro_qc_ui <- function(id) {
             tags$a(
               href = "#",
               onclick = "$(\"a[href='#shiny-tab-t_wl_upload']\").tab('show'); return false;",
-              style = "color: #1565c0; font-weight: bold;",
+              style = "color: #233d4d; font-weight: bold;",
               "Water Level Data"
             ),
             " or ",
             tags$a(
               href = "#",
               onclick = "$(\"a[href='#shiny-tab-t_do_upload']\").tab('show'); return false;",
-              style = "color: #1565c0; font-weight: bold;",
+              style = "color: #233d4d; font-weight: bold;",
               "Dissolved Oxygen Data"
             ),
             "."
@@ -1660,12 +1644,12 @@ module_baro_qc_server <- function(id) {
       # Pressure panel
       p1 <- plot_ly(data, x = ~timestamp, y = ~airpress_kPa,
               type = "scattergl", mode = "lines",
-              line = list(color = "#90CAF9", width = 1),
+              line = list(color = "#736d6d", width = 2),
               name = "Raw Pressure",
               hovertemplate = "Raw: %{y:.2f} kPa<extra></extra>") %>%
         add_trace(y = ~airpress_kPa_adj,
               type = "scattergl", mode = "lines",
-              line = list(color = "#1565C0", width = 1),
+              line = list(color = "#915e3d", width = 2),
               name = "Adjusted Pressure",
               hovertemplate = "Adj: %{y:.2f} kPa<extra></extra>")
 
@@ -1677,7 +1661,7 @@ module_baro_qc_server <- function(id) {
       if (nrow(press_flags) > 0) {
         p1 <- p1 %>% add_trace(data = press_flags, x = ~timestamp, y = ~airpress_kPa,
           type = "scatter", mode = "markers",
-          marker = list(color = "#D32F2F", size = 5, symbol = "circle"),
+          marker = list(color = "black", size = 10, symbol = "circle"),
           line = list(width = 0),
           name = "Outlier Pressure",
           hovertemplate = "HIGH: %{y:.2f} kPa<extra></extra>")
@@ -1685,7 +1669,7 @@ module_baro_qc_server <- function(id) {
       if (nrow(spike_flags) > 0) {
         p1 <- p1 %>% add_trace(data = spike_flags, x = ~timestamp, y = ~airpress_kPa,
           type = "scatter", mode = "markers",
-          marker = list(color = "#7B1FA2", size = 5, symbol = "diamond"),
+          marker = list(color = "black", size = 10, symbol = "diamond"),
           line = list(width = 0),
           name = "Spike",
           hovertemplate = "SPIKE: %{y:.2f} kPa<extra></extra>")
@@ -1693,7 +1677,7 @@ module_baro_qc_server <- function(id) {
       if (nrow(flat_flags) > 0) {
         p1 <- p1 %>% add_trace(data = flat_flags, x = ~timestamp, y = ~airpress_kPa,
           type = "scatter", mode = "markers",
-          marker = list(color = "#00897B", size = 5, symbol = "square"),
+          marker = list(color = "black", size = 10, symbol = "square"),
           line = list(width = 0),
           name = "Flatline",
           hovertemplate = "FLAT: %{y:.2f} kPa<extra></extra>")
@@ -1702,12 +1686,12 @@ module_baro_qc_server <- function(id) {
       # Temperature panel
       p2 <- plot_ly(data, x = ~timestamp, y = ~airtemp_C,
               type = "scattergl", mode = "lines",
-              line = list(color = "#FFCC80", width = 1),
+              line = list(color = "#736d6d", width = 2),
               name = "Raw Temperature",
               hovertemplate = "Raw: %{y:.1f} \u00b0C<extra></extra>") %>%
         add_trace(y = ~airtemp_C_adj,
               type = "scattergl", mode = "lines",
-              line = list(color = "#E65100", width = 1),
+              line = list(color = "#fe7f2d", width = 2),
               name = "Adjusted Temperature",
               hovertemplate = "Adj: %{y:.1f} \u00b0C<extra></extra>")
 
@@ -1715,7 +1699,7 @@ module_baro_qc_server <- function(id) {
       if (nrow(temp_flags) > 0) {
         p2 <- p2 %>% add_trace(data = temp_flags, x = ~timestamp, y = ~airtemp_C,
           type = "scatter", mode = "markers",
-          marker = list(color = "#FBC02D", size = 5, symbol = "circle"),
+          marker = list(color = "black", size = 10, symbol = "circle"),
           line = list(width = 0),
           name = "Outlier Air Temp",
           hovertemplate = "TEMP: %{y:.1f} \u00b0C<extra></extra>")
@@ -1744,10 +1728,10 @@ module_baro_qc_server <- function(id) {
       date_range <- paste(format(min(data$timestamp), "%Y-%m-%d"),
                           "to", format(max(data$timestamp), "%Y-%m-%d"))
       tags$div(
-        style = "background-color: #e3f2fd; padding: 12px; border-radius: 5px; border: 2px solid #1565c0; margin-bottom: 15px;",
+        style = "background-color: #e3f2fd; padding: 12px; border-radius: 5px; border: 2px solid #233d4d; margin-bottom: 15px;",
         tags$p(style = "margin: 0; font-size: 14px;",
           "Showing summary statistics for station: ",
-          tags$strong(stn, style = "color: #1565c0;"),
+          tags$strong(stn, style = "color: #233d4d;"),
           tags$span(style = "color: #555; margin-left: 10px;",
             sprintf("(%s records, %s)", format(nrow(data), big.mark = ","), date_range)
           )

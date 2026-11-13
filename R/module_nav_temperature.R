@@ -18,7 +18,7 @@
 #   5. QC Water Temperature — qc_watertemp() + export
 #
 # Package functions used:
-#   bind_logger_files()       — parse raw HOBO CSVs (TidbiT, Pendant)
+#   bind_logger_files()       — parse raw logger files (as CSVs) from loggers that record temperature as the primary metric (TidbiT, Pendant)
 #   align_timestamps()   — snap timestamps to regular interval grid
 #   add_nearest_baro()      — join nearest baro air temp (overlay only)
 #   qc_airtemp()            — range-check QC for air temperature
@@ -136,10 +136,10 @@ module_temp_upload_ui <- function(id) {
             ),
             tags$p(style = "font-size: 12px; margin-top: 10px;",
               tags$a(
-                href = "sample_metadata.csv",
-                download = "sample_metadata.csv",
+                href = "metadata.csv",
+                download = "metadata.csv",
                 icon("download"),
-                " Download sample metadata template",
+                " Download sample metadata",
                 style = "color: #233d4d;"
               )
             )
@@ -264,14 +264,14 @@ module_temp_upload_ui <- function(id) {
             tags$h4("Columns Produced", style = "margin-top: 0;"),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px; margin-bottom: 0;",
-              tags$li(tags$code("site_station_code"), " \u2014 station ID",
-                      " (e.g. ", tags$code("LEMI_ST_20"), ")"),
+              tags$li(tags$code("site_station_code"), " \u2014 station ID found from supplied metadata",
+                      " (e.g. ", tags$code("FROGS_WE_02"), ")"),
               tags$li(tags$code("timestamp"), " \u2014 date-time in ",
                       tags$code("YYYY-MM-DD HH:MM:SS"), " format",
                       " (e.g. ", tags$code("2025-06-01 14:30:00"), ")"),
               tags$li(tags$code("watertemp_C"), " \u2014 water temperature in \u00b0C",
                       " (e.g. ", tags$code("12.3"), ")"),
-              tags$li(tags$code("sn"), " \u2014 logger serial number",
+              tags$li(tags$code("sn"), " \u2014 logger serial number from raw logger data matched to metadata",
                       " (e.g. ", tags$code("20712099"), ")"),
               tags$li(tags$code("metric"), " \u2014 ", tags$code("\"watertemp\""))
             )
@@ -383,7 +383,7 @@ module_temp_upload_ui <- function(id) {
             tags$h4("Follow Along in the R Package (waterlogged)", style = "margin-top: 0;"),
             tags$code("bind_logger_files()"),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
-                   "Load raw HOBO CSVs, match serial numbers to metadata, trim files to deployment period in metadata")
+                   "Load raw CSVs, match serial numbers to metadata, trim files to deployment period in metadata")
           ),
 
           tags$div(
@@ -391,14 +391,14 @@ module_temp_upload_ui <- function(id) {
             tags$h4("Columns Produced", style = "margin-top: 0;"),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px; margin-bottom: 0;",
-              tags$li(tags$code("site_station_code"), " \u2014 station ID",
-                      " (e.g. ", tags$code("HAGG_ST_30"), ")"),
+              tags$li(tags$code("site_station_code"), " \u2014 station ID found from supplied metadata",
+                      " (e.g. ", tags$code("SLUG_ST_02"), ")"),
               tags$li(tags$code("timestamp"), " \u2014 date-time in ",
                       tags$code("YYYY-MM-DD HH:MM:SS"), " format",
                       " (e.g. ", tags$code("2025-06-01 14:30:00"), ")"),
               tags$li(tags$code("airtemp_C"), " \u2014 air temperature in \u00b0C",
                       " (e.g. ", tags$code("18.4"), ")"),
-              tags$li(tags$code("sn"), " \u2014 logger serial number",
+              tags$li(tags$code("sn"), " \u2014 logger serial number found in raw logger data and matched to metadata",
                       " (e.g. ", tags$code("20764236"), ")"),
               tags$li(tags$code("metric"), " \u2014 ", tags$code("\"airtemp\""))
             )
@@ -682,7 +682,7 @@ module_temp_upload_server <- function(id) {
           data = wt_sites,
           lng = ~longitude, lat = ~latitude,
           radius = 7, weight = 2,
-          color = "#fff", fillColor = "#1565C0", fillOpacity = 0.9,
+          color = "#fff", fillColor = "#619b8a", fillOpacity = 0.9,
           label = ~site_station_code,
           popup = ~paste0(
             "<strong>", site_station_code, "</strong><br>",
@@ -699,7 +699,7 @@ module_temp_upload_server <- function(id) {
           data = at_sites,
           lng = ~longitude, lat = ~latitude,
           radius = 7, weight = 2,
-          color = "#fff", fillColor = "#FF8F00", fillOpacity = 0.9,
+          color = "#fff", fillColor = "#FDB840", fillOpacity = 0.9,
           label = ~site_station_code,
           popup = ~paste0(
             "<strong>", site_station_code, "</strong><br>",
@@ -714,7 +714,7 @@ module_temp_upload_server <- function(id) {
       map %>%
         addLegend(
           position = "bottomright",
-          colors = c("#1565C0", "#FF8F00"),
+          colors = c("#619b8a", "#FDB840"),
           labels = c("Water Temp", "Air Temp"),
           title = "Metric"
         ) %>%
@@ -772,6 +772,7 @@ module_temp_upload_server <- function(id) {
         format = "%m/%d/%Y %H:%M", tz = "UTC")
       temp_meta$remove <- as.POSIXct(temp_meta$timestamp_remove,
         format = "%m/%d/%Y %H:%M", tz = "UTC")
+      temp_meta$remove[is.na(temp_meta$remove)] <- as.POSIXct(now(), format = "%Y-%m-%d %H:%M", tz = "UTC")
 
       # Order by metric then station then deploy time
       temp_meta <- temp_meta[order(temp_meta$metric,
@@ -787,7 +788,7 @@ module_temp_upload_server <- function(id) {
         levels = rev(temp_meta$row_label))
 
       # Color by metric
-      metric_colors <- c("watertemp" = "#1565C0", "airtemp" = "#FF8F00")
+      metric_colors <- c("watertemp" = "#619b8a", "airtemp" = "#FDB840")
 
       # Build plot with one trace per metric (for legend grouping)
       p <- plot_ly()
@@ -1087,7 +1088,7 @@ module_temp_upload_server <- function(id) {
         )
       }
 
-      border_color <- if (length(unmatched) > 0) "#ffc107" else "#28a745"
+      border_color <- if (length(unmatched) > 0) "#FDB840" else  "#a1c181"
 
       tags$div(
         style = sprintf("background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 15px; border-left: 4px solid %s;", border_color),
@@ -1147,7 +1148,7 @@ module_temp_upload_server <- function(id) {
         )
       }
 
-      border_color <- if (length(unmatched) > 0) "#ffc107" else "#28a745"
+      border_color <- if (length(unmatched) > 0) "#FDB840" else  "#a1c181"
 
       tags$div(
         style = sprintf("background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 15px; border-left: 4px solid %s;", border_color),
@@ -1429,17 +1430,13 @@ module_temp_qc_water_ui <- function(id) {
       width = 12,
 
       # ---- Header + Description ----
-      tags$h1("QC Water Temperature", class = "custom-h1"),
-      tags$h2("Automated quality checks for standalone water temperature loggers",
+      tags$h1("Quality Control of Water Temperature Data", class = "custom-h1"),
+      tags$h2("Automated quality control for water temperature loggers",
               class = "custom-h2"),
 
       tags$p(
         class = "clean-print",
-        "Run automated quality checks on water temperature data from standalone ",
-        "loggers (TidbiT, Pendant). The function flags possible ice and dry conditions, ",
-        "corrects small negative temperatures to 0\u00b0C, and removes clearly impossible ",
-        "values (< -1\u00b0C). Raw data is preserved \u2014 corrections are applied to the ",
-        tags$code("watertemp_C_adj"), " column only."
+        tags$code("qc_watertemp"), " applies an automatic QC function to the raw water temperature data set to remove outliers and flag potentially erroneous data determined by user-modifiable limits and flag thresholds. Temperature values above and below temperature limits are removed as outliers. Temperature values below the ice flag threshold and above the dry flag threshold are flagged for user review. If air temperature is available for the same station and time period, the user can specify a threshold of difference between air and water temperature that would indicate a potential dry period (i.e. air and water temperature are within 2 degrees Celcius of each other for 12 consecutive hours, indicating this water temp logger may be exposed to air). All raw data values are preserved in the column ", tags$code("watertemp_C"), ". Flagged and adjusted/removed values are stored in a new data column ", tags$code("watertemp_C_adj"), " and identified by columns ", tags$code("FLAG_"), " and ", tags$code("OUTLIER_WT"), ", respectively."
       ),
 
       uiOutput(ns("qaqc_status")),
@@ -1468,7 +1465,7 @@ module_temp_qc_water_ui <- function(id) {
             tags$h4("QC Rules", style = "margin-top: 0;"),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
-              tags$li(tags$strong("OUTLIER_WT"), " \u2014 water temp < -1\u00b0C \u2192 set to NA;", tags$br(),"     -1\u00b0C < water temp < 0\u00b0C \u2192 corrected to 0\u00b0C"),
+              tags$li(tags$strong("OUTLIER_WT"), " \u2014 water temp < -1\u00b0C \u2192 set to NA"),
               tags$li(tags$strong("FLAG_ICE"), " \u2014 water temp < ice flag threshold (\u00b0C) \u2192 flagged for review"),
               tags$li(tags$strong("FLAG_DRY"), " \u2014 water temp > dry flag threshold (\u00b0C) or air-water temperature difference > flag threshold (\u00b0C) \u2192 flagged for review")
             )
@@ -1690,7 +1687,7 @@ module_temp_qc_water_ui <- function(id) {
                 column(4,
                   downloadButton(ns("download_log"), "Download QC Log",
                     class = "btn-info",
-                    style = "width: 100%; color: #ffffff;")
+                    style = "width: 100%; color: #ffffff; background-color: #619b8a; border-color: #619b8a;")
                 ),
                 column(4,
                   downloadButton(ns("download_metadata"), "Download Metadata",
@@ -1875,11 +1872,11 @@ module_temp_qc_water_server <- function(id) {
 
       p <- plot_ly(data, x = ~timestamp, y = ~watertemp_C,
               type = "scattergl", mode = "lines",
-              line = list(color = "#90CAF9", width = 1),
+              line = list(color = "#736d6d", width = 2),
               name = "Raw Water Temp",
               hovertemplate = "Raw: %{y:.1f} \u00b0C<extra></extra>") %>%
         add_trace(y = ~watertemp_C_adj, type = "scattergl", mode = "lines",
-              line = list(color = "#1565C0", width = 1),
+              line = list(color = "#619b8a", width = 2),
               name = "Adjusted Water Temp",
               hovertemplate = "Adj: %{y:.1f} \u00b0C<extra></extra>")
 
@@ -1889,15 +1886,15 @@ module_temp_qc_water_server <- function(id) {
 
       if (nrow(ice_flags) > 0)
         p <- p %>% add_trace(data = ice_flags, x = ~timestamp, y = ~watertemp_C,
-          type = "scatter", mode = "markers", marker = list(color = "#00BCD4", size = 5, symbol = "diamond"),
+          type = "scatter", mode = "markers", marker = list(color = "black", size = 10, symbol = "diamond"),
           line = list(width = 0), name = "FLAG_ICE", hovertemplate = "ICE: %{y:.1f} \u00b0C<extra></extra>")
       if (nrow(dry_flags) > 0)
         p <- p %>% add_trace(data = dry_flags, x = ~timestamp, y = ~watertemp_C,
-          type = "scatter", mode = "markers", marker = list(color = "#FF9800", size = 5, symbol = "triangle-up"),
+          type = "scatter", mode = "markers", marker = list(color = "black", size = 10, symbol = "triangle-up"),
           line = list(width = 0), name = "FLAG_DRY", hovertemplate = "DRY: %{y:.1f} \u00b0C<extra></extra>")
       if (nrow(outlier_wt) > 0)
         p <- p %>% add_trace(data = outlier_wt, x = ~timestamp, y = ~watertemp_C,
-          type = "scatter", mode = "markers", marker = list(color = "#D32F2F", size = 5, symbol = "circle"),
+          type = "scatter", mode = "markers", marker = list(color = "black", size = 10, symbol = "circle"),
           line = list(width = 0), name = "OUTLIER_WT", hovertemplate = "OUTLIER: %{y:.1f} \u00b0C<extra></extra>")
 
       p %>% layout(
@@ -1984,7 +1981,7 @@ module_temp_qc_water_server <- function(id) {
         selectInput(session$ns("modal_reason"), "Reason:", choices = c("ice", "dry", "disturbance"), selected = "disturbance"),
         textInput(session$ns("modal_note"), "Note (required):", value = ""),
         footer = tagList(modalButton("Cancel"),
-          actionButton(session$ns("modal_confirm"), "Confirm Removal", class = "btn-warning", icon = icon("eraser"), style = "color: #ffffff;")),
+          actionButton(session$ns("modal_confirm"), "Confirm Removal", class = "btn-warning", icon = icon("eraser"), style = "color: #619b8a;")),
         easyClose = TRUE
       ))
     })
@@ -2071,15 +2068,13 @@ module_temp_qc_air_ui <- function(id) {
     shinydashboard::box(
       width = 12,
 
-      tags$h1("QC Air Temperature", class = "custom-h1"),
-      tags$h2("Range-check quality control for standalone air temperature loggers",
+      tags$h1("Quality Control for Air Temperature", class = "custom-h1"),
+      tags$h2("Automated quality control for air temperature loggers",
               class = "custom-h2"),
 
       tags$p(
         class = "clean-print",
-        "Run automated range-check quality control on air temperature data from ",
-        "standalone loggers. Values outside the specified low/high limits are set ",
-        "to NA in the ", tags$code("airtemp_C_adj"), " column. Raw data is preserved."
+        tags$code("qc_airtemp"), " applies an automatic QC function to the raw air temperature data set to remove outliers and flag potentially erroneous data determined by user-modifiable limits and flag thresholds. All raw data values are preserved in the column ", tags$code("airtemp_C"), ". Adjusted/removed values are stored in a new data column ", tags$code("airtemp_C_adj"), " and identified by columns ", tags$code("FLAG_RANGE"), " and ", tags$code("OUTLIER_AT"), ", respectively."
       ),
 
       uiOutput(ns("qaqc_status")),
@@ -2211,7 +2206,7 @@ module_temp_qc_air_ui <- function(id) {
               fluidRow(
                 column(4, downloadButton(ns("download_csv"), "Download Clean CSV", class = "btn-primary",
                   style = "width: 100%; color: #ffffff; background-color: #233d4d; border-color: #233d4d;")),
-                column(4, downloadButton(ns("download_log"), "Download QC Log", class = "btn-info", style = "width: 100%; color: #ffffff;")),
+                column(4, downloadButton(ns("download_log"), "Download QC Log", class = "btn-info", style = "width: 100%; color: #ffffff; background-color: #619b8a; border-color: #619b8a;")),
                 column(4, downloadButton(ns("download_metadata"), "Download Metadata", class = "btn-default", style = "width: 100%;"))))))
       )
     ),
@@ -2342,10 +2337,10 @@ module_temp_qc_air_server <- function(id) {
     output$qaqc_plot <- renderPlotly({
       data <- selected_data(); req(nrow(data) > 0); station <- input$station_select
       p <- plot_ly(data, x = ~timestamp, y = ~airtemp_C, type = "scattergl", mode = "lines",
-              line = list(color = "#FFCC80", width = 1), name = "Raw Air Temp",
+              line = list(color = "#736d6d", width = 2), name = "Raw Air Temp",
               hovertemplate = "Raw: %{y:.1f} \u00b0C<extra></extra>") %>%
         add_trace(y = ~airtemp_C_adj, type = "scattergl", mode = "lines",
-              line = list(color = "#E65100", width = 1), name = "Adjusted Air Temp",
+              line = list(color = "#fe7f2d", width = 2), name = "Adjusted Air Temp",
               hovertemplate = "Adj: %{y:.1f} \u00b0C<extra></extra>")
 
 
@@ -2354,11 +2349,11 @@ module_temp_qc_air_server <- function(id) {
 
       if (nrow(outlier_at) > 0)
         p <- p %>% add_trace(data = outlier_at, x = ~timestamp, y = ~airtemp_C,
-          type = "scatter", mode = "markers", marker = list(color = "#D32F2F", size = 5, symbol = "circle"),
+          type = "scatter", mode = "markers", marker = list(color = "black", size = 10, symbol = "circle"),
           line = list(width = 0), name = "OUTLIER_AT", hovertemplate = "RANGE: %{y:.1f} \u00b0C<extra></extra>")
       if (nrow(flag_range) > 0)
         p <- p %>% add_trace(data = flag_range, x = ~timestamp, y = ~airtemp_C,
-           type = "scatter", mode = "markers", marker = list(color = "#FF9800", size = 5, symbol = "triangle-up"),
+           type = "scatter", mode = "markers", marker = list(color = "black", size = 10, symbol = "triangle-up"),
            line = list(width = 0), name = "FLAG_RANGE", hovertemplate = "RANGE: %{y:.1f} \u00b0C<extra></extra>")
 
       p %>% layout(title = list(text = paste("Air Temp QC \u2014", station), font = list(size = 14)),
@@ -2446,7 +2441,7 @@ module_temp_qc_air_server <- function(id) {
             style = "background-color: #e9ecef; cursor: not-allowed;")),
         textInput(session$ns("modal_note"), "Note (required):", value = ""),
         footer = tagList(modalButton("Cancel"),
-          actionButton(session$ns("modal_confirm"), "Confirm Removal", class = "btn-warning", icon = icon("eraser"), style = "color: #ffffff;")),
+          actionButton(session$ns("modal_confirm"), "Confirm Removal", class = "btn-warning", icon = icon("eraser"), style = "color: #619b8a;")),
         easyClose = TRUE
       ))
     })
@@ -2531,7 +2526,7 @@ module_temp_qc_air_server <- function(id) {
   fluidRow(column(
     width = 12,
     tags$p(
-      "Waterlogged Water Data Processing Application",
+      "waterlogged: streamlined environmental data processing",
       style = "text-align: center; color: #8A939A; margin-top: 10px; font-size: 12px;"
     )
   ))

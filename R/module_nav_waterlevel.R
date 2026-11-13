@@ -31,17 +31,13 @@ module_wl_upload_ui <- function(id) {
         # ---- Left: header text (2/3 width) ----
         tags$div(
           style = "flex: 0 0 66.667%; max-width: 66.667%; padding-right: 20px;",
-          tags$h1("Import Water Level Data", class = "custom-h1"),
-          tags$h2("Upload raw HOBO U20 water level logger files, barometric data, and align timestamps",
+          tags$h1("Prepare Raw Water Level Data", class = "custom-h1"),
+          tags$h2("Import raw water level logger files, optionally add barometric data for conversion to water level in metres, and align timestamps",
                   class = "custom-h2"),
           tags$p(
             class = "clean-print",
-            "Import raw HOBO CSV files from submerged water level pressure loggers ",
-            "(HOBO U20). These loggers record absolute pressure (water + atmosphere) ",
-            "in kPa, plus water temperature in \u00b0C. The raw pressure column is ",
-            "named ", tags$code("waterpress_kPa"), ". Because the HOBO U20 is not ",
-            "vented, atmospheric pressure must be subtracted before converting to ",
-            "water depth \u2014 that conversion happens in the next step."
+            "Import raw CSV files from submerged water level pressure loggers. ",
+            "Several different types of water level loggers exist and the processing steps vary depending on the style of logger. Unvented pressure transducers (e.g., HOBO U20 water level loggers) record the sum of both the pressure of water above the logger and atmospheric pressure. Data from these loggers require the application of a barometric compensation equation to account for the variability in atmospheric pressure at the loggers location. If the water level logger is vented or records water level directly (e.g., radar sensors), no barometric compensation is required, and the user can proceed to QC functions."
           ),
           tags$div(
             class = "clean-print",
@@ -53,22 +49,13 @@ module_wl_upload_ui <- function(id) {
               tags$a(
                 href = "#",
                 onclick = "$(\"a[href='#shiny-tab-t_baro_upload']\").tab('show'); return false;",
-                style = "color: #856404; font-weight: bold;",
+                style = "font-weight: bold;",
                 "Barometric Pressure"
               ),
               " workflow first."
             )
           )
         ),
-        # ---- Right: logger image (1/3 width) ----
-        tags$div(
-          style = "flex: 0 0 33.333%; max-width: 33.333%; text-align: center; padding-top: 10px;",
-          tags$img(
-            src = "img/toprightpic_waterlevel.png",
-            style = "max-width: 100%; height: auto;",
-            alt = "HOBO U20 water level logger"
-          )
-        )
       ),
 
       hr(),
@@ -132,8 +119,8 @@ module_wl_upload_ui <- function(id) {
             ),
             tags$p(style = "font-size: 12px; margin-top: 10px;",
               tags$a(
-                href = "sample_wl_metadata.csv",
-                download = "sample_wl_metadata.csv",
+                href = "metadata.csv",
+                download = "metadata.csv",
                 icon("download"),
                 " Download sample water level metadata (pre-loaded demo)",
                 style = "color: #1565c0;"

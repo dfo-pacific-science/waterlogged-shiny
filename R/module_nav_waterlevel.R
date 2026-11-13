@@ -232,32 +232,12 @@ module_wl_upload_ui <- function(id) {
               "data for demonstration."
             ),
             tags$p(style = "font-size: 12px; margin-top: 10px;",
-              icon("download"), " Download sample raw HOBO water level files:",
+              icon("download"), " Download sample raw water level files:",
               tags$br(),
-              tags$a(href = "WL_ALBR_ST_30_20533550_20250423.csv",
-                     download = "WL_ALBR_ST_30_20533550_20250423.csv",
+              tags$a(href = "waterlevel-raw.csv",
+                     download = "waterlevel-raw.csv",
                      style = "color: #1565c0; font-size: 12px;",
-                     "WL_ALBR_ST_30_20533550_20250423.csv"),
-              tags$br(),
-              tags$a(href = "WL_ALBR_ST_30_20533550_20251022.csv",
-                     download = "WL_ALBR_ST_30_20533550_20251022.csv",
-                     style = "color: #1565c0; font-size: 12px;",
-                     "WL_ALBR_ST_30_20533550_20251022.csv"),
-              tags$br(),
-              tags$a(href = "WL_CEDA_ST_30_20558102_20250423.csv",
-                     download = "WL_CEDA_ST_30_20558102_20250423.csv",
-                     style = "color: #1565c0; font-size: 12px;",
-                     "WL_CEDA_ST_30_20558102_20250423.csv"),
-              tags$br(),
-              tags$a(href = "WL_CEDA_ST_30_20558102_20251021.csv",
-                     download = "WL_CEDA_ST_30_20558102_20251021.csv",
-                     style = "color: #1565c0; font-size: 12px;",
-                     "WL_CEDA_ST_30_20558102_20251021.csv"),
-              tags$br(),
-              tags$a(href = "WL_FISH_ST_30_20810314_20251024.csv",
-                     download = "WL_FISH_ST_30_20810314_20251024.csv",
-                     style = "color: #1565c0; font-size: 12px;",
-                     "WL_FISH_ST_30_20810314_20251024.csv")
+                     "waterlevel-raw.csv")
             ),
             tags$p(style = "font-size: 13px; margin-top: 10px;",
               tags$a(
@@ -279,7 +259,7 @@ module_wl_upload_ui <- function(id) {
             ),
             tags$code("bind_logger_files()"),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
-                   "Parse raw HOBO CSVs, match serial numbers to metadata")
+                   "Parse raw CSVs, match serial numbers to metadata")
           ),
 
           tags$div(
@@ -288,7 +268,7 @@ module_wl_upload_ui <- function(id) {
             tags$ul(
               style = "padding-left: 20px; font-size: 13px; margin-bottom: 0;",
               tags$li(tags$code("site_station_code"), " \u2014 station ID",
-                      " (e.g. ", tags$code("ALBR_ST_30"), ")"),
+                      " (e.g. ", tags$code("FISH_ST_01"), ")"),
               tags$li(tags$code("timestamp"), " \u2014 date-time in ",
                       tags$code("YYYY-MM-DD HH:MM:SS"), " format",
                       " (e.g. ", tags$code("2025-06-01 14:30:00"), ")"),
@@ -378,7 +358,7 @@ module_wl_upload_ui <- function(id) {
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
               tags$li(tags$code("site_station_code"),
-                      " (e.g. ", tags$code("ALBR_ST_30"), ")"),
+                      " (e.g. ", tags$code("FISH_ST_01"), ")"),
               tags$li(tags$code("timestamp"), " \u2014 ",
                       tags$code("YYYY-MM-DD HH:MM:SS"), " format",
                       " (e.g. ", tags$code("2025-06-01 14:30:00"), ")"),
@@ -1710,7 +1690,7 @@ module_wl_convert_ui <- function(id) {
               style = "padding-left: 20px; font-size: 13px;",
               tags$li(tags$code("site_station_code"), " \u2014 station identifier. ",
                       tags$strong("Must exactly match"), " the codes in your metadata file",
-                      " (e.g. ", tags$code("ALBR_ST_30"), ")"),
+                      " (e.g. ", tags$code("FISH_ST_01"), ")"),
               tags$li(tags$code("timestamp"), " \u2014 date-time of the field measurement in ",
                       tags$code("MM/DD/YYYY HH:MM"), " format",
                       " (e.g. ", tags$code("07/25/2024 13:00"), ").",
@@ -5360,7 +5340,7 @@ module_wl_datum_server <- function(id) {
         } else {
           # Minimal example
           example <- data.frame(
-            site_station_code = "ALBR_ST_30",
+            site_station_code = "FISH_ST_01",
             visit_date = "4/18/2025",
             visit_time = "13:30",
             primary_bm = "BM1",

@@ -221,30 +221,15 @@ module_wl_upload_ui <- function(id) {
             tags$p(style = "font-size: 12px; margin-top: 10px;",
               icon("download"), " Download sample raw HOBO water level files:",
               tags$br(),
-              tags$a(href = "WL_ALBR_ST_30_20533550_20250423.csv",
-                     download = "WL_ALBR_ST_30_20533550_20250423.csv",
+              tags$a(href = "WL_FISH_ST_01_20533550_20250423.csv",
+                     download = "WL_FISH_ST_01_20533550_20250423.csv",
                      style = "color: #1565c0; font-size: 12px;",
-                     "WL_ALBR_ST_30_20533550_20250423.csv"),
+                     "WL_FISH_ST_01_20533550_20250423.csv"),
               tags$br(),
-              tags$a(href = "WL_ALBR_ST_30_20533550_20251022.csv",
-                     download = "WL_ALBR_ST_30_20533550_20251022.csv",
+              tags$a(href = "WL_FISH_ST_01_20533550_20251022.csv",
+                     download = "WL_FISH_ST_01_20533550_20251022.csv",
                      style = "color: #1565c0; font-size: 12px;",
-                     "WL_ALBR_ST_30_20533550_20251022.csv"),
-              tags$br(),
-              tags$a(href = "WL_CEDA_ST_30_20558102_20250423.csv",
-                     download = "WL_CEDA_ST_30_20558102_20250423.csv",
-                     style = "color: #1565c0; font-size: 12px;",
-                     "WL_CEDA_ST_30_20558102_20250423.csv"),
-              tags$br(),
-              tags$a(href = "WL_CEDA_ST_30_20558102_20251021.csv",
-                     download = "WL_CEDA_ST_30_20558102_20251021.csv",
-                     style = "color: #1565c0; font-size: 12px;",
-                     "WL_CEDA_ST_30_20558102_20251021.csv"),
-              tags$br(),
-              tags$a(href = "WL_FISH_ST_30_20810314_20251024.csv",
-                     download = "WL_FISH_ST_30_20810314_20251024.csv",
-                     style = "color: #1565c0; font-size: 12px;",
-                     "WL_FISH_ST_30_20810314_20251024.csv")
+                     "WL_FISH_ST_01_20533550_20251022.csv")
             ),
             tags$p(style = "font-size: 13px; margin-top: 10px;",
               tags$a(
@@ -266,7 +251,7 @@ module_wl_upload_ui <- function(id) {
             ),
             tags$code("bind_logger_files()"),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
-                   "Parse raw HOBO CSVs, match serial numbers to metadata")
+                   "Parse raw CSVs, match serial numbers to metadata")
           ),
 
           tags$div(
@@ -299,13 +284,13 @@ module_wl_upload_ui <- function(id) {
             style = "background-color: #fafafa; padding: 15px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #e0e0e0; flex: 1;",
             tags$h4("Raw Water Level Logger Files", style = "margin-top: 0;"),
             tags$p(style = "font-size: 13px; color: #666;",
-              "Upload one or more raw HOBO U20 CSV files, or use the ",
+              "Upload one or more CSV files, or use the ",
               "pre-loaded sample data."
             ),
             fileInput(ns("raw_files"), NULL,
               accept = ".csv",
               multiple = TRUE,
-              placeholder = "Choose HOBO U20 CSV files...",
+              placeholder = "Choose CSV files...",
               width = "100%"
             ),
             actionButton(ns("bind_btn"), "Bind & Import Files",
@@ -389,11 +374,11 @@ module_wl_upload_ui <- function(id) {
             ),
             tags$p(style = "font-size: 12px; margin-top: 10px;",
               tags$a(
-                href = "demo_baro_processed.csv",
-                download = "demo_baro_processed.csv",
+                href = "SLUG_ST_01_BARO_20250101_20251009_v1.0.csv",
+                download = "SLUG_ST_01_BARO_20250101_20251009_v1.0.csv",
                 style = "color: #1565c0;",
                 icon("download"),
-                " Download sample processed baro CSV"
+                " Download sample clean baro CSV"
               )
             )
           )
@@ -409,14 +394,14 @@ module_wl_upload_ui <- function(id) {
           # File upload
           tags$div(
             style = "background-color: #fafafa; padding: 15px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #e0e0e0;",
-            tags$h4("Upload Processed Barometric CSV", style = "margin-top: 0;"),
+            tags$h4("Upload Clean Barometric Data", style = "margin-top: 0;"),
             tags$p(style = "font-size: 13px; color: #666;",
-              "Upload a processed baro CSV file (output of baro QC), or use ",
+              "Upload a cleaned baro CSV file (output of baro QC), or use ",
               "session data from the Barometric Pressure tab if available."
             ),
             fileInput(ns("baro_qc_file"), NULL,
               accept = ".csv",
-              placeholder = "Choose processed baro CSV...",
+              placeholder = "Choose clean baro CSV...",
               width = "100%"
             ),
             actionButton(ns("load_baro_btn"), "Load Barometric Data (wait until above section says Upload Complete before pressing this button)",

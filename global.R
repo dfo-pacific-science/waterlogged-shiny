@@ -80,7 +80,7 @@ for (nm in names(demo_baro_list)) {
 
 # Load water level data
 demo_waterlevel_list <- list(
-  "ALBR_ST_30" = read.csv("inst/extdata/waterlevel_ALBR_ST_30.csv")
+  "FISH_ST_01" = read.csv("inst/extdata/WL_FISH_ST_01_v0.1.csv")
 )
 for (nm in names(demo_waterlevel_list)) {
   demo_waterlevel_list[[nm]]$timestamp <- .parse_timestamp(demo_waterlevel_list[[nm]]$timestamp)

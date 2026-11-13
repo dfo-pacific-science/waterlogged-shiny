@@ -114,7 +114,7 @@ module_temp_upload_ui <- function(id) {
             ),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
-              tags$li(tags$code("site_station_code"), " \u2014 station identifier"),
+              tags$li(tags$code("site_station_code"), " \u2014 unique station identifier for the location where the logger was installed"),
               tags$li(tags$code("timestamp_deploy"), " / ", tags$code("timestamp_remove"),
                       " \u2014 date-time in ", tags$code("MM/DD/YYYY HH:MM"), " format",
                       " (e.g. ", tags$code("05/15/2025 14:30"), ").",
@@ -122,12 +122,13 @@ module_temp_upload_ui <- function(id) {
                       " ", tags$code("timestamp_remove"), " may be ", tags$code("NA"),
                       " for loggers still deployed."),
               tags$li(tags$code("sn"), " \u2014 logger serial number"),
-              tags$li(tags$code("metric"), " \u2014 ",
+              tags$li(tags$code("model"), " \u2014 the model of the data logger (e.g. HOBO_TidbiT)"),
+              tags$li(tags$code("metric"), " \u2014 the primary metric of measurement of the logger, ",
                       tags$strong("must"), " be ", tags$code("\"watertemp\""), " or ",
                       tags$code("\"airtemp\""),
                       " \u2014 this determines how the logger data is classified and processed"),
               tags$li(tags$code("latitude"), " / ", tags$code("longitude"),
-                      " \u2014 decimal degrees",
+                      " \u2014 coordinates of the station where the logger was installed in decimal degrees",
                       " (e.g. ", tags$code("49.2827"), ", ", tags$code("-123.1207"), ")")
             ),
             tags$p(style = "font-size: 13px; color: #666;",
@@ -256,7 +257,7 @@ module_temp_upload_ui <- function(id) {
             tags$h4("Follow Along in the R Package (waterlogged)", style = "margin-top: 0;"),
             tags$code("bind_logger_files()"),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
-                   "Load raw HOBO CSVs, match serial numbers to metadata, trim files to deployment period in metadata")
+                   "Load raw CSVs, match serial numbers to metadata, trim files to deployment period in metadata")
           ),
 
           tags$div(

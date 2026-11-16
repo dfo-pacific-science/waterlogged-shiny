@@ -78,6 +78,10 @@ for (nm in names(demo_baro_list)) {
   demo_baro_list[[nm]]$timestamp <- .parse_timestamp(demo_baro_list[[nm]]$timestamp)
 }
 
+# Load cleanbarometric data for multiple stations
+demo_baro_clean <-  read.csv("inst/extdata/BARO_2024_v1.0.csv")
+
+
 # Load water level data
 demo_waterlevel_list <- list(
   "FISH_ST_01" = read.csv("inst/extdata/WL_FISH_ST_01_v0.1.csv")

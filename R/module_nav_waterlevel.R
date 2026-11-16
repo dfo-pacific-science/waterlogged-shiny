@@ -55,7 +55,7 @@ module_wl_upload_ui <- function(id) {
               " workflow first."
             )
           )
-        ),
+        )
       ),
 
       hr(),
@@ -69,9 +69,9 @@ module_wl_upload_ui <- function(id) {
       # Row 1: Metadata & Station Locations
       # ================================================================
       tags$div(
-        style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+        style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
         tags$span(
-          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
           "Metadata & Station Locations"
         )
       ),
@@ -123,7 +123,7 @@ module_wl_upload_ui <- function(id) {
                 download = "metadata.csv",
                 icon("download"),
                 " Download sample water level metadata (pre-loaded demo)",
-                style = "color: #1565c0;"
+                style = "color: #233d4d;"
               )
             )
           )
@@ -181,9 +181,9 @@ module_wl_upload_ui <- function(id) {
       # Row 2: Raw Water Level Logger Data
       # ================================================================
       tags$div(
-        style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+        style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
         tags$span(
-          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
           "Raw Water Level Logger Data Timeseries"
         )
       ),
@@ -223,19 +223,19 @@ module_wl_upload_ui <- function(id) {
               tags$br(),
               tags$a(href = "WL_FISH_ST_01_20533550_20250423.csv",
                      download = "WL_FISH_ST_01_20533550_20250423.csv",
-                     style = "color: #1565c0; font-size: 12px;",
+                     style = "color: #233d4d; font-size: 12px;",
                      "WL_FISH_ST_01_20533550_20250423.csv"),
               tags$br(),
               tags$a(href = "WL_FISH_ST_01_20533550_20251022.csv",
                      download = "WL_FISH_ST_01_20533550_20251022.csv",
-                     style = "color: #1565c0; font-size: 12px;",
+                     style = "color: #233d4d; font-size: 12px;",
                      "WL_FISH_ST_01_20533550_20251022.csv")
             ),
             tags$p(style = "font-size: 13px; margin-top: 10px;",
               tags$a(
                 href = "#", `data-toggle` = "modal",
                 `data-target` = "#hoboware_export_modal",
-                style = "color: #1565c0;",
+                style = "color: #233d4d;",
                 icon("question-circle"),
                 " How to export CSV files from HOBOware"
               )
@@ -297,16 +297,16 @@ module_wl_upload_ui <- function(id) {
               class = "btn-primary",
               icon = icon("file-import"),
               width = "100%",
-              style = "color: #ffffff;"
+              style = "color: #ffffff; background-color: #233d4d; border-color: #233d4d; "
             ),
             # Processing spinner (hidden by default, shown while binding)
             tags$div(
               id = ns("bind_spinner"),
               style = "display: none; text-align: center; padding: 15px; margin-top: 10px; background-color: #e3f2fd; border-radius: 5px;",
               tags$div(
-                style = "display: inline-block; width: 24px; height: 24px; border: 3px solid #90caf9; border-top: 3px solid #1565c0; border-radius: 50%; animation: wl-spin 0.8s linear infinite; vertical-align: middle;"
+                style = "display: inline-block; width: 24px; height: 24px; border: 3px solid #90caf9; border-top: 3px solid #233d4d; border-radius: 50%; animation: wl-spin 0.8s linear infinite; vertical-align: middle;"
               ),
-              tags$span(style = "margin-left: 10px; color: #1565c0; font-weight: bold;",
+              tags$span(style = "margin-left: 10px; color: #233d4d; font-weight: bold;",
                 "Processing... binding HOBO files")
             ),
             uiOutput(ns("bind_summary"))
@@ -318,9 +318,9 @@ module_wl_upload_ui <- function(id) {
       # Row 3: Processed Barometric Data
       # ================================================================
       tags$div(
-        style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+        style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
         tags$span(
-          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
           "Processed Barometric Data Timeseries"
         )
       ),
@@ -339,7 +339,7 @@ module_wl_upload_ui <- function(id) {
               tags$a(
                 href = "#",
                 onclick = "$(\"a[href='#shiny-tab-t_baro_upload']\").tab('show'); return false;",
-                style = "color: #1565c0; font-weight: bold;",
+                style = "color: #233d4d; font-weight: bold;",
                 "Barometric Pressure"
               ),
               " section first, or upload a previously exported processed baro CSV."
@@ -368,7 +368,7 @@ module_wl_upload_ui <- function(id) {
             tags$div(
               style = "background-color: #e8e8e8; padding: 10px; border-radius: 4px; margin-top: 10px;",
               tags$h5("Follow Along in the R package", style = "margin-top: 0; margin-bottom: 5px;"),
-              tags$code("qc_barometric_all()"),
+              tags$code("qc_barometric()"),
               tags$p(style = "font-size: 12px; color: #666; margin-top: 5px; margin-bottom: 0;",
                      "Run automated QC on baro data (produces the required columns)")
             ),
@@ -376,7 +376,7 @@ module_wl_upload_ui <- function(id) {
               tags$a(
                 href = "SLUG_ST_01_BARO_20250101_20251009_v1.0.csv",
                 download = "SLUG_ST_01_BARO_20250101_20251009_v1.0.csv",
-                style = "color: #1565c0;",
+                style = "color: #233d4d;",
                 icon("download"),
                 " Download sample clean baro CSV"
               )
@@ -408,16 +408,16 @@ module_wl_upload_ui <- function(id) {
               class = "btn-primary",
               icon = icon("cloud-download-alt"),
               width = "100%",
-              style = "color: #ffffff;"
+              style = "color: #ffffff; background-color: #233d4d; border-color: #233d4d;"
             ),
             # Processing spinner (hidden by default, shown while loading)
             tags$div(
               id = ns("baro_spinner"),
               style = "display: none; text-align: center; padding: 15px; margin-top: 10px; background-color: #e3f2fd; border-radius: 5px;",
               tags$div(
-                style = "display: inline-block; width: 24px; height: 24px; border: 3px solid #90caf9; border-top: 3px solid #1565c0; border-radius: 50%; animation: wl-spin 0.8s linear infinite; vertical-align: middle;"
+                style = "display: inline-block; width: 24px; height: 24px; border: 3px solid #90caf9; border-top: 3px solid #233d4d; border-radius: 50%; animation: wl-spin 0.8s linear infinite; vertical-align: middle;"
               ),
-              tags$span(style = "margin-left: 10px; color: #1565c0; font-weight: bold;",
+              tags$span(style = "margin-left: 10px; color: #233d4d; font-weight: bold;",
                 "Processing... loading barometric data")
             )
           ),
@@ -431,9 +431,9 @@ module_wl_upload_ui <- function(id) {
       # Row 4: Snap Timestamps
       # ================================================================
       tags$div(
-        style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+        style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
         tags$span(
-          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
           "Snap Timestamps: Water Level and Air Pressure"
         )
       ),
@@ -507,9 +507,9 @@ module_wl_upload_ui <- function(id) {
       # Row 5: Review Raw Series
       # ================================================================
       tags$div(
-        style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+        style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
         tags$span(
-          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
           "Review Raw Series for Water Level and Air Pressure"
         )
       ),
@@ -535,9 +535,9 @@ module_wl_upload_ui <- function(id) {
 
       # ---- (Optional) Filter Data by Date Range ----
       tags$div(
-        style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+        style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
         tags$span(
-          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
           "(Optional) Filter Data by Date Range"
         )
       ),
@@ -556,7 +556,7 @@ module_wl_upload_ui <- function(id) {
           style = "margin-top: 25px;",
           actionButton(ns("apply_filter"), "Apply Filter",
                        class = "btn-primary", icon = icon("filter"),
-                       style = "color: #fff; background-color: #1565c0; border-color: #1565c0;")
+                       style = "color: #fff; background-color: #233d4d; border-color: #233d4d;")
         ))
       ),
 
@@ -571,7 +571,7 @@ module_wl_upload_ui <- function(id) {
           tags$a(
             href = "#",
             onclick = "$(\"a[href='#shiny-tab-t_wl_convert']\").tab('show'); window.scrollTo(0,0); return false;",
-            style = "color: #1565c0; font-weight: bold;",
+            style = "color: #233d4d; font-weight: bold;",
             "Convert Data Metrics"
           ),
           " to subtract barometric pressure and convert to water depth."
@@ -684,7 +684,7 @@ module_wl_upload_server <- function(id) {
           data = wl_sites,
           lng = ~longitude, lat = ~latitude,
           radius = 7, weight = 2,
-          color = "#fff", fillColor = "#1565C0", fillOpacity = 0.9,
+          color = "#fff", fillColor = "#233d4d", fillOpacity = 0.9,
           label = ~site_station_code,
           popup = ~paste0(
             "<strong>", site_station_code, "</strong><br>",
@@ -706,7 +706,7 @@ module_wl_upload_server <- function(id) {
           data = baro_sites,
           lng = ~longitude, lat = ~latitude,
           radius = 7, weight = 2,
-          color = "#fff", fillColor = "#FF8F00", fillOpacity = 0.9,
+          color = "#fff", fillColor = "#915e3d", fillOpacity = 0.9,
           label = ~site_station_code,
           popup = ~paste0(
             "<strong>", site_station_code, "</strong><br>",
@@ -726,7 +726,7 @@ module_wl_upload_server <- function(id) {
       map %>%
         addLegend(
           position = "bottomright",
-          colors = c("#1565C0", "#FF8F00"),
+          colors = c("#233d4d", "#915e3d"),
           labels = c("Water Level", "Barometric"),
           title = "Metric"
         ) %>%
@@ -1194,7 +1194,7 @@ module_wl_upload_server <- function(id) {
       flag_cols <- grep("^flag_", names(baro_df), value = TRUE)
 
       tags$div(
-        style = "background-color: #e8f5e9; padding: 15px; border-radius: 5px; margin-bottom: 15px;",
+        style = "background-color: #9fd1c2; padding: 15px; border-radius: 5px; margin-bottom: 15px;",
         tags$h4("Loaded Barometric Data", style = "margin-top: 0;"),
         tags$ul(
           style = "padding-left: 20px; font-size: 13px; margin-bottom: 5px;",
@@ -1402,35 +1402,34 @@ module_wl_convert_ui <- function(id) {
   tagList(
     shinydashboard::box(
       width = 12,
-      tags$h1("Convert Water Level Pressure to Meters", class = "custom-h1"),
+      tags$h1("Convert Water Level from Pressure (kPa) to Meters (m)", class = "custom-h1"),
       tags$h2("Barometric compensation and pressure-to-depth conversion",
               class = "custom-h2"),
 
       tags$p(
         class = "clean-print",
-        "This step joins barometric pressure data to each water level timestamp,
-        then converts absolute pressure (kPa) to water depth (metres) using
+        "This step joins barometric pressure data to each water level timestamp using waterlogged ", tags$code("add_nearest_baro()"),
+        " then converts absolute pressure (kPa) to water depth (metres) using
         barometric compensation, water density, and a field reference measurement."
       ),
 
       tags$div(
         class = "clean-print",
-        tags$h4("Why Baro Compensation?", style = "margin-top: 10px;"),
+        tags$h4("Why Is Barometric Compensation Required?", style = "margin-top: 10px;"),
         tags$p(
-          "HOBO U20 loggers are not vented \u2014 they measure total pressure ",
-          "(water + atmosphere). Atmospheric pressure varies by 1\u20133 kPa with ",
+          "Unvented pressure transducers (e.g., HOBO U20 water level loggers) record the sum of both the pressure of water above the logger and atmospheric pressure. Data from these loggers require the application of a barometric compensation equation to account for the variability in atmospheric pressure at the loggers location. For example, atmospheric pressure varies by 1\u20133 kPa with ",
           "weather, which would appear as 10\u201330 cm of false water level ",
-          "change if not subtracted."
+          "change if not subtracted.  If the water level logger is vented or records water level directly (e.g., radar sensors), no barometric compensation is required, and the user can proceed to water level data cleaning (QC functions)."
         ),
-        tags$h4("What About Elevation Differences?", style = "margin-top: 15px;"),
+        tags$h4("What About Elevation Differences in Atmospheric Pressure?", style = "margin-top: 15px;"),
         tags$p(
           "No explicit altitude correction is applied \u2014 the metadata ",
           "schema does not include an elevation column. Instead, systematic ",
           "pressure offsets between stations at different elevations are ",
-          "absorbed by the regression calibration step (when temporal overlap ",
+          "absorbed by a regression calibration step (when temporal overlap ",
           "exists). ",
           "For ", tags$strong("pressure"), ", this works well in practice: ",
-          "the final depth conversion anchors to a field reference measurement, ",
+          "the final depth conversion anchors to a field reference measurement of water level in metres, ",
           "so a constant offset in the baro series cancels out. ",
           "For ", tags$strong("air temperature"), ", no calibration is performed, ",
           "if the composite series switches between stations at different ",
@@ -1442,7 +1441,7 @@ module_wl_convert_ui <- function(id) {
       hr(),
 
       # Part A: Add Nearest Baro
-      tags$h3("Part A: Add Nearest Barometric Station", style = "color: #1565c0; margin-bottom: 15px;"),
+      tags$h3("Part A: Add Nearest Barometric Station Data to Water Level Logger Data", style = "color: #233d4d; margin-bottom: 15px;"),
 
       fluidRow(
         column(
@@ -1453,7 +1452,7 @@ module_wl_convert_ui <- function(id) {
             tags$h4("How Station Matching Works", style = "margin-top: 0;"),
             tags$p(style = "font-size: 13px;",
               "The function uses ", tags$code("geosphere::distHaversine()"), " to ",
-              "rank all barometric stations by horizontal distance (lat/lon) from ",
+              "rank all barometric stations by horizontal distance (latitude, longitude) from ",
               "each water level site. It keeps the nearest ", tags$code("max_stations"),
               " (default 5) within an optional ", tags$code("max_km"), " radius."
             ),
@@ -1486,7 +1485,7 @@ module_wl_convert_ui <- function(id) {
             tags$code("add_nearest_baro()"),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
                    "Matches each water level station to the nearest barometric station(s) ",
-                   "by GPS distance and joins baro pressure/temperature by timestamp. ",
+                   "by GPS distance and joins barometric pressure and air temperature by timestamp. ",
                    "Outputs the input data frame with added ",
                    tags$code("airpress_kPa"), ", ", tags$code("airtemp_C"), ", and ",
                    tags$code("baro_site_stn_code"), " columns.")
@@ -1523,7 +1522,7 @@ module_wl_convert_ui <- function(id) {
               ),
               column(4,
                 numericInput(ns("max_km"), "Max Distance (km):",
-                  value = NA, min = 1, max = 500)
+                  value = NULL, min = 1, max = 500)
               ),
               column(4,
                 numericInput(ns("max_stations"), "Max Baro Stations:",
@@ -1540,7 +1539,7 @@ module_wl_convert_ui <- function(id) {
             actionButton(ns("run_add_baro"), "Add Baro Data",
               class = "btn-primary btn-lg", width = "100%",
               icon = icon("cloud"),
-              style = "color: #ffffff;"
+              style = "color: #ffffff; background-color: #233d4d; border-color: #233d4d; "
             )
           ),
 
@@ -1551,9 +1550,9 @@ module_wl_convert_ui <- function(id) {
 
             # Section divider: Baro Assignment Results
             tags$div(
-              style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+              style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
               tags$span(
-                style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+                style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
                 "Baro Assignment Results"
               )
             ),
@@ -1571,9 +1570,9 @@ module_wl_convert_ui <- function(id) {
 
         # Section divider: Station Detail
         tags$div(
-          style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+          style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
           tags$span(
-            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
             "Station Detail"
           )
         ),
@@ -1581,7 +1580,7 @@ module_wl_convert_ui <- function(id) {
         fluidRow(
           column(4,
             tags$div(
-              style = "background-color: #e3f2fd; padding: 10px; border-radius: 5px; border: 2px solid #1565c0;",
+              style = " color: #ffffff; background-color: #233d4d; padding: 10px; border-radius: 5px; border: 2px solid #233d4d;",
               selectInput(ns("detail_station"), "Select Station:",
                 choices = NULL, width = "100%")
             )
@@ -1599,7 +1598,7 @@ module_wl_convert_ui <- function(id) {
 
         tags$div(
           style = "background-color: #ffffff; padding: 20px; border-radius: 5px; margin-top: 15px; border: 1px solid #e0e0e0;",
-          tags$h4("What to Look For", style = "margin-top: 0; color: #1565c0;"),
+          tags$h4("What to Look For", style = "margin-top: 0; color: #233d4d;"),
           tags$p(style = "font-size: 13px;",
             "Review the barometric pressure overlay against the raw water pressure ",
             "time series. This is the data that will be used to compensate for ",
@@ -1636,7 +1635,7 @@ module_wl_convert_ui <- function(id) {
       hr(),
 
       # Part B: Convert to Metres
-      tags$h3("Part B: Convert Pressure to Water Depth", style = "color: #2e7d32; margin-bottom: 15px;"),
+      tags$h3("Part B: Convert Water Level from Pressure to Metres", style = "color: #619b8a; margin-bottom: 15px;"),
 
       fluidRow(
         column(
@@ -1645,11 +1644,11 @@ module_wl_convert_ui <- function(id) {
             style = "background-color: #f0f0f0; padding: 20px; border-radius: 5px; margin-bottom: 15px;",
             tags$h4("The Conversion", style = "margin-top: 0;"),
             tags$p(style = "font-size: 13px;",
-              "HOBO U20 loggers record absolute pressure (water column + atmosphere) ",
+              "Unvented water level loggers record absolute pressure (water column + atmosphere) ",
               "in kilopascals. To obtain a meaningful water level in metres, we need ",
               "to remove the atmospheric component, account for water density, and ",
               "anchor the result to a known field measurement. This step automates ",
-              "that physics:"
+              "the conversion:"
             ),
             tags$ol(
               style = "padding-left: 20px; font-size: 13px;",
@@ -1662,9 +1661,9 @@ module_wl_convert_ui <- function(id) {
             tags$p(style = "font-size: 13px; margin-top: 10px; color: #666;",
               "The field reference can be either a ", tags$strong("staff gauge reading"),
               " (stage) or a ", tags$strong("direct depth measurement"),
-              " from the water surface to the sensor. Upload your reference data on ",
+              " of the height of the water column at the logger at a specific time. Upload your reference data on ",
               "the right, select which measurement to anchor each station to, and ",
-              "click Convert."
+              "click Convert. The field measurement with the most confidence and accuracy should be selected as the reference."
             )
           ),
           tags$div(
@@ -1682,7 +1681,7 @@ module_wl_convert_ui <- function(id) {
               style = "padding-left: 20px; font-size: 13px;",
               tags$li(tags$code("site_station_code"), " \u2014 station identifier. ",
                       tags$strong("Must exactly match"), " the codes in your metadata file",
-                      " (e.g. ", tags$code("ALBR_ST_30"), ")"),
+                      " (e.g. ", tags$code("FISH_ST_01"), ")"),
               tags$li(tags$code("timestamp"), " \u2014 date-time of the field measurement in ",
                       tags$code("MM/DD/YYYY HH:MM"), " format",
                       " (e.g. ", tags$code("07/25/2024 13:00"), ").",
@@ -1723,7 +1722,7 @@ module_wl_convert_ui <- function(id) {
                 download = "sample_stage_readings.csv",
                 icon("download"),
                 " Download sample stage readings CSV",
-                style = "color: #2e7d32;"
+                style = "color: #619b8a;"
               )
             )
           ),
@@ -1743,9 +1742,9 @@ module_wl_convert_ui <- function(id) {
 
           # ---- Sub-section 1: Upload Stage Readings ----
           tags$div(
-            style = "border-top: 2px solid #2e7d32; margin: 0 0 20px 0; position: relative;",
+            style = "border-top: 2px solid #619b8a; margin: 0 0 20px 0; position: relative;",
             tags$span(
-              style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+              style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #619b8a; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
               "Stage / Depth Reference Data"
             )
           ),
@@ -1777,9 +1776,9 @@ module_wl_convert_ui <- function(id) {
 
           # ---- Sub-section 2: Station Readiness ----
           tags$div(
-            style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+            style = "border-top: 2px solid #619b8a; margin: 25px 0 20px 0; position: relative;",
             tags$span(
-              style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+              style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #619b8a; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
               "Station Readiness"
             )
           ),
@@ -1788,9 +1787,9 @@ module_wl_convert_ui <- function(id) {
 
           # ---- Sub-section 3: Convert Water Level ----
           tags$div(
-            style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+            style = "border-top: 2px solid #619b8a; margin: 25px 0 20px 0; position: relative;",
             tags$span(
-              style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+              style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #619b8a; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
               "Convert Water Level"
             )
           ),
@@ -1819,7 +1818,7 @@ module_wl_convert_ui <- function(id) {
             actionButton(ns("run_convert"), "Convert to Metres",
               class = "btn-success btn-lg", width = "100%",
               icon = icon("ruler-vertical"),
-              style = "color: #ffffff;"
+              style = "color: #ffffff; background-color: #619b8a; border-color: #619b8a;"
             )
           )
         )
@@ -1831,9 +1830,9 @@ module_wl_convert_ui <- function(id) {
         ns = ns,
 
         tags$div(
-          style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+          style = "border-top: 2px solid #619b8a; margin: 25px 0 20px 0; position: relative;",
           tags$span(
-            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #619b8a; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
             "Conversion Results"
           )
         ),
@@ -1842,9 +1841,9 @@ module_wl_convert_ui <- function(id) {
         DT::DTOutput(ns("convert_summary_table")),
 
         tags$div(
-          style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+          style = "border-top: 2px solid #619b8a; margin: 25px 0 20px 0; position: relative;",
           tags$span(
-            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #619b8a; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
             "Station Detail"
           )
         ),
@@ -1852,7 +1851,7 @@ module_wl_convert_ui <- function(id) {
         fluidRow(
           column(4,
             tags$div(
-              style = "background-color: #e8f5e9; padding: 10px; border-radius: 5px; border: 2px solid #2e7d32;",
+              style = " color: #ffffff; background-color: #619b8a; padding: 10px; border-radius: 5px; border: 2px solid #619b8a;",
               selectInput(ns("convert_detail_station"), "Select Station:",
                 choices = NULL, width = "100%")
             )
@@ -1867,9 +1866,9 @@ module_wl_convert_ui <- function(id) {
         ),
 
         tags$div(
-          style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+          style = "border-top: 2px solid #619b8a; margin: 25px 0 20px 0; position: relative;",
           tags$span(
-            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #619b8a; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
             "Reference Measurement Comparison"
           )
         ),
@@ -1879,14 +1878,14 @@ module_wl_convert_ui <- function(id) {
 
         # ---- Next step link ----
         tags$div(
-          style = "margin-top: 25px; padding: 15px; background-color: #e8f5e9; border-radius: 5px; text-align: center;",
+          style = "margin-top: 25px; padding: 15px; background-color: #9fd1c2; border-radius: 5px; text-align: center;",
           tags$p(style = "margin: 0; font-size: 14px;",
             icon("arrow-right"),
             " Ready to proceed? Continue to ",
             tags$a(
               href = "#",
               onclick = "$(\"a[href='#shiny-tab-t_wl_qaqc']\").tab('show'); window.scrollTo(0,0); return false;",
-              style = "color: #2e7d32; font-weight: bold;",
+              style = "color: #619b8a; font-weight: bold;",
               "QA Water Level"
             ),
             " to run automated quality checks and review flagged data."
@@ -2489,8 +2488,8 @@ module_wl_convert_server <- function(id) {
         sanitized <- gsub("[^A-Za-z0-9_]", "_", stn)
 
         tags$div(
-          style = "background-color: #e8f5e9; padding: 12px; border-radius: 5px; margin-bottom: 10px;",
-          tags$strong(stn, style = "color: #2e7d32;"),
+          style = "background-color: #9fd1c2; padding: 12px; border-radius: 5px; margin-bottom: 10px;",
+          tags$strong(stn, style = "color: #619b8a;"),
           radioButtons(ns(paste0("meas_select_", sanitized)),
             label = NULL,
             choices = choices,
@@ -2538,7 +2537,7 @@ module_wl_convert_server <- function(id) {
         if (length(missing) == 0) {
           n_ref <- nrow(avail[[stn]])
           tags$div(style = "margin-bottom: 5px;",
-            icon("check-circle", style = "color: #2e7d32;"),
+            icon("check-circle", style = "color: #619b8a;"),
             tags$strong(stn), sprintf(" \u2014 Ready (%d reference measurement%s)", n_ref, ifelse(n_ref == 1, "", "s"))
           )
         } else {
@@ -2899,10 +2898,10 @@ module_wl_convert_server <- function(id) {
                           "to", format(max(df$timestamp), "%Y-%m-%d"))
 
       tags$div(
-        style = "background-color: #e8f5e9; padding: 12px; border-radius: 5px; border: 2px solid #2e7d32; margin-bottom: 15px;",
+        style = "background-color: #9fd1c2; padding: 12px; border-radius: 5px; border: 2px solid #619b8a; margin-bottom: 15px;",
         tags$p(style = "margin: 0; font-size: 14px;",
           "Comparing manual ", tags$strong(ref_label), " readings against sensor water level for station: ",
-          tags$strong(stn, style = "color: #2e7d32;"),
+          tags$strong(stn, style = "color: #619b8a;"),
           tags$span(style = "color: #555; margin-left: 10px;",
             sprintf("(logger period: %s)", date_range)
           )
@@ -2994,7 +2993,7 @@ module_wl_convert_server <- function(id) {
         rownames = FALSE
       ) %>%
         DT::formatStyle("Difference",
-          color = DT::styleInterval(c(-0.05, 0.05), c("#d32f2f", "#2e7d32", "#d32f2f"))
+          color = DT::styleInterval(c(-0.05, 0.05), c("#d32f2f", "#619b8a", "#d32f2f"))
         )
     })
 
@@ -3032,9 +3031,9 @@ module_wl_qaqc_ui <- function(id) {
       # Section 1: Run Automated QC
       # ================================================================
       tags$div(
-        style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+        style = "border-top: 2px solid #619b8a; margin: 25px 0 20px 0; position: relative;",
         tags$span(
-          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #619b8a; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
           "Run Automated QAQC"
         )
       ),
@@ -3049,7 +3048,7 @@ module_wl_qaqc_ui <- function(id) {
             tags$h4("QC Rules", style = "margin-top: 0;"),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
-              tags$li(tags$strong("OUTLIER_WT"), " \u2014 water temp < -1\u00b0C \u2192 set to NA;", tags$br(), "     -1\u00b0C < water temp < 0\u00b0C \u2192 corrected to 0\u00b0C"),
+              tags$li(tags$strong("OUTLIER_WT"), " \u2014 water temp < -1\u00b0C \u2192 set to NA"),
               tags$li(tags$strong("FLAG_ICE"), " \u2014 water temp < ice flag threshold (\u00b0C) \u2192 flagged for review"),
               tags$li(tags$strong("FLAG_DRY"), " \u2014 water temp > dry flag threshold (\u00b0C) or air-water temperature difference > flag threshold (\u00b0C) \u2192 flagged for review"),
               tags$li(tags$strong("FLAG_SPIKE"), " \u2014 \u0394 water level > spike flag (m) \u2192 flagged for review")
@@ -3090,7 +3089,7 @@ module_wl_qaqc_ui <- function(id) {
           tags$div(
             style = "background-color: #fafafa; padding: 20px; border-radius: 5px; border: 1px solid #e0e0e0; flex: 1; min-width: 0; overflow-x: auto;",
             tags$div(
-              style = "background-color: #e8f5e9; padding: 10px; border-radius: 5px; border: 2px solid #2e7d32; margin-bottom: 15px;",
+              style = "color: #ffffff; background-color: #619b8a; padding: 10px; border-radius: 5px; border: 2px solid #619b8a; margin-bottom: 15px;",
               selectInput(ns("station_select"), "Select Station:",
                 choices = NULL, width = "100%")
             ),
@@ -3117,7 +3116,7 @@ module_wl_qaqc_ui <- function(id) {
             actionButton(ns("run_qaqc"), "Run Water Level QC",
               class = "btn-success btn-lg", width = "100%",
               icon = icon("play"),
-              style = "color: #ffffff;"
+              style = "color: #ffffff; background-color:#619b8a;"
             ),
 
             # Flag summary (appears after QC runs)
@@ -3143,9 +3142,9 @@ module_wl_qaqc_ui <- function(id) {
         # Section 3: Manual Adjustments
         # ================================================================
         tags$div(
-          style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+          style = "border-top: 2px solid #619b8a; margin: 25px 0 20px 0; position: relative;",
           tags$span(
-            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #619b8a; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
             "Manual Adjustments"
           )
         ),
@@ -3177,6 +3176,8 @@ module_wl_qaqc_ui <- function(id) {
               size = "lg",
               status = "success"
             ),
+            tags$script("$(\"input:radio[name='plot_mode'][value='zoom']\").parent().css('background-color', '#233d4d');"),
+            tags$script("$(\"input:radio[name='plot_mode'][value='select']\").parent().css('background-color', '#a1c181');"),
 
             # Row 2: Range management + 4 action buttons
             tags$div(
@@ -3187,16 +3188,16 @@ module_wl_qaqc_ui <- function(id) {
                 class = "btn-default btn-sm", icon = icon("times")),
               actionButton(ns("btn_remove"), "Remove Selected",
                 class = "btn-warning btn-sm", icon = icon("eraser"),
-                style = "color: #fff;"),
+                style = "color: #fff; background-color: #fe7f2d;"),
               actionButton(ns("btn_zero"), "Adjust WL Zero",
                 class = "btn-info btn-sm", icon = icon("arrows-alt-v"),
-                style = "color: #fff;"),
+                style = "color: #fff; background-color: #FDB840;"),
               actionButton(ns("btn_spike"), "Flatten Spike",
                 class = "btn-danger btn-sm", icon = icon("chart-line"),
-                style = "color: #fff;"),
+                style = "color: #fff; background-color: #915e3d;"),
               actionButton(ns("btn_offset"), "Cable Offset",
                 class = "btn-dark btn-sm", icon = icon("exchange-alt"),
-                style = "color: #000;")
+                style = "color: #000;  background-color: #619b8a;")
             ),
 
             # Row 3: Range status
@@ -3205,10 +3206,10 @@ module_wl_qaqc_ui <- function(id) {
 
           # Adjustment explanation panel
           tags$div(
-            style = "margin-top: 20px; padding: 15px; background-color: #e8f5e9; border-radius: 5px;",
+            style = "margin-top: 20px; padding: 15px; background-color: #9fd1c2; border-radius: 5px;",
             fluidRow(
               column(3,
-                tags$h5("Remove Selected", style = "margin-top: 0; color: #856404;"),
+                tags$h5("Remove Selected", style = "margin-top: 0;  font-weight: bold;  "),
                 tags$p(style = "font-size: 12px;",
                   "Set adjusted values to NA in selected ranges. ",
                   "Choose reason: ice, dry, or disturbance. ",
@@ -3216,7 +3217,7 @@ module_wl_qaqc_ui <- function(id) {
                 )
               ),
               column(3,
-                tags$h5("Adjust WL Zero", style = "margin-top: 0; color: #0c5460;"),
+                tags$h5("Adjust WL Zero", style = "margin-top: 0;  font-weight: bold; "),
                 tags$p(style = "font-size: 12px;",
                   "Shift water level by a constant offset (metres). ",
                   "Apply to selected range or entire series. ",
@@ -3224,7 +3225,7 @@ module_wl_qaqc_ui <- function(id) {
                 )
               ),
               column(3,
-                tags$h5("Flatten Spike", style = "margin-top: 0; color: #721c24;"),
+                tags$h5("Flatten Spike", style = "margin-top: 0;  font-weight: bold; "),
                 tags$p(style = "font-size: 12px;",
                   "Replace spike with linear interpolation between ",
                   "start and end of one selected range. ",
@@ -3232,7 +3233,7 @@ module_wl_qaqc_ui <- function(id) {
                 )
               ),
               column(3,
-                tags$h5("Cable Offset", style = "margin-top: 0; color: #1b1e21;"),
+                tags$h5("Cable Offset", style = "margin-top: 0;  font-weight: bold; "),
                 tags$p(style = "font-size: 12px;",
                   "Correct step change from cable break. Uses one ",
                   "range: start=pre-break, end=post-break reference. ",
@@ -3247,9 +3248,9 @@ module_wl_qaqc_ui <- function(id) {
         # Section 4: Visual Review
         # ================================================================
         tags$div(
-          style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+          style = "border-top: 2px solid #619b8a; margin: 25px 0 20px 0; position: relative;",
           tags$span(
-            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #619b8a; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
             "Visual Review"
           )
         ),
@@ -3275,9 +3276,9 @@ module_wl_qaqc_ui <- function(id) {
         # Section 5: Station Summary Statistics
         # ================================================================
         tags$div(
-          style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+          style = "border-top: 2px solid #619b8a; margin: 25px 0 20px 0; position: relative;",
           tags$span(
-            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #619b8a; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
             "Station Summary Statistics"
           )
         ),
@@ -3307,9 +3308,9 @@ module_wl_qaqc_ui <- function(id) {
         # Section 6: Export Clean Data
         # ================================================================
         tags$div(
-          style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+          style = "border-top: 2px solid #619b8a; margin: 25px 0 20px 0; position: relative;",
           tags$span(
-            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #619b8a; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
             "Export Clean Data"
           )
         ),
@@ -3346,12 +3347,12 @@ module_wl_qaqc_ui <- function(id) {
                 column(4,
                   downloadButton(ns("download_csv"), "Download Clean CSV",
                     class = "btn-primary",
-                    style = "width: 100%; color: #ffffff;")
+                    style = "width: 100%; color: #ffffff; background-color: #233d4d; border-color: #233d4d;")
                 ),
                 column(4,
                   downloadButton(ns("download_log"), "Download QC Log",
                     class = "btn-info",
-                    style = "width: 100%; color: #ffffff;")
+                    style = "width: 100%; color: #ffffff; background-color: #619b8a; border-color: #619b8a;")
                 ),
                 column(4,
                   downloadButton(ns("download_metadata"), "Download Metadata",
@@ -3369,7 +3370,7 @@ module_wl_qaqc_ui <- function(id) {
       tags$a(
         href = "#",
         onclick = "$(\"a[href='#shiny-tab-t_wl_datum']\").tab('show'); return false;",
-        style = "color: #2e7d32; font-weight: bold; font-size: 14px;",
+        style = "color: #619b8a; font-weight: bold; font-size: 14px;",
         "Ready to proceed? (Optionally) Continue to Adjust Datum ",
         icon("arrow-right")
       )
@@ -4248,10 +4249,10 @@ module_wl_qaqc_server <- function(id) {
       date_range <- paste(format(min(data$timestamp), "%Y-%m-%d"),
                           "to", format(max(data$timestamp), "%Y-%m-%d"))
       tags$div(
-        style = "background-color: #e8f5e9; padding: 12px; border-radius: 5px; border: 2px solid #2e7d32; margin-bottom: 15px;",
+        style = "background-color: #9fd1c2; padding: 12px; border-radius: 5px; border: 2px solid #619b8a; margin-bottom: 15px;",
         tags$p(style = "margin: 0; font-size: 14px;",
           "Showing summary statistics for station: ",
-          tags$strong(stn, style = "color: #2e7d32;"),
+          tags$strong(stn, style = "color: #619b8a;"),
           tags$span(style = "color: #555; margin-left: 10px;",
             sprintf("(%s records, %s)", format(nrow(data), big.mark = ","), date_range)
           )
@@ -4447,14 +4448,14 @@ module_wl_datum_ui <- function(id) {
         tags$a(
           href = "https://publications.gc.ca/collections/collection_2021/eccc/en37/En37-465-2019-eng.pdf",
           target = "_blank",
-          style = "color: #1565c0; font-weight: bold;",
+          style = "color: #233d4d; font-weight: bold;",
           "Manual of Hydrometric Data Computation and Publication Procedures"
         ),
         " and the associated ",
         tags$a(
           href = "https://www2.gov.bc.ca/assets/gov/environment/natural-resource-stewardship/nr-laws-policy/risc/man_bc_hydrometric_stand_v2.pdf",
           target = "_blank",
-          style = "color: #1565c0; font-weight: bold;",
+          style = "color: #233d4d; font-weight: bold;",
           "Manual of British Columbia Hydrometric Standards"
         ), "."
       ),
@@ -4481,9 +4482,9 @@ module_wl_datum_ui <- function(id) {
       # Section 1: Benchmark Level Runs
       # ================================================================
       tags$div(
-        style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+        style = "border-top: 2px solid #915e3d; margin: 25px 0 20px 0; position: relative;",
         tags$span(
-          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #915e3d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
           "Benchmark Level Runs"
         )
       ),
@@ -4570,7 +4571,7 @@ module_wl_datum_ui <- function(id) {
             tags$p(style = "font-size: 12px; margin-top: 10px;",
               downloadLink(ns("download_sample_bm"),
                 label = tagList(icon("download"), " Download sample benchmark CSV"),
-                style = "color: #1565c0;"
+                style = "color: #233d4d;"
               )
             )
           )
@@ -4585,11 +4586,6 @@ module_wl_datum_ui <- function(id) {
           uiOutput(ns("benchmark_validation")),
           DT::DTOutput(ns("benchmark_table")),
           tags$h4("Survey Elevations", style = "margin-top: 20px;"),
-          tags$img(
-            src = "img/elevation_survey.png",
-            style = "max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 15px;",
-            alt = "Elevation survey diagram"
-          ),
           plotly::plotlyOutput(ns("benchmark_dotplot"), height = "400px")
         )
       ),
@@ -4600,9 +4596,9 @@ module_wl_datum_ui <- function(id) {
       # Section 2: Apply Datum
       # ================================================================
       tags$div(
-        style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+        style = "border-top: 2px solid #915e3d; margin: 25px 0 20px 0; position: relative;",
         tags$span(
-          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #915e3d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
           "Apply Datum"
         )
       ),
@@ -4645,7 +4641,7 @@ module_wl_datum_ui <- function(id) {
           tags$div(
             style = "background-color: #fafafa; padding: 20px; border-radius: 5px; border: 1px solid #e0e0e0;",
             tags$div(
-              style = "background-color: #e8f5e9; padding: 10px; border-radius: 5px; border: 2px solid #2e7d32; margin-bottom: 15px;",
+              style = "color: #ffffff; background-color: #915e3d; padding: 10px; border-radius: 5px; border: 2px solid #915e3d; margin-bottom: 15px;",
               selectInput(ns("station_select"), "Select Station:",
                 choices = NULL, width = "100%")
             ),
@@ -4666,7 +4662,7 @@ module_wl_datum_ui <- function(id) {
             actionButton(ns("run_datum"), "Apply Datum",
               class = "btn-success btn-lg", width = "100%",
               icon = icon("play"),
-              style = "color: #ffffff;"
+              style = "color: #ffffff; border-color: #915e3d; background-color: #915e3d;"
             )
           )
         )
@@ -4681,9 +4677,9 @@ module_wl_datum_ui <- function(id) {
         condition = sprintf("output['%s']", ns("show_results")),
 
         tags$div(
-          style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+          style = "border-top: 2px solid #619b8a; margin: 25px 0 20px 0; position: relative;",
           tags$span(
-            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #619b8a; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
             "Results"
           )
         ),
@@ -4710,9 +4706,9 @@ module_wl_datum_ui <- function(id) {
         # Section 4: Export
         # ================================================================
         tags$div(
-          style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+          style = "border-top: 2px solid #619b8a; margin: 25px 0 20px 0; position: relative;",
           tags$span(
-            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #619b8a; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
             "Export"
           )
         ),
@@ -4944,9 +4940,9 @@ module_wl_datum_server <- function(id) {
       plot_data$visit_label <- factor(plot_data$visit_label, levels = visit_order)
 
       # Assign colours: red, purple, green for BM1-3; cycle for extras
-      bm_palette <- c("#d32f2f", "#7b1fa2", "#2e7d32", "#e65100", "#00838f",
+      bm_palette <- c("#d32f2f", "#7b1fa2", "#619b8a", "#e65100", "#00838f",
                        "#4e342e", "#546e7a")
-      we_colour <- "#1565c0"
+      we_colour <- "#233d4d"
 
       all_bm_series <- intersect(bm_cols, unique(plot_data$series))
       all_we_series <- intersect(we_cols, unique(plot_data$series))
@@ -5109,7 +5105,7 @@ module_wl_datum_server <- function(id) {
           name = "Stage (m)", line = list(color = "#90caf9"),
           yaxis = "y") %>%
         plotly::add_lines(y = ~wl_elev_m,
-          name = "Elevation (m)", line = list(color = "#1565c0"),
+          name = "Elevation (m)", line = list(color = "#233d4d"),
           yaxis = "y2")
 
       # Add benchmark visit water elevations on the Elevation axis

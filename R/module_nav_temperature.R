@@ -299,7 +299,7 @@ module_temp_upload_ui <- function(id) {
               class = "btn-primary",
               icon = icon("file-import"),
               width = "100%",
-              style = "color: #ffffff;"
+              style = "color: #ffffff; background-color: #233d4d; border-color: #233d4d;"
             ),
             tags$div(
               id = ns("wt_bind_spinner"),
@@ -426,7 +426,7 @@ module_temp_upload_ui <- function(id) {
               class = "btn-primary",
               icon = icon("file-import"),
               width = "100%",
-              style = "color: #ffffff;"
+              style = "color: #ffffff;  background-color: #233d4d; border-color: #233d4d;"
             ),
             tags$div(
               id = ns("at_bind_spinner"),

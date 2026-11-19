@@ -275,7 +275,7 @@ module_baro_upload_ui <- function(id) {
               class = "btn-primary",
               icon = icon("file-import"),
               width = "100%",
-              style = "color: #ffffff;"
+              style = "color: #ffffff;  background-color: #233d4d; border-color: #233d4d;"
             ),
             uiOutput(ns("bind_summary"))
           )

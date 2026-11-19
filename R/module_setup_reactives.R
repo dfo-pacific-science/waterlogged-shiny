@@ -76,10 +76,13 @@ module_setup_reactives <- function(session = NA) {
   rv_clean_data <- reactiveValues(
     waterlevel_clean = NULL,
     waterlevel_datum = NULL,
+    baro_clean = NULL,
     do_clean = NULL,
     conductivity_clean = NULL
   )
   session$userData$rv_clean_data <- rv_clean_data
+
+  rv_clean_data$baro_clean <- demo_baro_clean
 
   # Summary data storage (Step 5 outputs)
   rv_summary_data <- reactiveValues(

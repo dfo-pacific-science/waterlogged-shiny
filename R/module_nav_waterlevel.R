@@ -221,22 +221,11 @@ module_wl_upload_ui <- function(id) {
             tags$p(style = "font-size: 12px; margin-top: 10px;",
               icon("download"), " Download sample raw water level files:",
               tags$br(),
-<<<<<<< HEAD
-              tags$a(href = "WL_FISH_ST_01_20533550_20250423.csv",
-                     download = "WL_FISH_ST_01_20533550_20250423.csv",
+              tags$a(href = "WL_FISH_ST_01_20810314_20241022.csv",
+                     download = "WL_FISH_ST_01_20810314_20241022.csv",
                      style = "color: #233d4d; font-size: 12px;",
-                     "WL_FISH_ST_01_20533550_20250423.csv"),
+                     "WL_FISH_ST_01_20810314_20241022.csv"),
               tags$br(),
-              tags$a(href = "WL_FISH_ST_01_20533550_20251022.csv",
-                     download = "WL_FISH_ST_01_20533550_20251022.csv",
-                     style = "color: #233d4d; font-size: 12px;",
-                     "WL_FISH_ST_01_20533550_20251022.csv")
-=======
-              tags$a(href = "waterlevel-raw.csv",
-                     download = "waterlevel-raw.csv",
-                     style = "color: #1565c0; font-size: 12px;",
-                     "waterlevel-raw.csv")
->>>>>>> 99eaba9f0e904c2e6b101c8ffe6f96ef11a457a3
             ),
             tags$p(style = "font-size: 13px; margin-top: 10px;",
               tags$a(
@@ -3183,8 +3172,6 @@ module_wl_qaqc_ui <- function(id) {
               size = "lg",
               status = "success"
             ),
-            tags$script("$(\"input:radio[name='plot_mode'][value='zoom']\").parent().css('background-color', '#233d4d');"),
-            tags$script("$(\"input:radio[name='plot_mode'][value='select']\").parent().css('background-color', '#a1c181');"),
 
             # Row 2: Range management + 4 action buttons
             tags$div(
@@ -3195,16 +3182,16 @@ module_wl_qaqc_ui <- function(id) {
                 class = "btn-default btn-sm", icon = icon("times")),
               actionButton(ns("btn_remove"), "Remove Selected",
                 class = "btn-warning btn-sm", icon = icon("eraser"),
-                style = "color: #fff; background-color: #fe7f2d;"),
+                style = "color: #fff; background-color: #fe7f2d; border-color: #fe7f2d;"),
               actionButton(ns("btn_zero"), "Adjust WL Zero",
                 class = "btn-info btn-sm", icon = icon("arrows-alt-v"),
-                style = "color: #fff; background-color: #FDB840;"),
+                style = "color: #fff; background-color: #FDB840; border-color: #FDB840;"),
               actionButton(ns("btn_spike"), "Flatten Spike",
                 class = "btn-danger btn-sm", icon = icon("chart-line"),
-                style = "color: #fff; background-color: #915e3d;"),
+                style = "color: #fff; background-color: #915e3d; border-color: #915e3d;"),
               actionButton(ns("btn_offset"), "Cable Offset",
                 class = "btn-dark btn-sm", icon = icon("exchange-alt"),
-                style = "color: #000;  background-color: #619b8a;")
+                style = "color: #fff;  background-color: #619b8a; border-color: #619b8a;")
             ),
 
             # Row 3: Range status

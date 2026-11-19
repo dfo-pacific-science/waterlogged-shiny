@@ -4934,9 +4934,9 @@ module_wl_datum_server <- function(id) {
       plot_data$visit_label <- factor(plot_data$visit_label, levels = visit_order)
 
       # Assign colours: red, purple, green for BM1-3; cycle for extras
-      bm_palette <- c("#d32f2f", "#7b1fa2", "#619b8a", "#e65100", "#00838f",
-                       "#4e342e", "#546e7a")
-      we_colour <- "#233d4d"
+      bm_palette <- c("#233d4d", "#619b8a",
+                      "#FDB840", "#fe7f2d", "#915e3d",  "#000000", "#546E7A")
+      we_colour <- "#a1c181"
 
       all_bm_series <- intersect(bm_cols, unique(plot_data$series))
       all_we_series <- intersect(we_cols, unique(plot_data$series))

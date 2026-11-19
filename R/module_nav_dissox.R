@@ -24,18 +24,16 @@ module_do_upload_ui <- function(id) {
     ")),
     shinydashboard::box(
       width = 12,
-      tags$h1("Import Dissolved Oxygen Data", class = "custom-h1"),
-      tags$h2("Upload raw HOBO U26 DO logger files and align timestamps",
+      tags$h1("Prepare Raw Dissolved Oxygen Data", class = "custom-h1"),
+      tags$h2("Import raw DO logger files, optionally add barometric data for conversion to percent air saturation, and align timestamps",
               class = "custom-h2"),
 
       tags$p(
         class = "clean-print",
-        "Import raw HOBO CSV files from dissolved oxygen loggers ",
-        "(HOBO U26). These loggers record DO concentration (mg/L) and water ",
-        "temperature in \u00b0C. The raw data columns are ",
-        tags$code("do_mgl"), " and ", tags$code("watertemp_C"), ". ",
-        "Barometric pressure is needed for the subsequent % saturation ",
-        "conversion step."
+        "Import raw CSV files from dissolved oxygen loggers ",
+        "(e.g. HOBO U26). Loggers commonly measure dissolved oxygen as an absolute concentration (e.g. milligrams per litre), however, the solubility of oxygen in water changes depending on air pressure and temperature. If the dissolved oxygen logger used is not vented and the user requires dissolved oxygen data as percent saturation, a barometric pressure compensation will need to be applied. The required raw data columns are ",
+        "dissolved oxygen in mg/L", tags$code("do_mgl"), " and water temperature in degrees Celsius", tags$code("watertemp_C"), ". ",
+        "Barometric pressure is needed at the same temporal resolution and timespan (e.g. hourly) to apply a conversion to DO in percent air saturation."
       ),
 
       tags$div(
@@ -43,7 +41,7 @@ module_do_upload_ui <- function(id) {
         style = "background-color: #fff3cd; padding: 15px; border-radius: 5px; margin: 15px 0;",
         tags$p(style = "margin: 0;",
           tags$strong("Important:"), " Barometric pressure data must be processed ",
-          "and QC'd ", tags$strong("before"), " dissolved oxygen conversion. If you ",
+          "and cleaned ", tags$strong("before"), " dissolved oxygen conversion. If you ",
           "haven't done so yet, complete the ",
           tags$a(
             href = "#",
@@ -66,9 +64,9 @@ module_do_upload_ui <- function(id) {
       # Row 1: Metadata & Station Locations
       # ================================================================
       tags$div(
-        style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+        style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
         tags$span(
-          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
           "Metadata & Station Locations"
         )
       ),
@@ -98,13 +96,11 @@ module_do_upload_ui <- function(id) {
                       " Also accepts ", tags$code("YYYY-MM-DD HH:MM"), ".",
                       " ", tags$code("timestamp_remove"), " may be ", tags$code("NA"),
                       " for loggers still deployed."),
-              tags$li(tags$code("model"), " \u2014 logger model (e.g. HOBO_U26)"),
               tags$li(tags$code("sn"), " \u2014 logger serial number"),
               tags$li(tags$code("metric"), " \u2014 ",
                       tags$strong("must"), " be ", tags$code("\"dissolvedoxygen\""),
                       " or ", tags$code("\"barometric\""),
                       " \u2014 this determines how the logger data is classified and processed"),
-              tags$li(tags$code("status"), " \u2014 deployment status"),
               tags$li(tags$code("latitude"), " / ", tags$code("longitude"),
                       " \u2014 decimal degrees",
                       " (e.g. ", tags$code("49.2827"), ", ", tags$code("-123.1207"), ")")
@@ -117,11 +113,11 @@ module_do_upload_ui <- function(id) {
             ),
             tags$p(style = "font-size: 12px; margin-top: 10px;",
               tags$a(
-                href = "sample_metadata.csv",
-                download = "sample_metadata.csv",
+                href = "metadata.csv",
+                download = "metadata.csv",
                 icon("download"),
                 " Download sample metadata (pre-loaded demo)",
-                style = "color: #1565c0;"
+                style = "color: #233d4d;"
               )
             )
           )
@@ -179,10 +175,10 @@ module_do_upload_ui <- function(id) {
       # Row 2: Raw DO Logger Data
       # ================================================================
       tags$div(
-        style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+        style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
         tags$span(
-          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
-          "Raw Dissolved Oxygen Logger Data"
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          "Raw Dissolved Oxygen Logger Data Timeseries"
         )
       ),
 
@@ -195,10 +191,10 @@ module_do_upload_ui <- function(id) {
             style = "background-color: #f0f0f0; padding: 20px; border-radius: 5px; margin-bottom: 15px;",
             tags$h4("How to Import", style = "margin-top: 0;"),
             tags$p(
-              "Upload the raw CSV files exported from HOBOware for your ",
+              "Upload the raw CSV files exported from your ",
               "dissolved oxygen loggers. You can select multiple files at once. ",
               "The CSV must contain a ", tags$code("Date Time"), " column in ",
-              "HOBOware's default export format: ",
+              "the format: ",
               tags$code("MM/DD/YYYY HH:MM:SS AM/PM"),
               " (e.g. ", tags$code("06/01/2025 02:30:00 PM"), ")."
             ),
@@ -206,7 +202,7 @@ module_do_upload_ui <- function(id) {
               style = "padding-left: 20px; font-size: 13px;",
               tags$li("Ensure metadata is loaded (above) so logger serial ",
                       "numbers can be matched to stations."),
-              tags$li("Select one or more raw HOBO U26 CSV files."),
+              tags$li("Select one or more raw CSV files."),
               tags$li("Click ", tags$strong("Bind & Import Files"), " to parse ",
                       "and combine the data."),
               tags$li("Optionally use ", tags$strong("Snap Timestamps"), " to ",
@@ -220,18 +216,18 @@ module_do_upload_ui <- function(id) {
               tags$a(
                 href = "#", `data-toggle` = "modal",
                 `data-target` = "#hoboware_export_modal",
-                style = "color: #1565c0;",
+                style = "color: #233d4d;",
                 icon("question-circle"),
                 " How to export CSV files from HOBOware"
               )
             ),
             tags$p(style = "font-size: 12px; margin-top: 10px;",
               tags$a(
-                href = "sample_do_raw.csv",
-                download = "sample_do_raw.csv",
+                href = "dissox1.csv",
+                download = "dissox1.csv",
                 icon("download"),
                 " Download sample DO logger CSV (pre-loaded demo)",
-                style = "color: #1565c0;"
+                style = "color: #233d4d;"
               )
             )
           ),
@@ -245,7 +241,7 @@ module_do_upload_ui <- function(id) {
             ),
             tags$code("bind_logger_files()"),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
-                   "Parse raw HOBO CSVs, match serial numbers to metadata")
+                   "Import raw CSVs, match serial numbers to metadata, trim to deployment period")
           ),
 
           tags$div(
@@ -254,7 +250,7 @@ module_do_upload_ui <- function(id) {
             tags$ul(
               style = "padding-left: 20px; font-size: 13px; margin-bottom: 0;",
               tags$li(tags$code("site_station_code"), " \u2014 station ID",
-                      " (e.g. ", tags$code("COOK_WE_40"), ")"),
+                      " (e.g. ", tags$code("FROG_WE_01"), ")"),
               tags$li(tags$code("timestamp"), " \u2014 date-time in ",
                       tags$code("YYYY-MM-DD HH:MM:SS"), " format",
                       " (e.g. ", tags$code("2025-06-01 14:30:00"), ")"),
@@ -278,30 +274,30 @@ module_do_upload_ui <- function(id) {
             style = "background-color: #fafafa; padding: 15px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #e0e0e0; flex: 1;",
             tags$h4("Raw DO Logger Files", style = "margin-top: 0;"),
             tags$p(style = "font-size: 13px; color: #666;",
-              "Upload one or more raw HOBO U26 CSV files, or use the ",
+              "Upload one or more raw CSV files, or use the ",
               "pre-loaded sample data."
             ),
             fileInput(ns("raw_files"), NULL,
               accept = ".csv",
               multiple = TRUE,
-              placeholder = "Choose HOBO U26 CSV files...",
+              placeholder = "Choose CSV files...",
               width = "100%"
             ),
             actionButton(ns("bind_btn"), "Bind & Import Files",
               class = "btn-primary",
               icon = icon("file-import"),
               width = "100%",
-              style = "color: #ffffff;"
+              style = "color: #ffffff; background-color: #233d4d; border-color: #233d4d;"
             ),
             # Processing spinner (hidden by default, shown while binding)
             tags$div(
               id = ns("bind_spinner"),
               style = "display: none; text-align: center; padding: 15px; margin-top: 10px; background-color: #e3f2fd; border-radius: 5px;",
               tags$div(
-                style = "display: inline-block; width: 24px; height: 24px; border: 3px solid #90caf9; border-top: 3px solid #1565c0; border-radius: 50%; animation: do-spin 0.8s linear infinite; vertical-align: middle;"
+                style = "display: inline-block; width: 24px; height: 24px; border: 3px solid #90caf9; border-top: 3px solid #233d4d; border-radius: 50%; animation: do-spin 0.8s linear infinite; vertical-align: middle;"
               ),
-              tags$span(style = "margin-left: 10px; color: #1565c0; font-weight: bold;",
-                "Processing... binding HOBO files")
+              tags$span(style = "margin-left: 10px; color: #233d4d; font-weight: bold;",
+                "Processing... binding CSV files")
             ),
             uiOutput(ns("bind_summary"))
           )
@@ -312,9 +308,9 @@ module_do_upload_ui <- function(id) {
       # Row 3: Processed Barometric Data
       # ================================================================
       tags$div(
-        style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+        style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
         tags$span(
-          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
           "Processed Barometric Data"
         )
       ),
@@ -328,15 +324,15 @@ module_do_upload_ui <- function(id) {
             style = "background-color: #f0f0f0; padding: 20px; border-radius: 5px; margin-bottom: 15px; flex: 1;",
             tags$h4("Processed Baro File", style = "margin-top: 0;"),
             tags$p(
-              "This file is the output of the Barometric Pressure QAQC workflow. ",
+              "This file is the output of the Barometric Pressure QC workflow. ",
               "You must run through the ",
               tags$a(
                 href = "#",
                 onclick = "$(\"a[href='#shiny-tab-t_baro_upload']\").tab('show'); return false;",
-                style = "color: #1565c0; font-weight: bold;",
+                style = "color: #233d4d; font-weight: bold;",
                 "Barometric Pressure"
               ),
-              " section first, or upload a previously exported processed baro CSV."
+              " section first, or upload a CSV of clean barometric data."
             ),
             tags$p(style = "font-weight: bold; margin-bottom: 5px;",
               "Required columns:"
@@ -344,7 +340,7 @@ module_do_upload_ui <- function(id) {
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
               tags$li(tags$code("site_station_code"),
-                      " (e.g. ", tags$code("ALBR_ST_30"), ")"),
+                      " (e.g. ", tags$code("FROG_WE_01"), ")"),
               tags$li(tags$code("timestamp"), " \u2014 ",
                       tags$code("YYYY-MM-DD HH:MM:SS"), " format",
                       " (e.g. ", tags$code("2025-06-01 14:30:00"), ")"),
@@ -362,17 +358,17 @@ module_do_upload_ui <- function(id) {
             tags$div(
               style = "background-color: #e8e8e8; padding: 10px; border-radius: 4px; margin-top: 10px;",
               tags$h5("Follow Along in the R package", style = "margin-top: 0; margin-bottom: 5px;"),
-              tags$code("qc_barometric_all()"),
+              tags$code("qc_barometric()"),
               tags$p(style = "font-size: 12px; color: #666; margin-top: 5px; margin-bottom: 0;",
-                     "Run automated QAQC on baro data (produces the required columns)")
+                     "Run automated QC on baro data (produces the required columns)")
             ),
             tags$p(style = "font-size: 12px; margin-top: 10px;",
               tags$a(
-                href = "demo_baro_processed.csv",
-                download = "demo_baro_processed.csv",
-                style = "color: #1565c0;",
+                href = "BARO_2024_v1.0.csv",
+                download = "BARO_2024_v1.0.csv",
+                style = "color: #233d4d;",
                 icon("download"),
-                " Download sample processed baro CSV"
+                " Download sample clean barometric data"
               )
             )
           )
@@ -390,28 +386,28 @@ module_do_upload_ui <- function(id) {
             style = "background-color: #fafafa; padding: 15px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #e0e0e0;",
             tags$h4("Upload Processed Barometric CSV", style = "margin-top: 0;"),
             tags$p(style = "font-size: 13px; color: #666;",
-              "Upload a processed baro CSV file (output of baro QAQC), or use ",
+              "Upload clean barometric data (output of baro QC), or use ",
               "session data from the Barometric Pressure tab if available."
             ),
             fileInput(ns("baro_qc_file"), NULL,
               accept = ".csv",
-              placeholder = "Choose processed baro CSV...",
+              placeholder = "Choose clean barometric data (CSV)...",
               width = "100%"
             ),
-            actionButton(ns("load_baro_btn"), "Load Barometric Data (wait until above section says Upload Complete before pressing this button)",
+            actionButton(ns("load_baro_btn"), "Load Barometric Data (wait until Upload Complete)",
               class = "btn-primary",
               icon = icon("cloud-download-alt"),
               width = "100%",
-              style = "color: #ffffff;"
+              style = "color: #ffffff; background-color: #233d4d; border-color: #233d4d;"
             ),
             # Processing spinner (hidden by default, shown while loading)
             tags$div(
               id = ns("baro_spinner"),
               style = "display: none; text-align: center; padding: 15px; margin-top: 10px; background-color: #e3f2fd; border-radius: 5px;",
               tags$div(
-                style = "display: inline-block; width: 24px; height: 24px; border: 3px solid #90caf9; border-top: 3px solid #1565c0; border-radius: 50%; animation: do-spin 0.8s linear infinite; vertical-align: middle;"
+                style = "display: inline-block; width: 24px; height: 24px; border: 3px solid #90caf9; border-top: 3px solid #233d4d; border-radius: 50%; animation: do-spin 0.8s linear infinite; vertical-align: middle;"
               ),
-              tags$span(style = "margin-left: 10px; color: #1565c0; font-weight: bold;",
+              tags$span(style = "margin-left: 10px; color: #233d4d; font-weight: bold;",
                 "Processing... loading barometric data")
             )
           ),
@@ -425,9 +421,9 @@ module_do_upload_ui <- function(id) {
       # Row 4: Snap Timestamps
       # ================================================================
       tags$div(
-        style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+        style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
         tags$span(
-          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
           "Snap Timestamps: Dissolved Oxygen and Air Pressure"
         )
       ),
@@ -501,10 +497,10 @@ module_do_upload_ui <- function(id) {
       # Row 5: Review Raw Series
       # ================================================================
       tags$div(
-        style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+        style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
         tags$span(
-          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
-          "Review Raw Series"
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          "Review Raw DO Timeseries"
         )
       ),
 
@@ -528,9 +524,9 @@ module_do_upload_ui <- function(id) {
 
       # ---- (Optional) Filter Data by Date Range ----
       tags$div(
-        style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+        style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
         tags$span(
-          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
           "(Optional) Filter Data by Date Range"
         )
       ),
@@ -549,7 +545,7 @@ module_do_upload_ui <- function(id) {
           style = "margin-top: 25px;",
           actionButton(ns("apply_filter"), "Apply Filter",
                        class = "btn-primary", icon = icon("filter"),
-                       style = "color: #fff; background-color: #1565c0; border-color: #1565c0;")
+                       style = "color: #fff; background-color: #233d4d; border-color: #233d4d;")
         ))
       ),
 
@@ -564,7 +560,7 @@ module_do_upload_ui <- function(id) {
           tags$a(
             href = "#",
             onclick = "$(\"a[href='#shiny-tab-t_do_convert']\").tab('show'); window.scrollTo(0,0); return false;",
-            style = "color: #1565c0; font-weight: bold;",
+            style = "color: #233d4d; font-weight: bold;",
             "Convert to % Saturation"
           ),
           " to add barometric pressure and convert DO units."
@@ -677,7 +673,7 @@ module_do_upload_server <- function(id) {
           data = do_sites,
           lng = ~longitude, lat = ~latitude,
           radius = 7, weight = 2,
-          color = "#fff", fillColor = "#1565C0", fillOpacity = 0.9,
+          color = "#fff", fillColor = "#233d4d", fillOpacity = 0.9,
           label = ~site_station_code,
           popup = ~paste0(
             "<strong>", site_station_code, "</strong><br>",
@@ -699,7 +695,7 @@ module_do_upload_server <- function(id) {
           data = baro_sites,
           lng = ~longitude, lat = ~latitude,
           radius = 7, weight = 2,
-          color = "#fff", fillColor = "#FF8F00", fillOpacity = 0.9,
+          color = "#fff", fillColor = "#FDB840", fillOpacity = 0.9,
           label = ~site_station_code,
           popup = ~paste0(
             "<strong>", site_station_code, "</strong><br>",
@@ -719,7 +715,7 @@ module_do_upload_server <- function(id) {
       map %>%
         addLegend(
           position = "bottomright",
-          colors = c("#1565C0", "#FF8F00"),
+          colors = c("#233d4d", "#FDB840"),
           labels = c("Dissolved Oxygen", "Barometric"),
           title = "Metric"
         ) %>%
@@ -740,7 +736,7 @@ module_do_upload_server <- function(id) {
 
       display_cols <- intersect(
         c("site_station_code", "timestamp_deploy", "timestamp_remove",
-          "model", "sn", "metric", "status", "latitude", "longitude"),
+          "sn", "metric",  "latitude", "longitude"),
         names(do_baro_meta)
       )
 
@@ -849,7 +845,7 @@ module_do_upload_server <- function(id) {
 
         # Check required columns
         required_cols <- c("site_station_code", "timestamp_deploy", "timestamp_remove",
-                           "model", "sn", "metric", "status", "latitude", "longitude")
+                           "sn", "metric", "latitude", "longitude")
         missing_cols <- setdiff(required_cols, names(metadata))
         if (length(missing_cols) > 0) {
           showNotification(
@@ -976,7 +972,7 @@ module_do_upload_server <- function(id) {
         })
       } else {
         showNotification(
-          "No raw files selected. Upload HOBO CSV files first.",
+          "No raw files selected. Upload CSV files first.",
           type = "warning", duration = 3
         )
       }
@@ -1101,7 +1097,7 @@ module_do_upload_server <- function(id) {
       baro_file <- input$baro_qc_file
 
       if (is.null(baro_file)) {
-        showNotification("No baro file selected. Please upload a processed baro CSV.",
+        showNotification("No baro file selected. Please upload a clean baro CSV.",
           type = "error", duration = 5)
         return()
       }
@@ -1397,11 +1393,9 @@ module_do_convert_ui <- function(id) {
 
       tags$p(
         class = "clean-print",
-        "Dissolved oxygen loggers record concentration in mg/L, but percent ",
-        "air saturation (%sat) is needed for cross-site comparison. %sat depends ",
-        "on water temperature AND barometric pressure, so this step first joins ",
-        "baro data, then applies the Weiss (1970/1974) solubility equations to ",
-        "compute %sat."
+        "Commonly, unvented dissolved oxygen loggers record concentration in mg/L. Converting DO from mg/L to % air sat requires ",
+        "water temperature matched with corresponding barometric pressure. ", tags$code("add_nearest_baro()"), " matched DO data with nearest barometric data by timestamp, then ",
+        tags$code("convert_do_mgl_percsat()"), " applies the Weiss (1970/1974) solubility equations for barometric compensation."
       ),
 
       tags$div(
@@ -1426,7 +1420,7 @@ module_do_convert_ui <- function(id) {
 
       # ===== Part A: Add Nearest Baro =====
       tags$h3("Part A: Add Nearest Barometric Station",
-              style = "color: #1565c0; margin-bottom: 15px;"),
+              style = "color: #233d4d; margin-bottom: 15px;"),
 
       fluidRow(
         column(
@@ -1508,11 +1502,11 @@ module_do_convert_ui <- function(id) {
               ),
               column(4,
                 numericInput(ns("max_km"), "Max Distance (km):",
-                  value = NA, min = 1, max = 500)
+                  value = NULL, min = 1, max = 500)
               ),
               column(4,
                 numericInput(ns("max_stations"), "Max Baro Stations:",
-                  value = 5, min = 1, max = 20)
+                  value = NULL, min = 1, max = 20)
               )
             ),
 
@@ -1525,7 +1519,7 @@ module_do_convert_ui <- function(id) {
             actionButton(ns("run_add_baro"), "Add Baro Data",
               class = "btn-primary btn-lg", width = "100%",
               icon = icon("cloud"),
-              style = "color: #ffffff;"
+              style = "color: #ffffff; background-color: #233d4d; border-color: #233d4d;"
             )
           ),
 
@@ -1536,9 +1530,9 @@ module_do_convert_ui <- function(id) {
 
             # Section divider: Baro Assignment Results
             tags$div(
-              style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+              style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
               tags$span(
-                style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+                style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
                 "Baro Assignment Results"
               )
             ),
@@ -1556,9 +1550,9 @@ module_do_convert_ui <- function(id) {
 
         # Section divider: Station Detail
         tags$div(
-          style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+          style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
           tags$span(
-            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
             "Station Detail"
           )
         ),
@@ -1566,7 +1560,7 @@ module_do_convert_ui <- function(id) {
         fluidRow(
           column(4,
             tags$div(
-              style = "background-color: #e3f2fd; padding: 10px; border-radius: 5px; border: 2px solid #1565c0;",
+              style = "color: #ffffff; background-color:  #233d4d; padding: 10px; border-radius: 5px; border: 2px solid #233d4d;",
               selectInput(ns("detail_station"), "Select Station:",
                 choices = NULL, width = "100%")
             )
@@ -1586,8 +1580,8 @@ module_do_convert_ui <- function(id) {
       hr(),
 
       # ===== Part B: Convert DO to Percent Saturation =====
-      tags$h3("Part B: Convert DO to Percent Saturation",
-              style = "color: #2e7d32; margin-bottom: 15px;"),
+      tags$h3("Part B: Convert DO to Percent Air Saturation",
+              style = "color: #619b8a; margin-bottom: 15px;"),
 
       fluidRow(
         column(
@@ -1628,9 +1622,9 @@ module_do_convert_ui <- function(id) {
 
           # ---- Station Readiness ----
           tags$div(
-            style = "border-top: 2px solid #2e7d32; margin: 0 0 20px 0; position: relative;",
+            style = "border-top: 2px solid #619b8a; margin: 0 0 20px 0; position: relative;",
             tags$span(
-              style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+              style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #619b8a; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
               "Station Readiness"
             )
           ),
@@ -1639,9 +1633,9 @@ module_do_convert_ui <- function(id) {
 
           # ---- Convert Dissolved Oxygen ----
           tags$div(
-            style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+            style = "border-top: 2px solid #619b8a; margin: 25px 0 20px 0; position: relative;",
             tags$span(
-              style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+              style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #619b8a; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
               "Convert Dissolved Oxygen"
             )
           ),
@@ -1660,7 +1654,7 @@ module_do_convert_ui <- function(id) {
             actionButton(ns("run_convert"), "Convert to % Saturation",
               class = "btn-success btn-lg", width = "100%",
               icon = icon("flask"),
-              style = "color: #ffffff;"
+              style = "color: #ffffff; background-color:#619b8a; border-color:#619b8a; "
             )
           )
         )
@@ -1672,9 +1666,9 @@ module_do_convert_ui <- function(id) {
         ns = ns,
 
         tags$div(
-          style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+          style = "border-top: 2px solid #619b8a; margin: 25px 0 20px 0; position: relative;",
           tags$span(
-            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #619b8a; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
             "Conversion Results"
           )
         ),
@@ -1683,9 +1677,9 @@ module_do_convert_ui <- function(id) {
         DT::DTOutput(ns("convert_summary_table")),
 
         tags$div(
-          style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+          style = "border-top: 2px solid #619b8a; margin: 25px 0 20px 0; position: relative;",
           tags$span(
-            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #619b8a; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
             "Station Detail"
           )
         ),
@@ -1693,7 +1687,7 @@ module_do_convert_ui <- function(id) {
         fluidRow(
           column(4,
             tags$div(
-              style = "background-color: #e8f5e9; padding: 10px; border-radius: 5px; border: 2px solid #2e7d32;",
+              style = "color: #ffffff; background-color: #619b8a; padding: 10px; border-radius: 5px; border: 2px solid #619b8a;",
               selectInput(ns("convert_detail_station"), "Select Station:",
                 choices = NULL, width = "100%")
             )
@@ -1716,7 +1710,7 @@ module_do_convert_ui <- function(id) {
             tags$a(
               href = "#",
               onclick = "$(\"a[href='#shiny-tab-t_do_qc']\").tab('show'); window.scrollTo(0,0); return false;",
-              style = "color: #2e7d32; font-weight: bold;",
+              style = "color: #619b8a; font-weight: bold;",
               "QC Dissolved Oxygen"
             ),
             " to run automated quality checks and review flagged data."
@@ -2110,8 +2104,8 @@ module_do_convert_server <- function(id) {
       df <- selected_station_data()
       req(nrow(df) > 0, "airpress_kPa" %in% names(df))
 
-      baro_colors <- c("#E53935", "#43A047", "#FB8C00", "#8E24AA", "#00ACC1",
-                       "#6D4C41", "#D81B60", "#1E88E5", "#FDD835", "#546E7A")
+      baro_colors <- c("#233d4d", "#619b8a",
+                       "#FDB840", "#fe7f2d", "#915e3d",  "#000000", "#546E7A")
 
       # Panel 1: DO mg/L
       p1 <- plotly::plot_ly() %>%
@@ -2119,7 +2113,7 @@ module_do_convert_server <- function(id) {
           data = df, x = ~timestamp, y = ~do_mgl,
           type = "scatter", mode = "lines",
           name = "DO (mg/L)",
-          line = list(color = "#1565c0", width = 1.5)
+          line = list(color = "#a1c181", width = 1.5)
         ) %>%
         plotly::layout(yaxis = list(title = "DO (mg/L)"))
 
@@ -2194,7 +2188,7 @@ module_do_convert_server <- function(id) {
 
         if (length(missing) == 0) {
           tags$div(style = "margin-bottom: 5px;",
-            icon("check-circle", style = "color: #2e7d32;"),
+            icon("check-circle", style = "color: #619b8a;"),
             tags$strong(stn), " \u2014 Ready"
           )
         } else {
@@ -2393,8 +2387,8 @@ module_do_convert_server <- function(id) {
       df <- selected_convert_data()
       req(nrow(df) > 0, "do_percsat" %in% names(df))
 
-      baro_colors <- c("#E53935", "#43A047", "#FB8C00", "#8E24AA", "#00ACC1",
-                       "#6D4C41", "#D81B60", "#1E88E5", "#FDD835", "#546E7A")
+      baro_colors <- c("#233d4d", "#619b8a",
+                       "#FDB840", "#fe7f2d", "#915e3d",  "#000000", "#546E7A")
 
       # Panel 1: DO mg/L (raw)
       p1 <- plotly::plot_ly() %>%
@@ -2402,7 +2396,7 @@ module_do_convert_server <- function(id) {
           data = df, x = ~timestamp, y = ~do_mgl,
           type = "scatter", mode = "lines",
           name = "DO (mg/L)",
-          line = list(color = "#1565c0", width = 1.5)
+          line = list(color = "#a1c181", width = 1.5)
         ) %>%
         plotly::layout(yaxis = list(title = "DO (mg/L)"))
 
@@ -2412,7 +2406,7 @@ module_do_convert_server <- function(id) {
           data = df, x = ~timestamp, y = ~do_percsat,
           type = "scatter", mode = "lines",
           name = "DO (%sat)",
-          line = list(color = "#2e7d32", width = 1.5)
+          line = list(color = "#619b8a", width = 1.5)
         ) %>%
         plotly::layout(yaxis = list(title = "DO (%sat)"))
 
@@ -2466,12 +2460,12 @@ module_do_qc_ui <- function(id) {
 
       # ---- Header + Description ----
       tags$h1("QC Dissolved Oxygen", class = "custom-h1"),
-      tags$h2("Automated quality checks, drift correction, and visual review",
+      tags$h2("Automated quality control checks, drift correction, and visual review",
               class = "custom-h2"),
 
       tags$p(
         class = "clean-print",
-        "Run automated quality checks on converted dissolved oxygen data. The
+        "Run automated quality control checks on dissolved oxygen data. The
         function creates ", tags$code("do_mgl_adj"), ", ",
         tags$code("do_percsat_adj"), ", and ",
         tags$code("watertemp_C_do_adj"), " columns, applying corrections for
@@ -2488,10 +2482,10 @@ module_do_qc_ui <- function(id) {
       # Section 1: Run Automated QAQC
       # ================================================================
       tags$div(
-        style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+        style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
         tags$span(
-          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
-          "Run Automated QAQC"
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          "Run Automated QC"
         )
       ),
 
@@ -2502,12 +2496,12 @@ module_do_qc_ui <- function(id) {
           style = "flex: 0 0 33.333%; max-width: 33.333%; padding: 0 15px; display: flex; flex-direction: column;",
           tags$div(
             style = "background-color: #f0f0f0; padding: 20px; border-radius: 5px; margin-bottom: 15px;",
-            tags$h4("QAQC Rules", style = "margin-top: 0;"),
+            tags$h4("QC Rules", style = "margin-top: 0;"),
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
               tags$li(tags$strong("DO_ERROR"), " \u2014 -888.88 values \u2192 set to NA"),
               tags$li(tags$strong("OUTLIER_DO"), " \u2014 low limit (mg/L) < DO < high limit (mg/L) \u2192 set to NA"),
-              tags$li(tags$strong("OUTLIER_WT"), " \u2014 water temp < -1\u00b0C \u2192 set to NA;", tags$br(),  "     -1\u00b0C < water temp < 0\u00b0C \u2192 corrected to 0\u00b0C"),
+              tags$li(tags$strong("OUTLIER_WT"), " \u2014 water temp < -1\u00b0C \u2192 set to NA"),
               tags$li(tags$strong("FLAG_RANGE"), " \u2014 low flag (mg/L) < DO < high flag (mg/L) \u2192 flagged for review"),
               tags$li(tags$strong("FLAG_DRY"), " \u2014 DO > dry flag threshold (mg/L) or air-water temperature difference > flag threshold (\u00b0C) \u2192 flagged for review"),
               tags$li(tags$strong("FLAG_ICE"), " \u2014 water temp < ice flag threshold (\u00b0C) \u2192 flagged for review")
@@ -2526,7 +2520,7 @@ module_do_qc_ui <- function(id) {
             tags$h4("Follow Along in the R Package (waterlogged)", style = "margin-top: 0;"),
             tags$code("qc_dissox()"),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
-                   "Automated QAQC with flag and edit columns"),
+                   "Automated QC with flag and edit columns"),
             tags$code("wq_drift_correction()"),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
                    "Correct sensor drift using field reference data"),
@@ -2542,11 +2536,11 @@ module_do_qc_ui <- function(id) {
           tags$div(
             style = "background-color: #fafafa; padding: 20px; border-radius: 5px; border: 1px solid #e0e0e0; flex: 1; min-width: 0; overflow-x: auto;",
             tags$div(
-              style = "background-color: #e3f2fd; padding: 10px; border-radius: 5px; border: 2px solid #1565c0; margin-bottom: 15px;",
+              style = "color: #ffffff; background-color:#233d4d; padding: 10px; border-radius: 5px; border: 2px solid #233d4d; margin-bottom: 15px;",
               selectInput(ns("station_select"), "Select Station:",
                 choices = NULL, width = "100%")
             ),
-            tags$h4("QAQC Parameters", style = "margin-top: 0;"),
+            tags$h4("QC Parameters", style = "margin-top: 0;"),
             tags$p(style = "font-size: 13px; color: #666; margin-bottom: 10px;",
               icon("sliders-h"),
               " Adjust the thresholds used by ", tags$code("qc_dissox()"),
@@ -2580,9 +2574,9 @@ module_do_qc_ui <- function(id) {
               ),
 
             ),
-            actionButton(ns("run_qaqc"), "Run DO QAQC",
+            actionButton(ns("run_qaqc"), "Run DO QC",
               class = "btn-primary btn-lg", width = "100%",
-              style = "color: #fff;",
+              style = "color: #fff; border-color: #233d4d; background-color: #233d4d;",
               icon = icon("play")
             ),
 
@@ -2609,16 +2603,16 @@ module_do_qc_ui <- function(id) {
         # Section 2: Drift Correction (collapsible)
         # ================================================================
         tags$div(
-          style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+          style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
           tags$span(
-            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
-            "(Optional) Drift Correction: Warning Experimental"
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            "Optional: Drift Correction (in development)"
           )
         ),
 
         tags$a(
           `data-toggle` = "collapse", href = paste0("#", ns("drift_collapse")),
-          style = "display: block; margin-bottom: 10px; color: #1565c0; font-weight: bold; cursor: pointer;",
+          style = "display: block; margin-bottom: 10px; color: #233d4d; font-weight: bold; cursor: pointer;",
           icon("chevron-right"), " Show / Hide Drift Correction"
         ),
 
@@ -2634,12 +2628,12 @@ module_do_qc_ui <- function(id) {
               style = "background-color: #f0f0f0; padding: 20px; border-radius: 5px; margin-bottom: 15px;",
               tags$h4("Why Drift Correction?", style = "margin-top: 0;"),
               tags$p(style = "font-size: 13px;",
-                "DO sensors drift over time due to membrane degradation, biofouling, and ",
-                "aging electrolyte. Field reference measurements taken during site visits ",
-                "let you quantify and correct this drift. The correction ramps linearly ",
+                "DO sensors may drift over time due to membrane degradation, biofouling, and ",
+                "aging electrolyte. Field reference measurements, with high confidence and accuracy, taken during site visits ",
+                "allow for quantification and correction of drift. The drift correction ramps linearly ",
                 "from zero at the start of each segment to the full correction at the ",
-                "visit endpoint, then restarts at the next segment. No correction is ",
-                "applied after the last visit."
+                "field/reference sample, then restarts at the next segment. No correction is ",
+                "applied after the last field sample."
               ),
 
               tags$h4("Event Type", style = "margin-top: 12px; margin-bottom: 6px;"),
@@ -2755,7 +2749,7 @@ module_do_qc_ui <- function(id) {
                   download = "sample_field_references.csv",
                   icon("download"),
                   " Download sample field references template",
-                  style = "color: #1565c0;"
+                  style = "color: #233d4d;"
                 )
               ),
               uiOutput(ns("ref_upload_status")),
@@ -2802,9 +2796,9 @@ module_do_qc_ui <- function(id) {
         # Section 3: Manual Adjustments
         # ================================================================
         tags$div(
-          style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+          style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
           tags$span(
-            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
             "Manual Adjustments"
           )
         ),
@@ -2842,7 +2836,7 @@ module_do_qc_ui <- function(id) {
                 class = "btn-default btn-sm", icon = icon("times")),
               actionButton(ns("btn_remove"), "Remove Selected",
                 class = "btn-warning btn-sm", icon = icon("eraser"),
-                style = "color: #fff;")
+                style = "color: #fff; background-color: #fe7f2d; border-color: #fe7f2d;")
             ),
 
             # Row 3: Range status
@@ -2854,21 +2848,21 @@ module_do_qc_ui <- function(id) {
             style = "margin-top: 20px; padding: 15px; background-color: #e3f2fd; border-radius: 5px;",
             fluidRow(
               column(4,
-                tags$h5("Ice", style = "margin-top: 0; color: #1565c0;"),
+                tags$h5("Ice", style = "margin-top: 0; color: #233d4d;"),
                 tags$p(style = "font-size: 12px;",
                   "Sensor frozen or encased in ice. Sets DO and optionally ",
                   "temperature to NA."
                 )
               ),
               column(4,
-                tags$h5("Dry", style = "margin-top: 0; color: #1565c0;"),
+                tags$h5("Dry", style = "margin-top: 0; color: #233d4d;"),
                 tags$p(style = "font-size: 12px;",
                   "Sensor out of water. Sets DO values to NA; temperature ",
                   "may still be valid."
                 )
               ),
               column(4,
-                tags$h5("Disturbance", style = "margin-top: 0; color: #1565c0;"),
+                tags$h5("Disturbance", style = "margin-top: 0; color: #233d4d;"),
                 tags$p(style = "font-size: 12px;",
                   "Logger moved, disturbed, or otherwise unreliable. ",
                   "Use ", tags$code("keep_temp"), " to retain temperature."
@@ -2882,9 +2876,9 @@ module_do_qc_ui <- function(id) {
         # Section 4: Visual Review
         # ================================================================
         tags$div(
-          style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+          style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
           tags$span(
-            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
             "Visual Review"
           )
         ),
@@ -2904,9 +2898,9 @@ module_do_qc_ui <- function(id) {
         # Section 5: Station Summary Statistics
         # ================================================================
         tags$div(
-          style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+          style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
           tags$span(
-            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
             "Station Summary Statistics"
           )
         ),
@@ -2944,9 +2938,9 @@ module_do_qc_ui <- function(id) {
         # Section 6: Export Clean Data
         # ================================================================
         tags$div(
-          style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+          style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
           tags$span(
-            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
             "Export Clean Data"
           )
         ),
@@ -2960,10 +2954,10 @@ module_do_qc_ui <- function(id) {
               style = "background-color: #f0f0f0; padding: 20px; border-radius: 5px; flex: 1;",
               tags$h4("Download Results", style = "margin-top: 0;"),
               tags$p(style = "font-size: 13px;",
-                "Download the QAQC'd dissolved oxygen data as CSV for the ",
+                "Download the cleaned dissolved oxygen data as CSV for the ",
                 tags$strong("selected station"), ". The exported file ",
                 "contains raw columns, adjusted columns, and all edit/flag ",
-                "columns. The QAQC log records every automated and manual ",
+                "columns. The QC log records every automated and manual ",
                 "adjustment applied."
               ),
               tags$p(style = "font-size: 13px; color: #666;",
@@ -2982,12 +2976,12 @@ module_do_qc_ui <- function(id) {
                 column(4,
                   downloadButton(ns("download_csv"), "Download Clean CSV",
                     class = "btn-primary",
-                    style = "width: 100%; color: #ffffff;")
+                    style = "width: 100%; color: #ffffff; background-color: #233d4d; border-color: #233d4d;")
                 ),
                 column(4,
-                  downloadButton(ns("download_log"), "Download QAQC Log",
+                  downloadButton(ns("download_log"), "Download QC Log",
                     class = "btn-info",
-                    style = "width: 100%; color: #ffffff;")
+                    style = "width: 100%; color: #ffffff; background-color: #619b8a; border-color: #619b8a;")
                 ),
                 column(4,
                   downloadButton(ns("download_metadata"), "Download Metadata",
@@ -3055,7 +3049,7 @@ module_do_qc_server <- function(id) {
         tags$div(
           style = "color: #155724; background: #d4edda; padding: 12px; border-radius: 5px; margin-bottom: 10px;",
           icon("check-circle"),
-          sprintf(" Ready: %d station(s), %s records available for QAQC", n_stns, n_recs)
+          sprintf(" Ready: %d station(s), %s records available for QC", n_stns, n_recs)
         )
       }
     })
@@ -3068,7 +3062,7 @@ module_do_qc_server <- function(id) {
       req(converted_data)
 
       tryCatch({
-        showNotification("Running DO QAQC...",
+        showNotification("Running DO QC...",
           type = "message", duration = NULL, id = "do_qaqc_progress")
 
         result <- qc_dissox(
@@ -3100,12 +3094,12 @@ module_do_qc_server <- function(id) {
         range_history(list())
 
         removeNotification("do_qaqc_progress")
-        showNotification(sprintf("QAQC complete for %s", station),
+        showNotification(sprintf("QC complete for %s", station),
           type = "message", duration = 5)
 
       }, error = function(e) {
         removeNotification("do_qaqc_progress")
-        showNotification(paste("QAQC error:", conditionMessage(e)),
+        showNotification(paste("QC error:", conditionMessage(e)),
           type = "error", duration = 8)
       })
     })
@@ -3427,7 +3421,7 @@ module_do_qc_server <- function(id) {
               hovertemplate = "Raw: %{y:.2f} mg/L<extra></extra>") %>%
         add_trace(y = ~do_mgl_adj,
               type = "scattergl", mode = "lines",
-              line = list(color = "#1565c0", width = 1),
+              line = list(color = "#233d4d", width = 1),
               name = "Adj DO mg/L",
               hovertemplate = "Adj: %{y:.2f} mg/L<extra></extra>")
 
@@ -3439,7 +3433,7 @@ module_do_qc_server <- function(id) {
               hovertemplate = "Raw: %{y:.1f} %%sat<extra></extra>") %>%
         add_trace(y = ~do_percsat_adj,
               type = "scattergl", mode = "lines",
-              line = list(color = "#2e7d32", width = 1),
+              line = list(color = "#619b8a", width = 1),
               name = "Adj DO %sat",
               hovertemplate = "Adj: %{y:.1f} %%sat<extra></extra>")
 
@@ -3496,7 +3490,7 @@ module_do_qc_server <- function(id) {
 
       subplot(p1, p2, p3, p4, nrows = 4, shareX = TRUE, titleY = TRUE) %>%
         layout(
-          title = list(text = paste("DO QAQC \u2014", station), font = list(size = 14)),
+          title = list(text = paste("DO QC \u2014", station), font = list(size = 14)),
           xaxis = list(title = ""),
           xaxis2 = list(title = ""),
           xaxis3 = list(title = ""),
@@ -3849,10 +3843,10 @@ module_do_qc_server <- function(id) {
       date_range <- paste(format(min(data$timestamp), "%Y-%m-%d"),
                           "to", format(max(data$timestamp), "%Y-%m-%d"))
       tags$div(
-        style = "background-color: #e3f2fd; padding: 12px; border-radius: 5px; border: 2px solid #1565c0; margin-bottom: 15px;",
+        style = "background-color: #e3f2fd; padding: 12px; border-radius: 5px; border: 2px solid #233d4d; margin-bottom: 15px;",
         tags$p(style = "margin: 0; font-size: 14px;",
           "Showing summary statistics for station: ",
-          tags$strong(stn, style = "color: #1565c0;"),
+          tags$strong(stn, style = "color: #233d4d;"),
           tags$span(style = "color: #555; margin-left: 10px;",
             sprintf("(%s records, %s)", format(nrow(data), big.mark = ","), date_range)
           )

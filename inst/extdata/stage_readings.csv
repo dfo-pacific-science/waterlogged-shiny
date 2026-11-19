@@ -1,5 +1,12 @@
 site_station_code,timestamp,stage_m,depth_m,logger_dry,logger_ice,logger_disturbance,site_comments
+<<<<<<< HEAD
 FISH_ST_01,10/10/2023 9:10,0.446,,,,,
 FISH_ST_01,4/19/2024 16:26,0.33,,,,,
 FISH_ST_01,7/10/2024 15:05,0.48,,,,,stilling well clear
 FISH_ST_01,10/22/2024 8:40,0.335,,,,1,"waterlevel logger in sediment, cleared sediment"
+=======
+FISH_ST_01,10/10/2024 9:10,0.316,,,,,
+FISH_ST_01,4/19/2025 16:26,0.19,,,,,
+FISH_ST_01,7/10/2025 15:05,0.35,,,,,
+FISH_ST_01,10/22/2025 8:40,0.205,,,,1,"waterlevel logger in sediment, cleared sediment"
+>>>>>>> 99eaba9f0e904c2e6b101c8ffe6f96ef11a457a3

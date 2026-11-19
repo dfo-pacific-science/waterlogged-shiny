@@ -219,8 +219,9 @@ module_wl_upload_ui <- function(id) {
               "data for demonstration."
             ),
             tags$p(style = "font-size: 12px; margin-top: 10px;",
-              icon("download"), " Download sample raw HOBO water level files:",
+              icon("download"), " Download sample raw water level files:",
               tags$br(),
+<<<<<<< HEAD
               tags$a(href = "WL_FISH_ST_01_20533550_20250423.csv",
                      download = "WL_FISH_ST_01_20533550_20250423.csv",
                      style = "color: #233d4d; font-size: 12px;",
@@ -230,6 +231,12 @@ module_wl_upload_ui <- function(id) {
                      download = "WL_FISH_ST_01_20533550_20251022.csv",
                      style = "color: #233d4d; font-size: 12px;",
                      "WL_FISH_ST_01_20533550_20251022.csv")
+=======
+              tags$a(href = "waterlevel-raw.csv",
+                     download = "waterlevel-raw.csv",
+                     style = "color: #1565c0; font-size: 12px;",
+                     "waterlevel-raw.csv")
+>>>>>>> 99eaba9f0e904c2e6b101c8ffe6f96ef11a457a3
             ),
             tags$p(style = "font-size: 13px; margin-top: 10px;",
               tags$a(
@@ -260,7 +267,7 @@ module_wl_upload_ui <- function(id) {
             tags$ul(
               style = "padding-left: 20px; font-size: 13px; margin-bottom: 0;",
               tags$li(tags$code("site_station_code"), " \u2014 station ID",
-                      " (e.g. ", tags$code("ALBR_ST_30"), ")"),
+                      " (e.g. ", tags$code("FISH_ST_01"), ")"),
               tags$li(tags$code("timestamp"), " \u2014 date-time in ",
                       tags$code("YYYY-MM-DD HH:MM:SS"), " format",
                       " (e.g. ", tags$code("2025-06-01 14:30:00"), ")"),
@@ -350,7 +357,7 @@ module_wl_upload_ui <- function(id) {
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
               tags$li(tags$code("site_station_code"),
-                      " (e.g. ", tags$code("ALBR_ST_30"), ")"),
+                      " (e.g. ", tags$code("FISH_ST_01"), ")"),
               tags$li(tags$code("timestamp"), " \u2014 ",
                       tags$code("YYYY-MM-DD HH:MM:SS"), " format",
                       " (e.g. ", tags$code("2025-06-01 14:30:00"), ")"),
@@ -5328,7 +5335,7 @@ module_wl_datum_server <- function(id) {
         } else {
           # Minimal example
           example <- data.frame(
-            site_station_code = "ALBR_ST_30",
+            site_station_code = "FISH_ST_01",
             visit_date = "4/18/2025",
             visit_time = "13:30",
             primary_bm = "BM1",

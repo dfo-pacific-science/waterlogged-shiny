@@ -370,8 +370,8 @@ module_wl_upload_ui <- function(id) {
             ),
             tags$p(style = "font-size: 12px; margin-top: 10px;",
               tags$a(
-                href = "SLUG_ST_01_BARO_20250101_20251009_v1.0.csv",
-                download = "SLUG_ST_01_BARO_20250101_20251009_v1.0.csv",
+                href = "BARO_2024_v1.0.csv",
+                download = "BARO_2024_v1.0.csv",
                 style = "color: #233d4d;",
                 icon("download"),
                 " Download sample clean baro CSV"

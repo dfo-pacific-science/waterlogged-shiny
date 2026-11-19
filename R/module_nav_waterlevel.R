@@ -221,22 +221,11 @@ module_wl_upload_ui <- function(id) {
             tags$p(style = "font-size: 12px; margin-top: 10px;",
               icon("download"), " Download sample raw water level files:",
               tags$br(),
-<<<<<<< HEAD
-              tags$a(href = "WL_FISH_ST_01_20533550_20250423.csv",
-                     download = "WL_FISH_ST_01_20533550_20250423.csv",
+              tags$a(href = "WL_FISH_ST_01_20810314_20241022.csv",
+                     download = "WL_FISH_ST_01_20810314_20241022.csv",
                      style = "color: #233d4d; font-size: 12px;",
-                     "WL_FISH_ST_01_20533550_20250423.csv"),
+                     "WL_FISH_ST_01_20810314_20241022.csv"),
               tags$br(),
-              tags$a(href = "WL_FISH_ST_01_20533550_20251022.csv",
-                     download = "WL_FISH_ST_01_20533550_20251022.csv",
-                     style = "color: #233d4d; font-size: 12px;",
-                     "WL_FISH_ST_01_20533550_20251022.csv")
-=======
-              tags$a(href = "waterlevel-raw.csv",
-                     download = "waterlevel-raw.csv",
-                     style = "color: #1565c0; font-size: 12px;",
-                     "waterlevel-raw.csv")
->>>>>>> 99eaba9f0e904c2e6b101c8ffe6f96ef11a457a3
             ),
             tags$p(style = "font-size: 13px; margin-top: 10px;",
               tags$a(

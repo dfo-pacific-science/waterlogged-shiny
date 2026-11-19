@@ -3172,8 +3172,6 @@ module_wl_qaqc_ui <- function(id) {
               size = "lg",
               status = "success"
             ),
-            tags$script("$(\"input:radio[name='plot_mode'][value='zoom']\").parent().css('background-color', '#233d4d');"),
-            tags$script("$(\"input:radio[name='plot_mode'][value='select']\").parent().css('background-color', '#a1c181');"),
 
             # Row 2: Range management + 4 action buttons
             tags$div(
@@ -3184,16 +3182,16 @@ module_wl_qaqc_ui <- function(id) {
                 class = "btn-default btn-sm", icon = icon("times")),
               actionButton(ns("btn_remove"), "Remove Selected",
                 class = "btn-warning btn-sm", icon = icon("eraser"),
-                style = "color: #fff; background-color: #fe7f2d;"),
+                style = "color: #fff; background-color: #fe7f2d; border-color: #fe7f2d;"),
               actionButton(ns("btn_zero"), "Adjust WL Zero",
                 class = "btn-info btn-sm", icon = icon("arrows-alt-v"),
-                style = "color: #fff; background-color: #FDB840;"),
+                style = "color: #fff; background-color: #FDB840; border-color: #FDB840;"),
               actionButton(ns("btn_spike"), "Flatten Spike",
                 class = "btn-danger btn-sm", icon = icon("chart-line"),
-                style = "color: #fff; background-color: #915e3d;"),
+                style = "color: #fff; background-color: #915e3d; border-color: #915e3d;"),
               actionButton(ns("btn_offset"), "Cable Offset",
                 class = "btn-dark btn-sm", icon = icon("exchange-alt"),
-                style = "color: #000;  background-color: #619b8a;")
+                style = "color: #fff;  background-color: #619b8a; border-color: #619b8a;")
             ),
 
             # Row 3: Range status

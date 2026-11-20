@@ -92,7 +92,7 @@ for (nm in names(demo_waterlevel_list)) {
 
 # Load dissolved oxygen data
 demo_dissox_list <- list(
-  "COOK_WE_40" = read.csv("inst/extdata/dissox_COOK_WE_40.csv")
+  "FROG_WE_01" = read.csv("inst/extdata/DO_FROG_WE_01_20240930_v0.1.csv")
 )
 for (nm in names(demo_dissox_list)) {
   demo_dissox_list[[nm]]$timestamp <- .parse_timestamp(demo_dissox_list[[nm]]$timestamp)

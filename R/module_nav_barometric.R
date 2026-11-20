@@ -1084,7 +1084,7 @@ module_baro_qc_ui <- function(id) {
 
             # Station scope selector
             tags$div(
-              style = "background-color: #e0f2f1; padding: 10px; border-radius: 5px; border: 2px solid #233d4d; margin-bottom: 15px;",
+              style = "color: #ffffff; background-color: #233d4d; padding: 10px; border-radius: 5px; border: 2px solid #233d4d; margin-bottom: 15px;",
               tags$h4("Select Station", style = "margin-top: 0;"),
               selectizeInput(ns("qaqc_stations"), NULL,
                              choices = NULL, multiple = TRUE,
@@ -1188,7 +1188,7 @@ module_baro_qc_ui <- function(id) {
           fluidRow(
             column(4,
               tags$div(
-                style = "background-color:  #e0f2f1; padding: 10px; border-radius: 5px; border: 2px solid #233d4d;",
+                style = "color: #ffffff; background-color:  #233d4d; padding: 10px; border-radius: 5px; border: 2px solid #233d4d;",
                 selectInput(ns("station_select"), "Select Station:",
                   choices = NULL, width = "100%")
               )

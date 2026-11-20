@@ -1498,7 +1498,7 @@ module_temp_qc_water_ui <- function(id) {
             style = "background-color: #fafafa; padding: 20px; border-radius: 5px; border: 1px solid #e0e0e0; flex: 1; min-width: 0; overflow-x: auto;",
 
             tags$div(
-              style = "background-color: #e0f2f1; padding: 10px; border-radius: 5px; border: 2px solid #233d4d; margin-bottom: 15px;",
+              style = "color: #ffffff; background-color: #233d4d; padding: 10px; border-radius: 5px; border: 2px solid #233d4d; margin-bottom: 15px;",
               selectInput(ns("station_select"), "Select Station:",
                 choices = NULL, width = "100%")
             ),
@@ -2128,7 +2128,7 @@ module_temp_qc_air_ui <- function(id) {
             style = "background-color: #fafafa; padding: 20px; border-radius: 5px; border: 1px solid #e0e0e0; flex: 1; min-width: 0; overflow-x: auto;",
 
             tags$div(
-              style = "background-color: #e0f2f1; padding: 10px; border-radius: 5px; border: 2px solid #233d4d; margin-bottom: 15px;",
+              style = "color: #ffffff; background-color: #233d4d;; padding: 10px; border-radius: 5px; border: 2px solid #233d4d; margin-bottom: 15px;",
               selectInput(ns("station_select"), "Select Station:", choices = NULL, width = "100%")
             ),
             # QC parameters

@@ -103,21 +103,35 @@ module_welcome_ui <- function(id) {
                       )
                     ),
                     tags$li(style = "margin-bottom: 4px;",
-                      tags$a(href = "barometric-pressure.pdf", target = "_blank",
+                            tags$a(href = "air-temperature.html", target = "_blank",
+                                   style = "color: #233d4d;",
+                                   icon("download", style = "margin-right: 4px;"),
+                                   "Tutorial: Air temperature timeseries"
+                            )
+                    ),
+                    tags$li(style = "margin-bottom: 4px;",
+                            tags$a(href = "water-temperature.html", target = "_blank",
+                                   style = "color: #233d4d;",
+                                   icon("download", style = "margin-right: 4px;"),
+                                   "Tutorial: Water temperature timeseries"
+                            )
+                    ),
+                    tags$li(style = "margin-bottom: 4px;",
+                      tags$a(href = "barometric-pressure.html", target = "_blank",
                         style = "color: #233d4d;",
                         icon("download", style = "margin-right: 4px;"),
-                        "Tutorial: Barometric timeseries"
+                        "Tutorial: Barometric pressure timeseries"
                       )
                     ),
                     tags$li(style = "margin-bottom: 4px;",
-                      tags$a(href = "water-level.pdf", target = "_blank",
+                      tags$a(href = "water-level.html", target = "_blank",
                         style = "color: #233d4d;",
                         icon("download", style = "margin-right: 4px;"),
                         "Tutorial: Water level timeseries"
                       )
                     ),
                     tags$li(style = "margin-bottom: 4px;",
-                      tags$a(href = "dissolved-oxygen.pdf", target = "_blank",
+                      tags$a(href = "dissolved-oxygen.html", target = "_blank",
                         style = "color: #233d4d;",
                         icon("download", style = "margin-right: 4px;"),
                         "Tutorial: Dissolved oxygen timeseries"
@@ -205,33 +219,33 @@ module_welcome_ui <- function(id) {
               tags$div(style = "background: #f8f9fa; padding: 12px; border-radius: 6px;",
                 tags$span(style = "color: #555; font-size: 12px;", "Bind and trim raw logger files by station metadata"),
                 tags$br(),
-                tags$code(style = "color: #fe7f2d;", "bind_logger_files()")
+                tags$code(style =  "bind_logger_files()")
               ),
               tags$div(style = "background: #f8f9fa; padding: 12px; border-radius: 6px;",
                 tags$span(style = "color: #555; font-size: 12px;", "Add nearby barometric data"),
                 tags$br(),
-                tags$code(style = "color: #fe7f2d;", "add_nearest_baro()")
+                tags$code(style = "add_nearest_baro()")
               ),
               tags$div(style = "background: #f8f9fa; padding: 12px; border-radius: 6px;",
                 tags$span(style = "color: #555; font-size: 12px;", "Unit conversions"),
                 tags$br(),
-                tags$code(style = "color: #fe7f2d;", "convert_waterlevel_kPa_m(), convert_do_mgl_percsat(), convert_conductivity_spc_uScm()")
+                tags$code(style = "convert_waterlevel_kPa_m(), convert_do_mgl_percsat(), convert_conductivity_spc_uScm()")
               ),
 
               tags$div(style = "background: #f8f9fa; padding: 12px; border-radius: 6px;",
                 tags$span(style = "color: #555; font-size: 12px;", "Automated QC to produce data flags"),
                 tags$br(),
-                tags$code(style = "color:#fe7f2d;", "qc_watertemp(), qc_airtemp(), qc_barometric(), qc_waterlevel(), qc_dissox(), qc_conductivity()")
+                tags$code(style =  "qc_watertemp(), qc_airtemp(), qc_barometric(), qc_waterlevel(), qc_dissox(), qc_conductivity()")
               ),
               tags$div(style = "background: #f8f9fa; padding: 12px; border-radius: 6px;",
                        tags$span(style = "color: #555; font-size: 12px;", "Visualize logger data and flags"),
                        tags$br(),
-                       tags$code(style = "color:#fe7f2d;", "plot_qc_timeseries")
+                       tags$code(style = "plot_qc_timeseries")
               ),
               tags$div(style = "background: #f8f9fa; padding: 12px; border-radius: 6px;",
                 tags$span(style = "color: #555; font-size: 12px;", "Export  and summarize clean logger data"),
                 tags$br(),
-                tags$code(style = "color: #fe7f2d;", "write_clean_data(), summarise_clean_data(), plot_clean_timeseries()")
+                tags$code(style = "write_clean_data(), summarise_clean_data(), plot_clean_timeseries()")
               )
             )
           ),

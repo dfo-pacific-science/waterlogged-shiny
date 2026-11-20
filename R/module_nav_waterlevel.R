@@ -2277,14 +2277,13 @@ module_wl_convert_server <- function(id) {
           data = df, x = ~timestamp, y = ~waterpress_kPa,
           type = "scatter", mode = "lines",
           name = "WL Pressure (raw)",
-          line = list(color = "#90CAF9", width = 1)
+          line = list(color = "#736d6d", width = 1)
         )
 
       # Add baro pressure, colored by contributing station
       if ("baro_site_stn_code" %in% names(df)) {
         baro_stns <- unique(na.omit(df$baro_site_stn_code))
-        baro_colors <- c("#E53935", "#43A047", "#FB8C00", "#8E24AA", "#00ACC1",
-                         "#6D4C41", "#D81B60", "#1E88E5", "#FDD835", "#546E7A")
+        baro_colors <- c(c("#000000", "#233d4d", "#915e3d", "#fe7f2d", "#FDB840","#a1c181", "#619b8a"))
         for (i in seq_along(baro_stns)) {
           stn_data <- dplyr::filter(df, baro_site_stn_code == baro_stns[i])
           if (nrow(stn_data) > 0) {
@@ -2301,7 +2300,7 @@ module_wl_convert_server <- function(id) {
           data = df, x = ~timestamp, y = ~airpress_kPa,
           type = "scatter", mode = "lines",
           name = "Baro Pressure",
-          line = list(color = "#E53935", width = 1)
+          line = list(color = "#915e3d", width = 1)
         )
       }
 
@@ -3592,43 +3591,43 @@ module_wl_qaqc_server <- function(id) {
       # Panel 1: Water Level
       p1 <- plot_ly(data, x = ~timestamp, y = ~waterlevel_m,
               type = "scattergl", mode = "lines",
-              line = list(color = "rgba(35,61,77,0.4)", width = 1),
+              line = list(color = "#736d6d", width = 2),
               name = "Raw WL",
               hovertemplate = "Raw: %{y:.3f} m<extra></extra>") %>%
         add_trace(y = ~waterlevel_m_adj,
               type = "scattergl", mode = "lines",
-              line = list(color = "#233d4d", width = 1),
+              line = list(color = "#233d4d", width = 2),
               name = "Adjusted WL",
               hovertemplate = "Adj: %{y:.3f} m<extra></extra>")
 
       # Panel 2: Pressure
       p2 <- plot_ly(data, x = ~timestamp, y = ~waterpress_kPa,
               type = "scattergl", mode = "lines",
-              line = list(color = "#915e3d", width = 1),
+              line = list(color = "#233d4d", width = 2),
               name = "Water Pressure",
               hovertemplate = "Water: %{y:.2f} kPa<extra></extra>") %>%
         add_trace(y = ~airpress_kPa,
               type = "scattergl", mode = "lines",
-              line = list(color = "rgba(145,94,61,0.4)", width = 1),
+              line = list(color = "#915e3d", width = 2),
               name = "Air Pressure",
               hovertemplate = "Air: %{y:.2f} kPa<extra></extra>")
 
       # Panel 3: Water Temperature
       p3 <- plot_ly(data, x = ~timestamp, y = ~watertemp_C,
               type = "scattergl", mode = "lines",
-              line = list(color = "rgba(97,155,138,0.4)", width = 1),
+              line = list(color = "#736d6d", width = 2),
               name = "Raw Water Temp",
               hovertemplate = "Raw: %{y:.1f} \u00b0C<extra></extra>") %>%
         add_trace(y = ~watertemp_C_adj,
               type = "scattergl", mode = "lines",
-              line = list(color = "#619b8a", width = 1),
+              line = list(color = "#619b8a", width = 2),
               name = "Adj Water Temp",
               hovertemplate = "Adj: %{y:.1f} \u00b0C<extra></extra>")
 
       # Panel 4: Air Temperature
       p4 <- plot_ly(data, x = ~timestamp, y = ~airtemp_C,
               type = "scattergl", mode = "lines",
-              line = list(color = "#FDB840", width = 1),
+              line = list(color = "#FDB840", width = 2),
               name = "Air Temp",
               hovertemplate = "Air: %{y:.1f} \u00b0C<extra></extra>")
 
@@ -3710,7 +3709,7 @@ module_wl_qaqc_server <- function(id) {
           p <- p %>% add_trace(
             data = flagged, x = ~timestamp,
             y = col, type = "scatter", mode = "markers",
-            marker = list(color = "#000000", size = 6,
+            marker = list(color = "#000000", size = 10,
                          symbol = symbols[((i - 1) %% length(symbols)) + 1]),
             name = col
           )
@@ -3718,7 +3717,7 @@ module_wl_qaqc_server <- function(id) {
       }
 
       p %>% layout(
-        title = list(text = "QA/QC Flags", font = list(size = 13)),
+        title = list(text = "QC Flags", font = list(size = 13)),
         xaxis = list(title = "Date"),
         yaxis = list(title = "", categoryorder = "trace"),
         legend = list(orientation = "h", y = -0.3),
@@ -4243,7 +4242,7 @@ module_wl_qaqc_server <- function(id) {
       date_range <- paste(format(min(data$timestamp), "%Y-%m-%d"),
                           "to", format(max(data$timestamp), "%Y-%m-%d"))
       tags$div(
-        style = "background-color: #9fd1c2; padding: 12px; border-radius: 5px; border: 2px solid #619b8a; margin-bottom: 15px;",
+        style = "background-color: #9fd1c2; padding: 12px;",
         tags$p(style = "margin: 0; font-size: 14px;",
           "Showing summary statistics for station: ",
           tags$strong(stn, style = "color: #619b8a;"),

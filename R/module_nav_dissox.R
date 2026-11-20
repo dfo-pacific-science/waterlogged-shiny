@@ -2104,8 +2104,8 @@ module_do_convert_server <- function(id) {
       df <- selected_station_data()
       req(nrow(df) > 0, "airpress_kPa" %in% names(df))
 
-      baro_colors <- c("#233d4d", "#619b8a",
-                       "#FDB840", "#fe7f2d", "#915e3d",  "#000000", "#546E7A")
+      baro_colors <- c("#000000", "#233d4d", "#915e3d", "#fe7f2d", "#FDB840", "#a1c181","#619b8a")
+
 
       # Panel 1: DO mg/L
       p1 <- plotly::plot_ly() %>%
@@ -2138,7 +2138,7 @@ module_do_convert_server <- function(id) {
           data = df, x = ~timestamp, y = ~airpress_kPa,
           type = "scatter", mode = "lines",
           name = "Baro Pressure",
-          line = list(color = "#E53935", width = 1)
+          line = list(color = "#915e3d", width = 1)
         )
       }
 
@@ -2387,8 +2387,7 @@ module_do_convert_server <- function(id) {
       df <- selected_convert_data()
       req(nrow(df) > 0, "do_percsat" %in% names(df))
 
-      baro_colors <- c("#233d4d", "#619b8a",
-                       "#FDB840", "#fe7f2d", "#915e3d",  "#000000", "#546E7A")
+      baro_colors <- c(c("#000000", "#233d4d", "#915e3d", "#fe7f2d", "#FDB840","#a1c181", "#619b8a"))
 
       # Panel 1: DO mg/L (raw)
       p1 <- plotly::plot_ly() %>%
@@ -2431,7 +2430,7 @@ module_do_convert_server <- function(id) {
           data = df, x = ~timestamp, y = ~airpress_kPa,
           type = "scatter", mode = "lines",
           name = "Baro Pressure",
-          line = list(color = "#E53935", width = 1)
+          line = list(color = "#915e3d", width = 1)
         )
       }
 
@@ -3416,24 +3415,24 @@ module_do_qc_server <- function(id) {
       # Panel 1: DO mg/L
       p1 <- plot_ly(data, x = ~timestamp, y = ~do_mgl,
               type = "scattergl", mode = "lines",
-              line = list(color = "rgba(21,101,192,0.4)", width = 1),
+              line = list(color = "#736d6d", width = 2),
               name = "Raw DO mg/L",
               hovertemplate = "Raw: %{y:.2f} mg/L<extra></extra>") %>%
         add_trace(y = ~do_mgl_adj,
               type = "scattergl", mode = "lines",
-              line = list(color = "#233d4d", width = 1),
+              line = list(color = "#a1c181", width = 2),
               name = "Adj DO mg/L",
               hovertemplate = "Adj: %{y:.2f} mg/L<extra></extra>")
 
       # Panel 2: DO %sat
       p2 <- plot_ly(data, x = ~timestamp, y = ~do_percsat,
               type = "scattergl", mode = "lines",
-              line = list(color = "rgba(46,125,50,0.4)", width = 1),
+              line = list(color = "#736d6d", width = 2),
               name = "Raw DO %sat",
               hovertemplate = "Raw: %{y:.1f} %%sat<extra></extra>") %>%
         add_trace(y = ~do_percsat_adj,
               type = "scattergl", mode = "lines",
-              line = list(color = "#619b8a", width = 1),
+              line = list(color = "#a1c181", width = 2),
               name = "Adj DO %sat",
               hovertemplate = "Adj: %{y:.1f} %%sat<extra></extra>")
 
@@ -3446,7 +3445,7 @@ module_do_qc_server <- function(id) {
             data = ref_percsat, x = ~ts_parsed, y = ~value,
             type = "scatter", mode = "markers",
             inherit = FALSE,
-            marker = list(color = "#d32f2f", size = 10, symbol = "diamond",
+            marker = list(color = "#915e3d", size = 10, symbol = "diamond",
                          line = list(color = "#ffffff", width = 1.5)),
             name = "Field Ref (%sat)",
             text = ~paste0(event_type, ": ", value, " %sat\n", timestamp),
@@ -3458,12 +3457,12 @@ module_do_qc_server <- function(id) {
       # Panel 3: Water Temperature
       p3 <- plot_ly(data, x = ~timestamp, y = ~watertemp_C,
               type = "scattergl", mode = "lines",
-              line = list(color = "rgba(97,155,138,0.4)", width = 1),
+              line = list(color = "rgba(97,155,138,0.4)", width = 2),
               name = "Raw Water Temp",
               hovertemplate = "Raw: %{y:.1f} \u00b0C<extra></extra>") %>%
         add_trace(y = ~watertemp_C_do_adj,
               type = "scattergl", mode = "lines",
-              line = list(color = "#619b8a", width = 1),
+              line = list(color = "#619b8a", width = 2),
               name = "Adj Water Temp",
               hovertemplate = "Adj: %{y:.1f} \u00b0C<extra></extra>")
 
@@ -3473,8 +3472,8 @@ module_do_qc_server <- function(id) {
           data = ref, x = ~ts_parsed, y = ~watertemp_C,
           type = "scatter", mode = "markers",
           inherit = FALSE,
-          marker = list(color = "#d32f2f", size = 10, symbol = "diamond",
-                       line = list(color = "#ffffff", width = 1.5)),
+          marker = list(color = "#915e3d", size = 10, symbol = "diamond",
+                       line = list(color = "#ffffff", width = 2)),
           name = "Field Ref (temp)",
           text = ~paste0(event_type, ": ", watertemp_C, "\u00b0C\n", timestamp),
           hovertemplate = "%{text}<extra></extra>"
@@ -3484,7 +3483,7 @@ module_do_qc_server <- function(id) {
       # Panel 4: Air Temperature
       p4 <- plot_ly(data, x = ~timestamp, y = ~airtemp_C,
               type = "scattergl", mode = "lines",
-              line = list(color = "#FDB840", width = 1),
+              line = list(color = "#FDB840", width = 2),
               name = "Air Temp",
               hovertemplate = "Air: %{y:.1f} \u00b0C<extra></extra>")
 
@@ -3562,7 +3561,7 @@ module_do_qc_server <- function(id) {
           p <- p %>% add_trace(
             data = flagged, x = ~timestamp,
             y = col, type = "scatter", mode = "markers",
-            marker = list(color = "#000000", size = 6,
+            marker = list(color = "#000000", size = 10,
                          symbol = symbols[((i - 1) %% length(symbols)) + 1]),
             name = col
           )
@@ -3843,7 +3842,7 @@ module_do_qc_server <- function(id) {
       date_range <- paste(format(min(data$timestamp), "%Y-%m-%d"),
                           "to", format(max(data$timestamp), "%Y-%m-%d"))
       tags$div(
-        style = "background-color: #e3f2fd; padding: 12px; border-radius: 5px; border: 2px solid #233d4d; margin-bottom: 15px;",
+        style = "background-color: #e3f2fd; padding: 12px; ;",
         tags$p(style = "margin: 0; font-size: 14px;",
           "Showing summary statistics for station: ",
           tags$strong(stn, style = "color: #233d4d;"),

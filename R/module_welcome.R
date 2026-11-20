@@ -138,7 +138,7 @@ module_welcome_ui <- function(id) {
                       )
                     ),
                     tags$li(
-                      tags$a(href = "conductivity.pdf", target = "_blank",
+                      tags$a(href = "conductivity.html", target = "_blank",
                         style = "color: #233d4d;",
                         icon("download", style = "margin-right: 4px;"),
                         "Tutorial: Conductivity timeseries"
@@ -219,33 +219,33 @@ module_welcome_ui <- function(id) {
               tags$div(style = "background: #f8f9fa; padding: 12px; border-radius: 6px;",
                 tags$span(style = "color: #555; font-size: 12px;", "Bind and trim raw logger files by station metadata"),
                 tags$br(),
-                tags$code(style =  "bind_logger_files()")
+                tags$code("bind_logger_files()")
               ),
               tags$div(style = "background: #f8f9fa; padding: 12px; border-radius: 6px;",
                 tags$span(style = "color: #555; font-size: 12px;", "Add nearby barometric data"),
                 tags$br(),
-                tags$code(style = "add_nearest_baro()")
+                tags$code("add_nearest_baro()")
               ),
               tags$div(style = "background: #f8f9fa; padding: 12px; border-radius: 6px;",
                 tags$span(style = "color: #555; font-size: 12px;", "Unit conversions"),
                 tags$br(),
-                tags$code(style = "convert_waterlevel_kPa_m(), convert_do_mgl_percsat(), convert_conductivity_spc_uScm()")
+                tags$code("convert_waterlevel_kPa_m(), convert_do_mgl_percsat(), convert_conductivity_spc_uScm()")
               ),
 
               tags$div(style = "background: #f8f9fa; padding: 12px; border-radius: 6px;",
                 tags$span(style = "color: #555; font-size: 12px;", "Automated QC to produce data flags"),
                 tags$br(),
-                tags$code(style =  "qc_watertemp(), qc_airtemp(), qc_barometric(), qc_waterlevel(), qc_dissox(), qc_conductivity()")
+                tags$code("qc_watertemp(), qc_airtemp(), qc_barometric(), qc_waterlevel(), qc_dissox(), qc_conductivity()")
               ),
               tags$div(style = "background: #f8f9fa; padding: 12px; border-radius: 6px;",
                        tags$span(style = "color: #555; font-size: 12px;", "Visualize logger data and flags"),
                        tags$br(),
-                       tags$code(style = "plot_qc_timeseries")
+                       tags$code( "plot_qc_timeseries")
               ),
               tags$div(style = "background: #f8f9fa; padding: 12px; border-radius: 6px;",
                 tags$span(style = "color: #555; font-size: 12px;", "Export  and summarize clean logger data"),
                 tags$br(),
-                tags$code(style = "write_clean_data(), summarise_clean_data(), plot_clean_timeseries()")
+                tags$code("write_clean_data(), summarise_clean_data(), plot_clean_timeseries()")
               )
             )
           ),

@@ -4,7 +4,7 @@
 # ------------------------------------------------
 # Setup UI function for Shiny app
 ui <- dashboardPage(
-  title = "waterlogged: Water Data Processing",
+  title = "waterlogged: streamlined environmental data processing",
   skin = "blue",
   header = dashboardHeader(
     title = "waterlogged",
@@ -19,6 +19,10 @@ ui <- dashboardPage(
     # Import custom css files to html head tag
     tags$head(
       tags$link(rel = "stylesheet", type = "text/css", href = "custom_style.css"),
+
+      tags$style(HTML("
+                      code {color: #fe7f2d}
+                      ")),
 
       # Prevent scroll-to-top when fileInput browse is clicked or
       # when Shiny reactive outputs update and replace DOM nodes.

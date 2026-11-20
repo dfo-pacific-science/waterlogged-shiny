@@ -96,13 +96,6 @@ module_welcome_ui <- function(id) {
                   tags$ul(
                     style = "list-style: none; padding-left: 0; margin: 8px 0 0 0;",
                     tags$li(style = "margin-bottom: 4px;",
-                      tags$a(href = "waterlogged_manual.pdf", target = "_blank",
-                        style = "color: #233d4d;",
-                        icon("download", style = "margin-right: 4px;"),
-                        "waterlogged R package manual"
-                      )
-                    ),
-                    tags$li(style = "margin-bottom: 4px;",
                             tags$a(href = "air-temperature.html", target = "_blank",
                                    style = "color: #233d4d;",
                                    icon("download", style = "margin-right: 4px;"),

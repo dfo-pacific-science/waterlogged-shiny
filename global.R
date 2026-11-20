@@ -99,11 +99,10 @@ for (nm in names(demo_dissox_list)) {
 }
 
 # Load conductivity data
-demo_conductivity_list <- list(
-  "TUMT_WE_40" = read.csv("inst/extdata/conductivity_TUMT_WE_40.csv")
-)
+demo_conductivity_list <- read.csv("inst/extdata/CO_20231018_20250419_v0.1.csv")
+
 for (nm in names(demo_conductivity_list)) {
-  demo_conductivity_list[[nm]]$timestamp <- .parse_timestamp(demo_conductivity_list[[nm]]$timestamp)
+  demo_conductivity_list$timestamp <- .parse_timestamp(demo_conductivity_list$timestamp)
 }
 
 # Load temperature metadata

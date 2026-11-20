@@ -29,17 +29,19 @@ module_cond_upload_ui <- function(id) {
     ")),
     shinydashboard::box(
       width = 12,
-      tags$h1("Import Conductivity Logger Data", class = "custom-h1"),
-      tags$h2("Upload raw HOBO U24 conductivity logger files and align timestamps",
+      tags$h1("Prepare Raw Conductivity Logger Data", class = "custom-h1"),
+      tags$h2("Import raw conductivity logger files and align timestamps",
               class = "custom-h2"),
 
       tags$p(
         class = "clean-print",
-        "Import raw HOBO CSV files from conductivity loggers ",
-        "(HOBO U24). These loggers record electrical conductivity (\u00b5S/cm) and water ",
+        "Import raw CSV files from conductivity loggers ",
+        "(e.g. HOBO U24). These loggers record electrical conductivity (\u00b5S/cm) and water ",
         "temperature in \u00b0C. When both Low Range and Full Range channels are present, ",
         "the appropriate range is automatically selected (Low Range if valid and ",
-        "\u2264 1000 \u00b5S/cm, otherwise Full Range)."
+        "\u2264 1000 \u00b5S/cm, otherwise Full Range).", tags$br(),
+        tags$strong("What is conductivity? "),  tags$br(),"Electrical conductivity (EC) measures how well water conducts electricity, reported in microsiemens per centimetre (µS/cm). Higher conductivity means more dissolved ions (salts, minerals). It's a quick indicator of water chemistry changes — runoff events, groundwater inputs, or pollution can all shift conductivity. ",  tags$br(),
+        tags$strong("Why temperature compensation? "),  tags$br(),"Conductivity varies with water temperature — warmer water conducts better. To compare readings across seasons (or between sites at different temperatures), we normalize to a standard temperature (25 °C). This normalized value is called 'specific conductance' (SPC) and is the standard for reporting."
       ),
 
       tags$div(
@@ -54,7 +56,7 @@ module_cond_upload_ui <- function(id) {
           tags$a(
             href = "#",
             onclick = "$(\"a[href='#shiny-tab-t_cond_convert']\").tab('show'); return false;",
-            style = "color: #0d47a1; font-weight: bold;",
+            style = "color: #233d4d; font-weight: bold;",
             "Convert to Spec. Cond."
           ), "."
         )
@@ -71,9 +73,9 @@ module_cond_upload_ui <- function(id) {
       # Row 1: Metadata & Station Locations
       # ================================================================
       tags$div(
-        style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+        style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
         tags$span(
-          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
           "Metadata & Station Locations"
         )
       ),
@@ -103,7 +105,6 @@ module_cond_upload_ui <- function(id) {
                       " Also accepts ", tags$code("YYYY-MM-DD HH:MM"), ".",
                       " ", tags$code("timestamp_remove"), " may be ", tags$code("NA"),
                       " for loggers still deployed."),
-              tags$li(tags$code("model"), " \u2014 logger model (e.g. HOBO_U24)"),
               tags$li(tags$code("sn"), " \u2014 logger serial number"),
               tags$li(tags$code("metric"), " \u2014 ",
                       tags$strong("must"), " be ", tags$code("\"conductivity\""),
@@ -121,11 +122,11 @@ module_cond_upload_ui <- function(id) {
             ),
             tags$p(style = "font-size: 12px; margin-top: 10px;",
               tags$a(
-                href = "sample_metadata.csv",
-                download = "sample_metadata.csv",
+                href = "metadata.csv",
+                download = "metadata.csv",
                 icon("download"),
                 " Download sample metadata (pre-loaded demo)",
-                style = "color: #2e7d32;"
+                style = "color: #233d4d;"
               )
             )
           )
@@ -183,9 +184,9 @@ module_cond_upload_ui <- function(id) {
       # Row 2: Raw Conductivity Logger Data
       # ================================================================
       tags$div(
-        style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+        style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
         tags$span(
-          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
           "Raw Conductivity Logger Data"
         )
       ),
@@ -199,10 +200,10 @@ module_cond_upload_ui <- function(id) {
             style = "background-color: #f0f0f0; padding: 20px; border-radius: 5px; margin-bottom: 15px;",
             tags$h4("How to Import", style = "margin-top: 0;"),
             tags$p(
-              "Upload the raw CSV files exported from HOBOware for your ",
+              "Upload the raw CSV files exported from ",
               "conductivity loggers. You can select multiple files at once. ",
               "The CSV must contain a ", tags$code("Date Time"), " column in ",
-              "HOBOware's default export format: ",
+              "the format: ",
               tags$code("MM/DD/YYYY HH:MM:SS AM/PM"),
               " (e.g. ", tags$code("06/01/2025 02:30:00 PM"), ")."
             ),
@@ -210,7 +211,7 @@ module_cond_upload_ui <- function(id) {
               style = "padding-left: 20px; font-size: 13px;",
               tags$li("Ensure metadata is loaded (above) so logger serial ",
                       "numbers can be matched to stations."),
-              tags$li("Select one or more raw HOBO U24 CSV files."),
+              tags$li("Select one or more raw CSV files."),
               tags$li("Click ", tags$strong("Bind & Import Files"), " to parse ",
                       "and combine the data."),
               tags$li("Optionally use ", tags$strong("Snap Timestamps"), " to ",
@@ -224,18 +225,18 @@ module_cond_upload_ui <- function(id) {
               tags$a(
                 href = "#", `data-toggle` = "modal",
                 `data-target` = "#hoboware_export_modal",
-                style = "color: #1565c0;",
+                style = "color: #619b8a;",
                 icon("question-circle"),
                 " How to export CSV files from HOBOware"
               )
             ),
             tags$p(style = "font-size: 12px; margin-top: 10px;",
               tags$a(
-                href = "sample_conductivity_raw.csv",
-                download = "sample_conductivity_raw.csv",
+                href = "cond-1.csv",
+                download = "cond-1.csv",
                 icon("download"),
                 " Download sample conductivity logger CSV (pre-loaded demo)",
-                style = "color: #2e7d32;"
+                style = "color: #233d4d;"
               )
             )
           ),
@@ -249,7 +250,7 @@ module_cond_upload_ui <- function(id) {
             ),
             tags$code("bind_logger_files()"),
             tags$p(style = "font-size: 12px; color: #666; margin-top: 5px;",
-                   "Parse raw HOBO CSVs, auto-select conductivity range, match serial numbers to metadata")
+                   "Parse raw CSVs, auto-select conductivity range, match serial numbers to metadata")
           ),
 
           tags$div(
@@ -258,7 +259,7 @@ module_cond_upload_ui <- function(id) {
             tags$ul(
               style = "padding-left: 20px; font-size: 13px; margin-bottom: 0;",
               tags$li(tags$code("site_station_code"), " \u2014 station ID",
-                      " (e.g. ", tags$code("TUMT_WE_40"), ")"),
+                      " (e.g. ", tags$code("BIRD_WE_01"), ")"),
               tags$li(tags$code("timestamp"), " \u2014 date-time in ",
                       tags$code("YYYY-MM-DD HH:MM:SS"), " format",
                       " (e.g. ", tags$code("2025-06-01 14:30:00"), ")"),
@@ -284,30 +285,30 @@ module_cond_upload_ui <- function(id) {
             style = "background-color: #fafafa; padding: 15px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #e0e0e0; flex: 1;",
             tags$h4("Raw Conductivity Logger Files", style = "margin-top: 0;"),
             tags$p(style = "font-size: 13px; color: #666;",
-              "Upload one or more raw HOBO U24 CSV files, or use the ",
+              "Upload one or more raw CSV files, or use the ",
               "pre-loaded sample data."
             ),
             fileInput(ns("raw_files"), NULL,
               accept = ".csv",
               multiple = TRUE,
-              placeholder = "Choose HOBO U24 CSV files...",
+              placeholder = "Choose CSV files...",
               width = "100%"
             ),
             actionButton(ns("bind_btn"), "Bind & Import Files",
               class = "btn-primary",
               icon = icon("file-import"),
               width = "100%",
-              style = "color: #ffffff;"
+              style = "color: #ffffff; background-color: #233d4d; border-color: #233d4d;"
             ),
             # Processing spinner (hidden by default, shown while binding)
             tags$div(
               id = ns("bind_spinner"),
               style = "display: none; text-align: center; padding: 15px; margin-top: 10px; background-color: #e8f5e9; border-radius: 5px;",
               tags$div(
-                style = "display: inline-block; width: 24px; height: 24px; border: 3px solid #a5d6a7; border-top: 3px solid #2e7d32; border-radius: 50%; animation: cond-spin 0.8s linear infinite; vertical-align: middle;"
+                style = "display: inline-block; width: 24px; height: 24px; border: 3px solid #a5d6a7; border-top: 3px solid #233d4d; border-radius: 50%; animation: cond-spin 0.8s linear infinite; vertical-align: middle;"
               ),
-              tags$span(style = "margin-left: 10px; color: #2e7d32; font-weight: bold;",
-                "Processing... binding HOBO files")
+              tags$span(style = "margin-left: 10px; color: #233d4d; font-weight: bold;",
+                "Processing... binding raw files")
             ),
             uiOutput(ns("bind_summary"))
           )
@@ -318,9 +319,9 @@ module_cond_upload_ui <- function(id) {
       # Row 3: Processed Barometric Data (Optional)
       # ================================================================
       tags$div(
-        style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+        style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
         tags$span(
-          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
           "Processed Barometric Data (Optional)"
         )
       ),
@@ -345,7 +346,7 @@ module_cond_upload_ui <- function(id) {
               tags$a(
                 href = "#",
                 onclick = "$(\"a[href='#shiny-tab-t_baro_upload']\").tab('show'); return false;",
-                style = "color: #2e7d32; font-weight: bold;",
+                style = "color: #233d4d; font-weight: bold;",
                 "Barometric Pressure"
               ),
               " section first, or upload a previously exported processed baro CSV."
@@ -356,7 +357,7 @@ module_cond_upload_ui <- function(id) {
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
               tags$li(tags$code("site_station_code"),
-                      " (e.g. ", tags$code("ALBR_ST_30"), ")"),
+                      " (e.g. ", tags$code("BIRD_WE_01"), ")"),
               tags$li(tags$code("timestamp"), " \u2014 ",
                       tags$code("YYYY-MM-DD HH:MM:SS"), " format",
                       " (e.g. ", tags$code("2025-06-01 14:30:00"), ")"),
@@ -374,17 +375,17 @@ module_cond_upload_ui <- function(id) {
             tags$div(
               style = "background-color: #e8e8e8; padding: 10px; border-radius: 4px; margin-top: 10px;",
               tags$h5("Follow Along in the R package", style = "margin-top: 0; margin-bottom: 5px;"),
-              tags$code("barometric_qaqc_all()"),
+              tags$code("barometric_qc()"),
               tags$p(style = "font-size: 12px; color: #666; margin-top: 5px; margin-bottom: 0;",
                      "Run automated QC on baro data (produces the required columns)")
             ),
             tags$p(style = "font-size: 12px; margin-top: 10px;",
               tags$a(
-                href = "demo_baro_processed.csv",
-                download = "demo_baro_processed.csv",
-                style = "color: #2e7d32;",
+                href = "BARO_2024_v1.0.csv",
+                download = "BARO_2024_v1.0.csv",
+                style = "color: #233d4d;",
                 icon("download"),
-                " Download sample processed baro CSV"
+                " Download sample clean baro CSV"
               )
             )
           )
@@ -400,9 +401,9 @@ module_cond_upload_ui <- function(id) {
           # File upload
           tags$div(
             style = "background-color: #fafafa; padding: 15px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #e0e0e0;",
-            tags$h4("Upload Processed Barometric CSV", style = "margin-top: 0;"),
+            tags$h4("Upload Clean Barometric CSV", style = "margin-top: 0;"),
             tags$p(style = "font-size: 13px; color: #666;",
-              "Upload a processed baro CSV file (output of baro QC), or use ",
+              "Upload a clean baro CSV file (output of baro QC), or use ",
               "session data from the Barometric Pressure tab if available."
             ),
             fileInput(ns("baro_qc_file"), NULL,
@@ -411,20 +412,20 @@ module_cond_upload_ui <- function(id) {
               placeholder = "Choose one or more processed baro CSVs...",
               width = "100%"
             ),
-            actionButton(ns("load_baro_btn"), "Load Barometric Data (wait until above section says Upload Complete before pressing this button)",
+            actionButton(ns("load_baro_btn"), "Load Barometric Data (wait until Upload Complete)",
               class = "btn-primary",
               icon = icon("cloud-download-alt"),
               width = "100%",
-              style = "color: #ffffff;"
+              style = "color: #ffffff; background-color: #233d4d; border-color: #233d4d;"
             ),
             # Processing spinner (hidden by default, shown while loading)
             tags$div(
               id = ns("baro_spinner"),
               style = "display: none; text-align: center; padding: 15px; margin-top: 10px; background-color: #e8f5e9; border-radius: 5px;",
               tags$div(
-                style = "display: inline-block; width: 24px; height: 24px; border: 3px solid #a5d6a7; border-top: 3px solid #2e7d32; border-radius: 50%; animation: cond-spin 0.8s linear infinite; vertical-align: middle;"
+                style = "display: inline-block; width: 24px; height: 24px; border: 3px solid #a5d6a7; border-top: 3px solid #233d4d; border-radius: 50%; animation: cond-spin 0.8s linear infinite; vertical-align: middle;"
               ),
-              tags$span(style = "margin-left: 10px; color: #2e7d32; font-weight: bold;",
+              tags$span(style = "margin-left: 10px; color: #233d4d; font-weight: bold;",
                 "Processing... loading barometric data")
             )
           ),
@@ -438,9 +439,9 @@ module_cond_upload_ui <- function(id) {
       # Row 4: Snap Timestamps
       # ================================================================
       tags$div(
-        style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+        style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
         tags$span(
-          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
           "Snap Timestamps"
         )
       ),
@@ -514,9 +515,9 @@ module_cond_upload_ui <- function(id) {
       # Row 5: Review Raw Series
       # ================================================================
       tags$div(
-        style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+        style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
         tags$span(
-          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
           "Review Raw Series"
         )
       ),
@@ -542,9 +543,9 @@ module_cond_upload_ui <- function(id) {
 
       # ---- (Optional) Filter Data by Date Range ----
       tags$div(
-        style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+        style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
         tags$span(
-          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
           "(Optional) Filter Data by Date Range"
         )
       ),
@@ -563,7 +564,7 @@ module_cond_upload_ui <- function(id) {
           style = "margin-top: 25px;",
           actionButton(ns("apply_filter"), "Apply Filter",
                        class = "btn-primary", icon = icon("filter"),
-                       style = "color: #fff; background-color: #2e7d32; border-color: #2e7d32;")
+                       style = "color: #fff; background-color: #233d4d; border-color: #233d4d;")
         ))
       ),
 
@@ -578,7 +579,7 @@ module_cond_upload_ui <- function(id) {
           tags$a(
             href = "#",
             onclick = "$(\"a[href='#shiny-tab-t_cond_convert']\").tab('show'); window.scrollTo(0,0); return false;",
-            style = "color: #2e7d32; font-weight: bold;",
+            style = "color: #233d4d; font-weight: bold;",
             "Convert to Spec. Cond."
           ),
           " to optionally add barometric data, convert to specific conductance, and run QC."
@@ -671,7 +672,7 @@ module_cond_upload_server <- function(id) {
           data = cond_sites,
           lng = ~longitude, lat = ~latitude,
           radius = 7, weight = 2,
-          color = "#fff", fillColor = "#2e7d32", fillOpacity = 0.9,
+          color = "#fff", fillColor = "#233d4d", fillOpacity = 0.9,
           label = ~site_station_code,
           popup = ~paste0(
             "<strong>", site_station_code, "</strong><br>",
@@ -693,7 +694,7 @@ module_cond_upload_server <- function(id) {
           data = baro_sites,
           lng = ~longitude, lat = ~latitude,
           radius = 7, weight = 2,
-          color = "#fff", fillColor = "#66bb6a", fillOpacity = 0.9,
+          color = "#fff", fillColor = "#FDB840", fillOpacity = 0.9,
           label = ~site_station_code,
           popup = ~paste0(
             "<strong>", site_station_code, "</strong><br>",
@@ -713,7 +714,7 @@ module_cond_upload_server <- function(id) {
       map %>%
         addLegend(
           position = "bottomright",
-          colors = c("#2e7d32", "#66bb6a"),
+          colors = c("#233d4d", "#FDB840"),
           labels = c("Conductivity", "Barometric"),
           title = "Metric"
         ) %>%
@@ -734,7 +735,7 @@ module_cond_upload_server <- function(id) {
 
       display_cols <- intersect(
         c("site_station_code", "timestamp_deploy", "timestamp_remove",
-          "model", "sn", "metric", "status", "latitude", "longitude"),
+           "sn", "metric", "status", "latitude", "longitude"),
         names(cond_baro_meta)
       )
 
@@ -843,7 +844,7 @@ module_cond_upload_server <- function(id) {
 
         # Check required columns
         required_cols <- c("site_station_code", "timestamp_deploy", "timestamp_remove",
-                           "model", "sn", "metric", "status", "latitude", "longitude")
+                            "sn", "metric", "status", "latitude", "longitude")
         missing_cols <- setdiff(required_cols, names(metadata))
         if (length(missing_cols) > 0) {
           showNotification(
@@ -1102,7 +1103,7 @@ module_cond_upload_server <- function(id) {
         })
       } else {
         showNotification(
-          "No raw files selected. Upload HOBO CSV files first.",
+          "No raw files selected. Upload raw CSV files first.",
           type = "warning", duration = 3
         )
       }
@@ -1416,9 +1417,9 @@ module_cond_convert_ui <- function(id) {
       # Part A: Convert to Specific Conductance
       # ================================================================
       tags$div(
-        style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+        style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
         tags$span(
-          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
           "Part A: Convert to Specific Conductance"
         )
       ),
@@ -1469,7 +1470,7 @@ module_cond_convert_ui <- function(id) {
 
             actionButton(ns("run_convert"), "Convert to Specific Conductance",
               class = "btn-primary btn-lg", width = "100%",
-              style = "color: #fff; background-color: #2e7d32; border-color: #2e7d32;",
+              style = "color: #fff; background-color: #233d4d; border-color: #233d4d;",
               icon = icon("exchange-alt")
             ),
 
@@ -1495,9 +1496,9 @@ module_cond_convert_ui <- function(id) {
         ns = ns,
 
         tags$div(
-          style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+          style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
           tags$span(
-            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
             "EC vs SPC Comparison"
           )
         ),
@@ -1535,9 +1536,9 @@ module_cond_convert_ui <- function(id) {
       ),
 
       tags$div(
-        style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+        style = "border-top: 2px solid #619b8a; margin: 25px 0 20px 0; position: relative;",
         tags$span(
-          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #619b8a; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
           "Part B: Add Nearest Barometric Station (Optional)"
         )
       ),
@@ -1635,7 +1636,7 @@ module_cond_convert_ui <- function(id) {
             actionButton(ns("run_add_baro"), "Add Baro Data (Optional)",
               class = "btn-primary btn-lg", width = "100%",
               icon = icon("cloud"),
-              style = "color: #ffffff;"
+              style = "color: #ffffff; background-color: #619b8a; border-color: #619b8a;"
             )
           ),
 
@@ -1645,9 +1646,9 @@ module_cond_convert_ui <- function(id) {
             ns = ns,
 
             tags$div(
-              style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+              style = "border-top: 2px solid #619b8a; margin: 25px 0 20px 0; position: relative;",
               tags$span(
-                style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+                style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #619b8a; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
                 "Baro Assignment Results"
               )
             ),
@@ -1664,9 +1665,9 @@ module_cond_convert_ui <- function(id) {
         ns = ns,
 
         tags$div(
-          style = "border-top: 2px solid #1565c0; margin: 25px 0 20px 0; position: relative;",
+          style = "border-top: 2px solid #619b8a; margin: 25px 0 20px 0; position: relative;",
           tags$span(
-            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #1565c0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #619b8a; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
             "Station Detail"
           )
         ),
@@ -1674,7 +1675,7 @@ module_cond_convert_ui <- function(id) {
         fluidRow(
           column(4,
             tags$div(
-              style = "background-color: #e3f2fd; padding: 10px; border-radius: 5px; border: 2px solid #1565c0;",
+              style = "color: #ffffff; background-color: #233d4d; padding: 10px; border-radius: 5px; border: 2px solid #233d4d;",
               selectInput(ns("detail_station"), "Select Station:",
                 choices = NULL, width = "100%")
             )
@@ -1700,7 +1701,7 @@ module_cond_convert_ui <- function(id) {
           tags$a(
             href = "#",
             onclick = "$(\"a[href='#shiny-tab-t_cond_qc']\").tab('show'); window.scrollTo(0,0); return false;",
-            style = "color: #2e7d32; font-weight: bold;",
+            style = "color: #233d4d; font-weight: bold;",
             "QC Conductivity"
           ),
           " to run automated quality checks and drift correction."
@@ -1787,8 +1788,8 @@ module_cond_convert_server <- function(id) {
 
         output$convert_result_summary <- renderUI({
           tags$div(
-            style = "margin-top: 15px; padding: 12px; background: #e8f5e9; border-radius: 5px; border-left: 4px solid #2e7d32;",
-            icon("check-circle", style = "color: #2e7d32;"),
+            style = "margin-top: 15px; padding: 12px; background: #e8f5e9; border-radius: 5px; border-left: 4px solid #233d4d;",
+            icon("check-circle", style = "color: #233d4d;"),
             sprintf(" Specific conductance computed: %s values. Column ",
                     format(n_spc, big.mark = ",")),
             tags$code("spc_uScm_adj"), " added to the dataset."
@@ -2262,8 +2263,7 @@ module_cond_convert_server <- function(id) {
       df <- selected_station_data()
       req(nrow(df) > 0, "airpress_kPa" %in% names(df))
 
-      baro_colors <- c("#E53935", "#43A047", "#FB8C00", "#8E24AA", "#00ACC1",
-                       "#6D4C41", "#D81B60", "#1E88E5", "#FDD835", "#546E7A")
+      baro_colors <- c(c("#000000", "#233d4d", "#915e3d", "#fe7f2d", "#FDB840","#a1c181", "#619b8a"))
 
       # Prefer _adj columns but fall back to raw
       ec_col <- if ("spc_uScm_adj" %in% names(df)) "spc_uScm_adj" else
@@ -2280,7 +2280,7 @@ module_cond_convert_server <- function(id) {
           type = "scatter",
           mode = "lines",
           name = paste0(title_label, " (", ec_col, ")"),
-          line = list(color = "#2e7d32", width = 1.5)
+          line = list(color = "#000000", width = 1.5)
         ) |>
         plotly::layout(
           yaxis = list(title = paste0(title_label, " (\u00b5S/cm)"))
@@ -2315,7 +2315,7 @@ module_cond_convert_server <- function(id) {
           type = "scatter",
           mode = "lines",
           name = "Air Temp",
-          line = list(color = "#E53935", width = 1)
+          line = list(color = "#FDB840", width = 1)
         )
       }
 
@@ -2352,7 +2352,7 @@ module_cond_qc_ui <- function(id) {
         "Run automated quality checks on conductivity data. The function creates ",
         tags$code("conduct_uScm_adj"), " and ", tags$code("watertemp_C_adj"),
         " columns, applying corrections for temperature range exceedances, ",
-        "near-zero temperatures, and spike detection. Flags are added for ice ",
+        "and spike detection. Flags are added for ice ",
         "and dry conditions for your review. Use drift correction with field ",
         "reference data, then manually remove bad periods as needed."
       ),
@@ -2377,9 +2377,9 @@ module_cond_qc_ui <- function(id) {
       # Section 1: Run Automated QC
       # ================================================================
       tags$div(
-        style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+        style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
         tags$span(
-          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+          style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
           "Run Automated QC"
         )
       ),
@@ -2395,7 +2395,7 @@ module_cond_qc_ui <- function(id) {
             tags$ul(
               style = "padding-left: 20px; font-size: 13px;",
               tags$li(tags$strong("OUTLIER_CO"), " \u2014 low limit (uScm) < conductivity < high limit (uScm) \u2192 set to NA"),
-              tags$li(tags$strong("OUTLIER_WT"), " \u2014 water temp < -1\u00b0C \u2192 set to NA;", tags$br(), "     -1\u00b0C < water temp < 0\u00b0C \u2192 corrected to 0\u00b0C"),
+              tags$li(tags$strong("OUTLIER_WT"), " \u2014 water temp < -1\u00b0C \u2192 set to NA;"),
               tags$li(tags$strong("FLAG_ICE"), " \u2014 water temp < ice flag threshold (\u00b0C) \u2192 flagged for review"),
               tags$li(tags$strong("FLAG_DRY"), " \u2014 conductivity < dry flag threshold (uScm) and (if available) air-water temperature difference < flag threshold (\u00b0C) \u2192 flagged for review"),
               tags$li(tags$strong("FLAG_SPIKE"), " \u2014 \u0394 conductivity > spike flag (uScm) \u2192 flagged for review")
@@ -2433,7 +2433,7 @@ module_cond_qc_ui <- function(id) {
           tags$div(
             style = "background-color: #fafafa; padding: 20px; border-radius: 5px; border: 1px solid #e0e0e0; flex: 1; min-width: 0; overflow-x: auto;",
             tags$div(
-              style = "background-color: #e8f5e9; padding: 10px; border-radius: 5px; border: 2px solid #2e7d32; margin-bottom: 15px;",
+              style = "color: #ffffff; background-color:  #233d4d; padding: 10px; border-radius: 5px; border: 2px solid #233d4d; margin-bottom: 15px;",
               selectInput(ns("station_select"), "Select Station:",
                           choices = NULL, width = "100%")
             ),
@@ -2494,7 +2494,7 @@ module_cond_qc_ui <- function(id) {
 
             actionButton(ns("run_qaqc"), "Run Conductivity QC",
               class = "btn-primary btn-lg", width = "100%",
-              style = "color: #fff; background-color: #2e7d32; border-color: #2e7d32;",
+              style = "color: #fff; background-color: #233d4d; border-color: #233d4d;",
               icon = icon("play")
             ),
 
@@ -2521,16 +2521,16 @@ module_cond_qc_ui <- function(id) {
         # Section 2: Drift Correction (collapsible)
         # ================================================================
         tags$div(
-          style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+          style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
           tags$span(
-            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
             "(Optional) Drift Correction: Warning Experimental"
           )
         ),
 
         tags$a(
           `data-toggle` = "collapse", href = paste0("#", ns("drift_collapse")),
-          style = "display: block; margin-bottom: 10px; color: #2e7d32; font-weight: bold; cursor: pointer;",
+          style = "display: block; margin-bottom: 10px; color: #233d4d; font-weight: bold; cursor: pointer;",
           icon("chevron-right"), " Show / Hide Drift Correction"
         ),
 
@@ -2667,7 +2667,7 @@ module_cond_qc_ui <- function(id) {
                   download = "sample_field_references.csv",
                   icon("download"),
                   " Download sample field references template",
-                  style = "color: #2e7d32;"
+                  style = "color: #233d4d;"
                 )
               ),
               uiOutput(ns("ref_upload_status")),
@@ -2700,7 +2700,7 @@ module_cond_qc_ui <- function(id) {
                   actionButton(ns("run_drift"), "Apply Drift Correction",
                     class = "btn-primary", width = "100%",
                     icon = icon("chart-line"),
-                    style = "color: #ffffff; background-color: #2e7d32; border-color: #2e7d32;"),
+                    style = "color: #ffffff; background-color: #233d4d; border-color: #233d4d;"),
                   uiOutput(ns("drift_result_summary"))
                 )
               )
@@ -2714,9 +2714,9 @@ module_cond_qc_ui <- function(id) {
         # Section 3: Manual Adjustments
         # ================================================================
         tags$div(
-          style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+          style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
           tags$span(
-            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
             "Manual Adjustments"
           )
         ),
@@ -2754,7 +2754,7 @@ module_cond_qc_ui <- function(id) {
                 class = "btn-default btn-sm", icon = icon("times")),
               actionButton(ns("btn_remove"), "Remove Selected",
                 class = "btn-warning btn-sm", icon = icon("eraser"),
-                style = "color: #fff;")
+                style = "color: #fff; background-color: #fe7f2d; border-color: #fe7f2d;")
             ),
 
             # Row 3: Range status
@@ -2766,21 +2766,21 @@ module_cond_qc_ui <- function(id) {
             style = "margin-top: 20px; padding: 15px; background-color: #e8f5e9; border-radius: 5px;",
             fluidRow(
               column(4,
-                tags$h5("Ice", style = "margin-top: 0; color: #2e7d32;"),
+                tags$h5("Ice", style = "margin-top: 0; color: #233d4d;"),
                 tags$p(style = "font-size: 12px;",
                   "Sensor frozen or encased in ice. Sets conductivity and optionally ",
                   "temperature to NA."
                 )
               ),
               column(4,
-                tags$h5("Dry", style = "margin-top: 0; color: #2e7d32;"),
+                tags$h5("Dry", style = "margin-top: 0; color: #233d4d;"),
                 tags$p(style = "font-size: 12px;",
                   "Sensor out of water. Sets conductivity values to NA; temperature ",
                   "may still be valid."
                 )
               ),
               column(4,
-                tags$h5("Disturbance", style = "margin-top: 0; color: #2e7d32;"),
+                tags$h5("Disturbance", style = "margin-top: 0; color: #233d4d;"),
                 tags$p(style = "font-size: 12px;",
                   "Logger moved, disturbed, or otherwise unreliable. ",
                   "Use ", tags$code("keep_temp"), " to retain temperature."
@@ -2794,9 +2794,9 @@ module_cond_qc_ui <- function(id) {
         # Section 4: Visual Review
         # ================================================================
         tags$div(
-          style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+          style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
           tags$span(
-            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
             "Visual Review"
           )
         ),
@@ -2816,9 +2816,9 @@ module_cond_qc_ui <- function(id) {
         # Section 5: Station Summary Statistics
         # ================================================================
         tags$div(
-          style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+          style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
           tags$span(
-            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
             "Station Summary Statistics"
           )
         ),
@@ -2856,9 +2856,9 @@ module_cond_qc_ui <- function(id) {
         # Section 6: Export Clean Data
         # ================================================================
         tags$div(
-          style = "border-top: 2px solid #2e7d32; margin: 25px 0 20px 0; position: relative;",
+          style = "border-top: 2px solid #233d4d; margin: 25px 0 20px 0; position: relative;",
           tags$span(
-            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #2e7d32; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
+            style = "position: absolute; top: -10px; left: 20px; background: white; padding: 0 10px; font-size: 12px; color: #233d4d; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;",
             "Export Clean Data"
           )
         ),
@@ -2894,12 +2894,12 @@ module_cond_qc_ui <- function(id) {
                 column(4,
                   downloadButton(ns("download_csv"), "Download Clean CSV",
                     class = "btn-primary",
-                    style = "width: 100%; color: #ffffff; background-color: #2e7d32; border-color: #2e7d32;")
+                    style = "width: 100%; color: #ffffff; background-color: #233d4d; border-color: #233d4d;")
                 ),
                 column(4,
                   downloadButton(ns("download_log"), "Download QC Log",
                     class = "btn-info",
-                    style = "width: 100%; color: #ffffff;")
+                    style = "width: 100%; color: #ffffff; background-color: #619b8a; border-color: #619b8a;")
                 ),
                 column(4,
                   downloadButton(ns("download_metadata"), "Download Metadata",
@@ -3347,12 +3347,12 @@ module_cond_qc_server <- function(id) {
       # Panel 1: Conductivity (uS/cm)
       p1 <- plot_ly(data, x = ~timestamp, y = ~conduct_uScm,
               type = "scattergl", mode = "lines",
-              line = list(color = "rgba(230,81,0,0.4)", width = 1),
+              line = list(color = "#736d6d", width = 2),
               name = "Raw Cond",
               hovertemplate = "Raw: %{y:.1f} \u00b5S/cm<extra></extra>") %>%
         add_trace(y = ~conduct_uScm_adj,
               type = "scattergl", mode = "lines",
-              line = list(color = "#2e7d32", width = 1),
+              line = list(color = "#000000", width = 2),
               name = "Adj Cond",
               hovertemplate = "Adj: %{y:.1f} \u00b5S/cm<extra></extra>")
 
@@ -3365,8 +3365,8 @@ module_cond_qc_server <- function(id) {
             data = ref_cond, x = ~ts_parsed, y = ~value,
             type = "scatter", mode = "markers",
             inherit = FALSE,
-            marker = list(color = "#d32f2f", size = 10, symbol = "diamond",
-                         line = list(color = "#ffffff", width = 1.5)),
+            marker = list(color = "#a1c181", size = 10, symbol = "diamond",
+                         line = list(color = "#ffffff", width = 2)),
             name = "Field Ref (cond)",
             text = ~paste0(event_type, ": ", value, " \u00b5S/cm\n", timestamp),
             hovertemplate = "%{text}<extra></extra>"
@@ -3378,12 +3378,12 @@ module_cond_qc_server <- function(id) {
       # Panel 2: Water Temperature
       p2 <- plot_ly(data, x = ~timestamp, y = ~watertemp_C,
               type = "scattergl", mode = "lines",
-              line = list(color = "rgba(97,155,138,0.4)", width = 1),
+              line = list(color = "#736d6d", width = 2),
               name = "Raw Water Temp",
               hovertemplate = "Raw: %{y:.1f} \u00b0C<extra></extra>") %>%
         add_trace(y = ~watertemp_C_adj,
               type = "scattergl", mode = "lines",
-              line = list(color = "#619b8a", width = 1),
+              line = list(color = "#619b8a", width = 2),
               name = "Adj Water Temp",
               hovertemplate = "Adj: %{y:.1f} \u00b0C<extra></extra>")
 
@@ -3393,8 +3393,8 @@ module_cond_qc_server <- function(id) {
           data = ref, x = ~ts_parsed, y = ~watertemp_C,
           type = "scatter", mode = "markers",
           inherit = FALSE,
-          marker = list(color = "#d32f2f", size = 10, symbol = "diamond",
-                       line = list(color = "#ffffff", width = 1.5)),
+          marker = list(color = "#a1c181", size = 10, symbol = "diamond",
+                       line = list(color = "#ffffff", width = 2)),
           name = "Field Ref (temp)",
           text = ~paste0(event_type, ": ", watertemp_C, "\u00b0C\n", timestamp),
           hovertemplate = "%{text}<extra></extra>"
@@ -3406,7 +3406,7 @@ module_cond_qc_server <- function(id) {
       if ("airtemp_C" %in% names(data)) {
         p3 <- plot_ly(data, x = ~timestamp, y = ~airtemp_C,
                 type = "scattergl", mode = "lines",
-                line = list(color = "#FDB840", width = 1),
+                line = list(color = "#FDB840", width =2),
                 name = "Air Temp",
                 hovertemplate = "Air: %{y:.1f} \u00b0C<extra></extra>")
         panels <- c(panels, list(p3))
@@ -3500,7 +3500,7 @@ module_cond_qc_server <- function(id) {
           p <- p %>% add_trace(
             data = flagged, x = ~timestamp,
             y = col, type = "scatter", mode = "markers",
-            marker = list(color = "#000000", size = 6,
+            marker = list(color = "#000000", size = 10,
                          symbol = symbols[((i - 1) %% length(symbols)) + 1]),
             name = col
           )
@@ -3508,7 +3508,7 @@ module_cond_qc_server <- function(id) {
       }
 
       p %>% layout(
-        title = list(text = "QA/QC Flags", font = list(size = 13)),
+        title = list(text = "QC Flags", font = list(size = 13)),
         xaxis = list(title = "Date"),
         yaxis = list(title = "", categoryorder = "trace"),
         legend = list(orientation = "h", y = -0.3),
@@ -3630,7 +3630,7 @@ module_cond_qc_server <- function(id) {
           tags$span(style = "font-size: 13px; color: #666;",
                     "Drag across the plot to select a period")
         } else {
-          tags$span(style = "font-size: 13px; color: #2e7d32; font-weight: bold;",
+          tags$span(style = "font-size: 13px; color: #233d4d; font-weight: bold;",
                     sprintf("%d range%s selected", n, if (n > 1) "s" else ""))
         }
       }
@@ -3778,10 +3778,10 @@ module_cond_qc_server <- function(id) {
       date_range <- paste(format(min(data$timestamp), "%Y-%m-%d"),
                           "to", format(max(data$timestamp), "%Y-%m-%d"))
       tags$div(
-        style = "background-color: #e8f5e9; padding: 12px; border-radius: 5px; border: 2px solid #2e7d32; margin-bottom: 15px;",
+        style = "background-color: #e8f5e9; padding: 12px; margin-bottom: 15px;",
         tags$p(style = "margin: 0; font-size: 14px;",
           "Showing summary statistics for station: ",
-          tags$strong(stn, style = "color: #2e7d32;"),
+          tags$strong(stn, style = "color: #233d4d;"),
           tags$span(style = "color: #555; margin-left: 10px;",
             sprintf("(%s records, %s)", format(nrow(data), big.mark = ","), date_range)
           )

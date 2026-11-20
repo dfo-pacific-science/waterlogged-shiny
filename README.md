@@ -39,11 +39,12 @@ This application guides you through a sequential workflow for processing your wa
 
 ## Documentation & Tutorials
 
-- [waterlogged R package manual](inst/misc/documentation/waterlogged_manual.pdf)
-- [Tutorial: Barometric timeseries](inst/misc/documentation/barometric-pressure.pdf)
-- [Tutorial: Water level timeseries](inst/misc/documentation/water-level.pdf)
-- [Tutorial: Dissolved oxygen timeseries](inst/misc/documentation/dissolved-oxygen.pdf)
-- [Tutorial: Conductivity timeseries](inst/misc/documentation/conductivity.pdf)
+- [Tutorial: Air temperature timeseries](inst/misc/documentation/air-temperature.html)
+- [Tutorial: Water temperature timeseries](inst/misc/documentation/water-temperature.html)
+- [Tutorial: Barometric pressure timeseries](inst/misc/documentation/barometric-pressure.html)
+- [Tutorial: Water level timeseries](inst/misc/documentation/water-level.html)
+- [Tutorial: Dissolved oxygen timeseries](inst/misc/documentation/dissolved-oxygen.html)
+- [Tutorial: Conductivity timeseries](inst/misc/documentation/conductivity.html)
 
 ## Getting Started
 
@@ -69,7 +70,9 @@ shiny::runApp()
 
 **Package Authors & Developers:** Daniella LoScerbo, Amanda Martens, Julian Gan, Paula Soto
 
-**Principle Investigators:** Douglas Braun, Sean Naman, David Reid, Joel Harding
+**Principle Investigators:** Douglas Braun, Sean Naman, Joel Harding
+
+**Reviewers:** Sarah Hnytka, David Reid
 
 **App Developers & Technical Support:** Matthew Bayly (MJBA, App Development), Frank Poulsen (Ashlu, Technical Support)
 
